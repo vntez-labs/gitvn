@@ -1,5 +1,5 @@
-import { create } from 'zustand';
-import { GitHubUser } from '@/interfaces/github';
+import { create } from "zustand";
+import type { GitHubUser } from "@/interfaces/github";
 
 interface AuthState {
   user: GitHubUser | null;
@@ -16,5 +16,6 @@ export const useAuthStore = create<AuthState>((set) => ({
   isAuthenticated: false,
   setUser: (user) => set({ user, isAuthenticated: !!user, isLoading: false }),
   setLoading: (isLoading) => set({ isLoading }),
-  clearAuth: () => set({ user: null, isAuthenticated: false, isLoading: false }),
+  clearAuth: () =>
+    set({ user: null, isAuthenticated: false, isLoading: false }),
 }));

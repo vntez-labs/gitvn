@@ -1,9 +1,9 @@
-import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
 
 export async function GET() {
   const cookieStore = await cookies();
-  const token = cookieStore.get('github_access_token')?.value;
+  const token = cookieStore.get("github_access_token")?.value;
 
   if (!token) {
     // Không đăng nhập -> Trả về user: null với 200 OK thay vì 401
@@ -11,10 +11,10 @@ export async function GET() {
   }
 
   try {
-    const res = await fetch('https://api.github.com/user', {
+    const res = await fetch("https://api.github.com/user", {
       headers: {
         Authorization: `Bearer ${token}`,
-        Accept: 'application/vnd.github+json',
+        Accept: "application/vnd.github+json",
       },
       next: { revalidate: 3600 },
     });

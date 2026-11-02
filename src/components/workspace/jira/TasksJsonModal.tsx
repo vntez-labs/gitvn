@@ -1,172 +1,127 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
 import {
-  Modal,
-  Box,
-  Group,
-  Text,
-  Badge,
-  Button,
-  Stack,
-  Textarea,
   ActionIcon,
-  Tooltip,
   Alert,
-} from '@mantine/core';
+  Badge,
+  Box,
+  Button,
+  CopyButton,
+  Group,
+  Loader,
+  Modal,
+  Stack,
+  Switch,
+  Text,
+  Textarea,
+  Tooltip,
+} from "@mantine/core";
+import { notifications } from "@mantine/notifications";
 import {
-  IconFileCode,
-  IconCopy,
-  IconCheck,
-  IconDeviceFloppy,
-  IconCloudUpload,
-  IconTrash,
   IconAlertCircle,
+  IconBrandGithub,
+  IconCheck,
+  IconCopy,
+  IconDeviceFloppy,
+  IconFileCode,
+  IconRefresh,
   IconSparkles,
-} from '@tabler/icons-react';
-import { notifications } from '@mantine/notifications';
-import { JiraBoardData } from '@/interfaces/jira';
+} from "@tabler/icons-react";
+import axios from "axios";
+import { useEffect, useState } from "react";
+import type { JiraBoardData } from "@/interfaces/jira";
 
 interface TasksJsonModalProps {
   opened: boolean;
   onClose: () => void;
+  owner: string;
+  repo: string;
   boardData: JiraBoardData | null;
-  syncedToGitHub: boolean;
-  onSaveData: (data: JiraBoardData, commitMessage?: string) => Promise<void>;
-  repoPrefix: string;
+  onSavedSuccess: (updatedData: JiraBoardData) => void;
 }
 
 export function TasksJsonModal({
   opened,
   onClose,
+  owner,
+  repo,
   boardData,
-  syncedToGitHub,
-  onSaveData,
-  repoPrefix,
+  onSavedSuccess,
 }: TasksJsonModalProps) {
-  const [jsonContent, setJsonContent] = useState('');
-  const [jsonError, setJsonError] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [jsonText, setJsonText] = useState("");
+  const [parseError, setParseError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [syncToGitHub, setSyncToGitHub] = useState(true);
 
+  // Load JSON text mỗi khi mở modal
   useEffect(() => {
-    if (boardData && opened) {
-      setJsonContent(JSON.stringify(boardData, null, 2));
-      setJsonError(null);
+    if (opened && boardData) {
+      setJsonText(JSON.stringify(boardData, null, 2));
+      setParseError(null);
     }
-  }, [boardData, opened]);
+  }, [opened, boardData]);
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(jsonContent);
-    setCopied(true);
-    notifications.show({
-      title: 'Đã sao chép',
-      message: 'Nội dung .gitvn/tasks.json đã được lưu vào clipboard',
-      color: 'blue',
-    });
-    setTimeout(() => setCopied(false), 2000);
+  const handleFormat = () => {
+    try {
+      const parsed = JSON.parse(jsonText);
+      setJsonText(JSON.stringify(parsed, null, 2));
+      setParseError(null);
+    } catch (err: any) {
+      setParseError(`JSON không hợp lệ: ${err.message}`);
+    }
   };
 
-  const handleSave = async (commitToGit = false) => {
-    try {
-      const parsed: JiraBoardData = JSON.parse(jsonContent);
+  const handleCopy = () => {
+    notifications.show({
+      title: "Đã sao chép",
+      message: "Nội dung .gitvn/tasks.json đã được lưu vào clipboard",
+      color: "teal",
+      icon: <IconCheck size={16} />,
+    });
+  };
 
-      if (!parsed || !Array.isArray(parsed.tasks) || !Array.isArray(parsed.sprints)) {
-        setJsonError('Cấu trúc JSON không hợp lệ: Cần có mảng "tasks" và "sprints"');
+  const handleSave = async () => {
+    try {
+      const parsed = JSON.parse(jsonText);
+      setParseError(null);
+
+      // Validate cấu trúc tối thiểu
+      if (!Array.isArray(parsed.tasks) || !Array.isArray(parsed.sprints)) {
+        setParseError('Cấu trúc thiếu mảng "tasks" hoặc "sprints"');
         return;
       }
 
       setSaving(true);
-      setJsonError(null);
-
-      const msg = commitToGit
-        ? `chore(gitvn): manual update .gitvn/tasks.json from UI`
-        : undefined;
-
-      await onSaveData(parsed, msg);
-
-      notifications.show({
-        title: commitToGit ? 'Đã commit lên GitHub' : 'Đã lưu file',
-        message: 'File .gitvn/tasks.json đã được cập nhật thành công!',
-        color: 'green',
+      const res = await axios.post("/api/jira", {
+        owner,
+        repo,
+        data: parsed,
+        forceGitHubSync: syncToGitHub,
       });
 
+      notifications.show({
+        title: "Lưu thành công!",
+        message: "File .gitvn/tasks.json đã được cập nhật thành công!",
+        color: "teal",
+        icon: <IconCheck size={16} />,
+      });
+
+      onSavedSuccess(res.data.data);
       onClose();
     } catch (err: any) {
-      setJsonError(`Lỗi cú pháp JSON: ${err.message}`);
+      if (err instanceof SyntaxError) {
+        setParseError(`Lỗi cú pháp JSON: ${err.message}`);
+      } else {
+        const errorMsg = err.response?.data?.error || err.message;
+        setParseError(`Lỗi khi lưu lên server: ${errorMsg}`);
+      }
     } finally {
       setSaving(false);
     }
   };
 
-  const handleResetEmpty = () => {
-    if (!boardData) return;
-    const emptyBoard: JiraBoardData = {
-      ...boardData,
-      taskSeq: 0,
-      tasks: [],
-      sprints: [
-        {
-          id: 'sprint-1',
-          name: 'Sprint 1',
-          goal: 'Sprint khởi động',
-          status: 'active',
-          createdAt: new Date().toISOString(),
-        },
-      ],
-    };
-    setJsonContent(JSON.stringify(emptyBoard, null, 2));
-    setJsonError(null);
-  };
-
-  const handleInsertSample = () => {
-    if (!boardData) return;
-    const now = new Date().toISOString();
-    const sampleBoard: JiraBoardData = {
-      ...boardData,
-      taskSeq: 3,
-      tasks: [
-        {
-          id: `${repoPrefix}-1`,
-          title: 'Khởi tạo cấu trúc dự án và cài đặt dependencies',
-          description: 'Cài đặt các gói phụ thuộc và cấu hình cơ bản.',
-          status: 'done',
-          priority: 'high',
-          sprintId: 'sprint-1',
-          storyPoints: 3,
-          createdAt: now,
-          updatedAt: now,
-          reporter: { login: 'admin', name: 'Admin' },
-        },
-        {
-          id: `${repoPrefix}-2`,
-          title: 'Xây dựng giao diện tính năng chính',
-          description: 'Triển khai UI components theo thiết kế Figma/Spec.',
-          status: 'in_progress',
-          priority: 'urgent',
-          sprintId: 'sprint-1',
-          storyPoints: 5,
-          createdAt: now,
-          updatedAt: now,
-          reporter: { login: 'admin', name: 'Admin' },
-        },
-        {
-          id: `${repoPrefix}-3`,
-          title: 'Viết unit tests và chuẩn bị deployment pipeline',
-          description: 'Kiểm thử logic cốt lõi và thiết lập CI/CD.',
-          status: 'todo',
-          priority: 'medium',
-          sprintId: 'sprint-1',
-          storyPoints: 2,
-          createdAt: now,
-          updatedAt: now,
-          reporter: { login: 'admin', name: 'Admin' },
-        },
-      ],
-    };
-    setJsonContent(JSON.stringify(sampleBoard, null, 2));
-    setJsonError(null);
-  };
+  const taskCount = boardData?.tasks?.length || 0;
+  const sprintCount = boardData?.sprints?.length || 0;
 
   return (
     <Modal
@@ -175,189 +130,149 @@ export function TasksJsonModal({
       size="xl"
       title={
         <Group gap="xs">
-          <IconFileCode size={20} color="#58a6ff" />
-          <Box>
-            <Group gap="xs">
-              <Text fw={700} fz={15} c="#f0f6fc" ff="monospace">
-                .gitvn/tasks.json
-              </Text>
-              <Badge
-                size="xs"
-                variant="light"
-                color={syncedToGitHub ? 'green' : 'blue'}
-              >
-                {syncedToGitHub ? '🟢 GitHub Synced' : '💾 Local Workspace'}
-              </Badge>
-            </Group>
-          </Box>
+          <IconFileCode size={18} color="#fb291a" />
+          <Text fw={700} fz={15} c="#0f172a">
+            Trình Chỉnh Sửa Trực Tiếp .gitvn/tasks.json
+          </Text>
+          <Badge size="xs" variant="light" color="vntez">
+            Raw JSON Engine
+          </Badge>
         </Group>
       }
+      centered
+      radius="md"
       styles={{
         content: {
-          backgroundColor: '#0d1117',
-          border: '1px solid #30363d',
-          color: '#f0f6fc',
+          backgroundColor: "#ffffff",
+          border: "1px solid #e2e8f0",
+          color: "#0f172a",
           borderRadius: 12,
         },
         header: {
-          backgroundColor: '#161b22',
-          borderBottom: '1px solid #21262d',
-          padding: '14px 20px',
-        },
-        body: {
-          padding: 20,
+          backgroundColor: "#f8fafc",
+          borderBottom: "1px solid #e2e8f0",
+          padding: "14px 20px",
         },
       }}
     >
       <Stack gap="sm">
-        <Group justify="space-between" align="center">
-          <Text fz={12} c="#8b949e">
-            Bạn có thể chỉnh sửa trực tiếp cấu trúc JSON của bảng Kanban bên dưới.
-          </Text>
+        {/* Thanh trạng thái & Tools */}
+        <Group justify="space-between" align="center" wrap="wrap" gap="xs">
+          <Group gap="xs">
+            <Badge size="sm" variant="light" color="vntez">
+              {taskCount} tasks
+            </Badge>
+            <Badge size="sm" variant="light" color="teal">
+              {sprintCount} sprints
+            </Badge>
+          </Group>
 
-          <Group gap={6}>
-            <Tooltip label="Xóa toàn bộ tasks để tạo bảng sạch rỗng" withArrow>
-              <Button
-                size="compact-xs"
-                variant="subtle"
-                color="red"
-                leftSection={<IconTrash size={12} />}
-                onClick={handleResetEmpty}
-              >
-                Làm rỗng bảng
-              </Button>
-            </Tooltip>
-
-            <Tooltip label="Khởi tạo công việc mẫu chuẩn" withArrow>
-              <Button
-                size="compact-xs"
-                variant="subtle"
-                color="blue"
-                leftSection={<IconSparkles size={12} />}
-                onClick={handleInsertSample}
-              >
-                Chèn mẫu
-              </Button>
-            </Tooltip>
-
+          <Group gap="xs">
             <Button
               size="compact-xs"
               variant="default"
-              leftSection={copied ? <IconCheck size={12} /> : <IconCopy size={12} />}
-              onClick={handleCopy}
-              styles={{
-                root: {
-                  backgroundColor: '#21262d',
-                  borderColor: '#30363d',
-                  color: '#c9d1d9',
-                },
-              }}
+              leftSection={<IconRefresh size={12} />}
+              onClick={handleFormat}
             >
-              {copied ? 'Đã copy' : 'Sao chép'}
+              Format JSON
             </Button>
+
+            <CopyButton value={jsonText}>
+              {({ copied, copy }) => (
+                <Button
+                  size="compact-xs"
+                  variant="default"
+                  leftSection={
+                    copied ? <IconCheck size={12} /> : <IconCopy size={12} />
+                  }
+                  onClick={() => {
+                    copy();
+                    handleCopy();
+                  }}
+                >
+                  {copied ? "Đã sao chép" : "Copy JSON"}
+                </Button>
+              )}
+            </CopyButton>
           </Group>
         </Group>
 
-        {jsonError && (
+        {/* Cảnh báo lỗi Parse nếu có */}
+        {parseError && (
           <Alert
-            icon={<IconAlertCircle size={16} />}
-            title="Lỗi cấu trúc JSON"
             color="red"
-            variant="light"
-            styles={{ root: { backgroundColor: 'rgba(248, 81, 73, 0.1)', borderColor: '#f85149' } }}
+            icon={<IconAlertCircle size={16} />}
+            title="Lỗi cú pháp"
+            withCloseButton
+            onClose={() => setParseError(null)}
           >
-            {jsonError}
+            {parseError}
           </Alert>
         )}
 
-        <Box
-          style={{
-            position: 'relative',
-            borderRadius: 8,
-            overflow: 'hidden',
-            border: '1px solid #30363d',
-            backgroundColor: '#090d16',
+        {/* Textarea Editor hiển thị raw JSON */}
+        <Textarea
+          value={jsonText}
+          onChange={(e) => {
+            setJsonText(e.currentTarget.value);
+            if (parseError) setParseError(null);
           }}
-        >
-          <Textarea
-            value={jsonContent}
-            onChange={(e) => {
-              setJsonContent(e.currentTarget.value);
-              if (jsonError) setJsonError(null);
-            }}
-            minRows={14}
-            maxRows={24}
-            autosize
-            styles={{
-              input: {
-                backgroundColor: '#090d16',
-                color: '#7ee787',
-                fontFamily: 'var(--font-geist-mono), monospace',
-                fontSize: 12.5,
-                lineHeight: 1.5,
-                border: 'none',
-                padding: '12px 14px',
-              },
-            }}
-          />
-        </Box>
+          rows={16}
+          styles={{
+            input: {
+              backgroundColor: "#f8fafc",
+              borderColor: "#cbd5e1",
+              color: "#0f172a",
+              fontFamily: "var(--font-geist-mono), monospace",
+              fontSize: 12,
+              lineHeight: 1.5,
+              borderRadius: 8,
+            },
+          }}
+        />
 
-        <Group justify="space-between" mt="sm">
-          <Text fz={11} c="#8b949e">
-            Vị trí lưu: <code style={{ color: '#58a6ff' }}>.gitvn/tasks.json</code>
-          </Text>
+        {/* Footer: Tuỳ chọn sync GitHub và nút bấm */}
+        <Group
+          justify="space-between"
+          align="center"
+          mt="xs"
+          wrap="wrap"
+          gap="sm"
+        >
+          <Group gap="xs">
+            <Switch
+              size="xs"
+              checked={syncToGitHub}
+              onChange={(e) => setSyncToGitHub(e.currentTarget.checked)}
+              label={
+                <Group gap={4}>
+                  <IconBrandGithub size={13} />
+                  <Text fz={12} c="#334155" fw={500}>
+                    Tự động commit lên GitHub
+                  </Text>
+                </Group>
+              }
+              color="vntez"
+            />
+          </Group>
 
           <Group gap="xs">
             <Button
               variant="default"
               size="xs"
               onClick={onClose}
-              styles={{
-                root: {
-                  backgroundColor: '#21262d',
-                  borderColor: '#30363d',
-                  color: '#c9d1d9',
-                },
-              }}
+              disabled={saving}
             >
-              Hủy
+              Đóng
             </Button>
-
             <Button
-              variant="default"
+              color="vntez"
               size="xs"
               loading={saving}
               leftSection={<IconDeviceFloppy size={14} />}
-              onClick={() => handleSave(false)}
-              styles={{
-                root: {
-                  backgroundColor: '#238636',
-                  borderColor: '#2ea043',
-                  color: '#ffffff',
-                  fontWeight: 600,
-                  '&:hover': { backgroundColor: '#2ea043' },
-                },
-              }}
+              onClick={handleSave}
             >
               Lưu vào .gitvn/tasks.json
-            </Button>
-
-            <Button
-              variant="filled"
-              size="xs"
-              loading={saving}
-              leftSection={<IconCloudUpload size={14} />}
-              onClick={() => handleSave(true)}
-              styles={{
-                root: {
-                  backgroundColor: '#1f6feb',
-                  color: '#ffffff',
-                  fontWeight: 600,
-                  '&:hover': { backgroundColor: '#388bfd' },
-                },
-              }}
-            >
-              Commit lên GitHub
             </Button>
           </Group>
         </Group>

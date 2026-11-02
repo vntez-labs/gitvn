@@ -1,0 +1,33 @@
+# Tài liệu Dự án GitVN
+
+Chào mừng bạn đến với hệ thống tài liệu động **Live MDX** được lưu trữ trực tiếp trong thư mục `.gitvn/docs` của repository.
+
+> [!NOTE]
+> Tất cả tài liệu trong thư mục `.gitvn/docs` được quản lý phiên bản cùng với mã nguồn bằng Git. Mọi thành viên khi pull code về đều có tài liệu cập nhật nhất.
+
+## 🚀 Các tính năng chính của .gitvn
+
+- **Kanban Board tích hợp**: Theo dõi công việc, phân loại sprint và trạng thái ngay trên repo.
+- **Tài liệu MDX trực tiếp**: Soạn thảo tài liệu kỹ thuật, markdown với các callout block, code syntax highlight và bảng.
+- **Đồng bộ hóa 2 chiều**: Cập nhật trực tiếp trên UI và tự động commit lên GitHub repository.
+- **Quy chuẩn cấu trúc**: Thống nhất vị trí lưu trữ cấu hình `.gitvn/config.json`, công việc `.gitvn/tasks.json` và tài liệu `.gitvn/docs/*.mdx`.
+
+## 📦 Cấu trúc thư mục chuẩn
+
+```bash
+.gitvn/
+├── config.json         # Cấu hình workspace, cột kanban và tính năng
+├── tasks.json          # Danh sách task, sprint và phân quyền
+└── docs/               # Tài liệu dự án MDX
+    ├── index.mdx       # Trang tài liệu tổng quan
+    └── architecture.mdx# Kiến trúc hệ thống
+```
+
+## 📋 Hướng dẫn bắt đầu
+
+1. **Xem bảng công việc**: Chuyển sang tab **Kanban** để quản lý tiến độ các task.
+2. **Kéo thả công việc**: Di chuyển task giữa các cột `Backlog`, `To Do`, `In Progress`, `In Review`, `Done`.
+3. **Cập nhật tài liệu**: Chỉnh sửa file MDX này trực tiếp và nhấn nút **Lưu & Đồng bộ lên GitHub**.
+
+> [!TIP]
+> Bạn có thể thêm các file `.mdx` mới vào thư mục `.gitvn/docs` để mở rộng tài liệu dự án bất kỳ lúc nào!

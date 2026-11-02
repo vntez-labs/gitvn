@@ -1,0 +1,46 @@
+{
+  "owner": "vntez-labs",
+  "repo": "uth_flow",
+  "taskSeq": 1,
+  "tasks": [
+    {
+      "id": "UTHFL-1",
+      "title": "Khởi tạo dự án uth_flow & cấu trúc công việc",
+      "description": "### Mục tiêu ban đầu\n\n- Khởi tạo dự án và thiết lập môi trường phát triển\n- Lên danh sách các tính năng cốt lõi\n- Cập nhật file `.gitvn/tasks.json`",
+      "status": "todo",
+      "priority": "high",
+      "assignee": {
+        "login": "hnamhocit",
+        "name": "hnamhocit"
+      },
+      "reporter": {
+        "login": "hnamhocit",
+        "name": "hnamhocit"
+      },
+      "sprintId": "sprint-1",
+      "storyPoints": 3,
+      "createdAt": "2026-11-02T06:19:26.506Z",
+      "updatedAt": "2026-11-02T06:31:03.126Z"
+    }
+  ],
+  "sprints": [
+    {
+      "id": "sprint-1",
+      "name": "Sprint 1 - Bắt đầu dự án",
+      "goal": "Kế hoạch phát triển cho uth_flow",
+      "startDate": "2026-11-02",
+      "endDate": "2026-11-16",
+      "status": "active",
+      "createdAt": "2026-11-02T06:19:26.506Z"
+    }
+  ],
+  "permissions": {
+    "userRoles": {
+      "hnamhocit": "admin",
+      "vntez-labs": "admin"
+    },
+    "defaultRole": "member",
+    "canManageSprint": ["admin", "pm"],
+    "canCreateBacklog": ["admin", "pm", "member"]
+  }
+}

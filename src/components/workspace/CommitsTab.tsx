@@ -1,38 +1,28 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useMemo } from 'react';
 import {
-  Box,
-  Group,
-  Text,
-  Badge,
-  Loader,
-  Stack,
-  Avatar,
-  Paper,
-  TextInput,
-  Button,
-  CopyButton,
   ActionIcon,
+  Badge,
+  Box,
+  Button,
+  Group,
+  Skeleton,
+  Stack,
+  Text,
+  TextInput,
   Tooltip,
-  Alert,
-  Title,
-} from '@mantine/core';
+} from "@mantine/core";
 import {
+  IconGitBranch,
   IconGitCommit,
-  IconSearch,
   IconRefresh,
-  IconCheck,
-  IconCopy,
-  IconArrowDown,
-  IconInfoCircle,
-  IconFileDiff,
-  IconSparkles,
-} from '@tabler/icons-react';
-import { useDashboardStore } from '@/store/dashboard.store';
-import { formatDateTime, formatRelativeTime } from '@/lib/time';
-import { CommitDetailModal } from './CommitDetailModal';
-import axios from 'axios';
+  IconSearch,
+} from "@tabler/icons-react";
+import axios from "axios";
+import { useEffect, useMemo, useState } from "react";
+import { useDashboardStore } from "@/store/dashboard.store";
+import { CommitDetailModal } from "./CommitDetailModal";
+import { CommitGraphRow } from "./commits/CommitGraphRow";
 
 interface CommitsTabProps {
   onCommitsLoaded?: (count: number) => void;
@@ -42,7 +32,7 @@ export function CommitsTab({ onCommitsLoaded }: CommitsTabProps) {
   const { selectedRepo, currentBranch } = useDashboardStore();
   const [commits, setCommits] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedSha, setSelectedSha] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -53,8 +43,8 @@ export function CommitsTab({ onCommitsLoaded }: CommitsTabProps) {
     axios
       .get(
         `/api/github/commits?owner=${selectedRepo.owner.login}&repo=${selectedRepo.name}&branch=${encodeURIComponent(
-          currentBranch
-        )}`
+          currentBranch,
+        )}`,
       )
       .then((res) => {
         const data = res.data.commits || [];
@@ -63,7 +53,7 @@ export function CommitsTab({ onCommitsLoaded }: CommitsTabProps) {
           onCommitsLoaded(data.length);
         }
       })
-      .catch((err) => console.error('Lỗi tải danh sách commits:', err))
+      .catch((err) => console.error("Lỗi tải danh sách commits:", err))
       .finally(() => setLoading(false));
   };
 
@@ -71,302 +61,172 @@ export function CommitsTab({ onCommitsLoaded }: CommitsTabProps) {
     fetchCommits();
   }, [selectedRepo?.id, currentBranch]);
 
+  // Bộ lọc tìm kiếm commit
   const filteredCommits = useMemo(() => {
     if (!searchQuery.trim()) return commits;
     const q = searchQuery.toLowerCase();
-    return commits.filter((c) => {
-      const msg = c.commit?.message?.toLowerCase() || '';
-      const author = c.commit?.author?.name?.toLowerCase() || '';
-      const login = c.author?.login?.toLowerCase() || '';
-      const sha = c.sha?.toLowerCase() || '';
-      return msg.includes(q) || author.includes(q) || login.includes(q) || sha.includes(q);
-    });
+    return commits.filter(
+      (c) =>
+        c.commit?.message?.toLowerCase().includes(q) ||
+        c.commit?.author?.name?.toLowerCase().includes(q) ||
+        c.author?.login?.toLowerCase().includes(q) ||
+        c.sha?.toLowerCase().startsWith(q),
+    );
   }, [commits, searchQuery]);
 
   if (!selectedRepo) return null;
-
-  const pullCommand = `git pull origin ${currentBranch}`;
-  const latestCommit = commits[0];
 
   return (
     <Box
       className="hide-scrollbar"
       style={{
         flex: 1,
-        overflowY: 'auto',
-        padding: '24px 32px',
-        backgroundColor: '#0d1117',
+        overflowY: "auto",
+        padding: "20px 24px",
         minHeight: 0,
+        backgroundColor: "#ffffff",
       }}
     >
-      <Box style={{ maxWidth: 960, margin: '0 auto', width: '100%' }}>
-        {/* Hướng Dẫn Kéo Code (Git Sync Guide) */}
-        <Paper
-          p="md"
-          mb="xl"
-          radius="md"
-          bg="rgba(56, 139, 253, 0.06)"
-          style={{ border: '1px solid #388bfd44' }}
-        >
-          <Group justify="space-between" align="flex-start" wrap="wrap" gap="md">
-            <Box style={{ flex: 1, minWidth: 280 }}>
-              <Group gap="xs" mb={4}>
-                <IconSparkles size={18} color="#58a6ff" />
-                <Text fw={600} fz={14} c="#f0f6fc">
-                  Đồng bộ mã nguồn (Sync & Pull)
-                </Text>
-                <Badge size="xs" variant="filled" color="blue">
-                  Nhánh: {currentBranch}
-                </Badge>
-              </Group>
-              <Text fz={12} c="#8b949e" mb={8} lh={1.5}>
-                Khi đồng đội vừa push code mới hoặc bạn bắt đầu làm việc trong ngày, hãy chạy lệnh dưới đây trong Terminal ở máy tính để cập nhật code mới nhất về máy và tránh bị conflict (xung đột):
-              </Text>
-
-              <Group gap="xs">
-                <Box
-                  style={{
-                    backgroundColor: '#0d1117',
-                    border: '1px solid #30363d',
-                    borderRadius: 6,
-                    padding: '6px 12px',
-                    fontFamily: 'monospace',
-                    fontSize: 12,
-                    color: '#79c0ff',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 10,
-                  }}
-                >
-                  <IconArrowDown size={14} color="#58a6ff" />
-                  <span>{pullCommand}</span>
-                </Box>
-                <CopyButton value={pullCommand}>
-                  {({ copied, copy }) => (
-                    <Tooltip label={copied ? 'Đã sao chép!' : 'Sao chép lệnh pull'} withArrow>
-                      <Button
-                        size="xs"
-                        variant="light"
-                        color={copied ? 'teal' : 'blue'}
-                        onClick={copy}
-                        leftSection={copied ? <IconCheck size={14} /> : <IconCopy size={14} />}
-                      >
-                        {copied ? 'Đã sao chép' : 'Copy lệnh pull'}
-                      </Button>
-                    </Tooltip>
-                  )}
-                </CopyButton>
-              </Group>
-            </Box>
-
-            <Button
+      <Box style={{ maxWidth: 1040, margin: "0 auto" }}>
+        {/* Thanh công cụ tìm kiếm và thông tin nhánh */}
+        <Group justify="space-between" mb="md" gap="sm" wrap="wrap">
+          <Group gap="xs">
+            <TextInput
+              placeholder="Tìm kiếm commit theo thông điệp, tác giả hoặc SHA..."
+              leftSection={<IconSearch size={14} color="#94a3b8" />}
               size="xs"
-              variant="subtle"
-              color="gray"
-              leftSection={<IconRefresh size={14} />}
-              onClick={fetchCommits}
-              loading={loading}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.currentTarget.value)}
+              style={{ width: 340 }}
               styles={{
-                root: {
-                  backgroundColor: '#161b22',
-                  border: '1px solid #30363d',
-                  color: '#c9d1d9',
-                  '&:hover': { backgroundColor: '#21262d' },
+                input: {
+                  backgroundColor: "#ffffff",
+                  borderColor: "#cbd5e1",
+                  color: "#0f172a",
                 },
               }}
-            >
-              Kiểm tra commit mới
-            </Button>
-          </Group>
-        </Paper>
+            />
 
-        {/* Thanh tìm kiếm & đếm */}
-        <Group justify="space-between" mb="md">
+            <Tooltip label="Làm mới lịch sử commit" withArrow>
+              <ActionIcon
+                size="input-xs"
+                variant="default"
+                onClick={fetchCommits}
+                loading={loading}
+                aria-label="Làm mới"
+              >
+                <IconRefresh size={14} />
+              </ActionIcon>
+            </Tooltip>
+          </Group>
+
           <Group gap="xs">
-            <Title order={4} fz={14} c="#f0f6fc">
-              Lịch sử Commits
-            </Title>
-            <Badge size="sm" variant="outline" color="gray">
+            <Group gap={6} align="center">
+              <IconGitBranch size={14} color="#64748b" />
+              <Text fz="xs" c="#64748b">
+                Nhánh:{" "}
+                <span
+                  style={{
+                    color: "#fb291a",
+                    fontFamily: "monospace",
+                    fontWeight: 600,
+                  }}
+                >
+                  {currentBranch}
+                </span>
+              </Text>
+            </Group>
+
+            <Badge size="sm" variant="light" color="gray">
               {filteredCommits.length} commits
             </Badge>
           </Group>
-
-          <TextInput
-            size="xs"
-            placeholder="Tìm theo message, tác giả, SHA..."
-            leftSection={<IconSearch size={14} color="#8b949e" />}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.currentTarget.value)}
-            styles={{
-              input: {
-                backgroundColor: '#161b22',
-                borderColor: '#30363d',
-                color: '#c9d1d9',
-                width: 260,
-              },
-            }}
-          />
         </Group>
 
-        {/* Danh sách Commits */}
+        {/* Biểu đồ Commit Graph & Danh sách Commits */}
         {loading ? (
-          <Box ta="center" py={60}>
-            <Loader size="sm" color="gray" />
-            <Text fz={12} c="#8b949e" mt="xs">
-              Đang tải danh sách commit...
+          <Stack
+            gap={1}
+            style={{
+              border: "1px solid #e2e8f0",
+              borderRadius: 8,
+              overflow: "hidden",
+            }}
+          >
+            {[1, 2, 3, 4, 5].map((i) => (
+              <Box
+                key={i}
+                p="md"
+                bg="#ffffff"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  borderBottom: "1px solid #f1f5f9",
+                }}
+              >
+                <Group gap="sm" style={{ flex: 1 }}>
+                  <Skeleton height={28} width={28} circle />
+                  <Stack gap={4} style={{ flex: 1 }}>
+                    <Skeleton height={14} width="55%" radius="sm" />
+                    <Skeleton height={11} width="35%" radius="sm" />
+                  </Stack>
+                </Group>
+                <Skeleton height={22} width={70} radius="sm" />
+              </Box>
+            ))}
+          </Stack>
+        ) : filteredCommits.length > 0 ? (
+          <Box
+            style={{
+              border: "1px solid #e2e8f0",
+              borderRadius: 8,
+              overflow: "hidden",
+              boxShadow: "0 1px 3px rgba(15, 23, 42, 0.04)",
+            }}
+          >
+            {filteredCommits.map((item, index) => (
+              <CommitGraphRow
+                key={item.sha}
+                item={item}
+                index={index}
+                total={filteredCommits.length}
+                currentBranch={currentBranch}
+                onSelect={(sha) => {
+                  setSelectedSha(sha);
+                  setModalOpen(true);
+                }}
+              />
+            ))}
+          </Box>
+        ) : (
+          <Box ta="center" mt={60} px="md">
+            <IconGitCommit
+              size={38}
+              color="#94a3b8"
+              style={{ margin: "0 auto 10px" }}
+            />
+            <Text fz="sm" fw={500} c="#0f172a">
+              Không tìm thấy commit nào phù hợp
+            </Text>
+            <Text fz="xs" c="#64748b" mt={4}>
+              Hãy thử kiểm tra lại từ khóa tìm kiếm hoặc đổi sang nhánh khác.
             </Text>
           </Box>
-        ) : filteredCommits.length === 0 ? (
-          <Paper p="xl" bg="#161b22" radius="md" style={{ border: '1px solid #30363d', textAlign: 'center' }}>
-            <IconGitCommit size={36} color="#8b949e" style={{ margin: '0 auto 12px' }} />
-            <Text fz={14} fw={600} c="#f0f6fc" mb={4}>
-              Chưa có commit nào
-            </Text>
-            <Text fz={12} c="#8b949e">
-              {searchQuery ? 'Không có commit nào khớp với từ khóa tìm kiếm.' : 'Hãy tạo commit đầu tiên và push lên nhé!'}
-            </Text>
-          </Paper>
-        ) : (
-          <Stack gap="xs" style={{ position: 'relative' }}>
-            {filteredCommits.map((item, idx) => {
-              const isLatest = idx === 0 && !searchQuery;
-              const author = item.commit?.author;
-              const githubAuthor = item.author;
-              const message = item.commit?.message || '';
-              const [title] = message.split('\n');
-              const shaShort = item.sha?.slice(0, 7);
-
-              return (
-                <Paper
-                  key={item.sha}
-                  p="sm"
-                  radius="md"
-                  bg={isLatest ? '#161b22' : '#0d1117'}
-                  style={{
-                    border: `1px solid ${isLatest ? '#388bfd' : '#21262d'}`,
-                    transition: 'all 0.15s ease',
-                    cursor: 'pointer',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = '#161b22';
-                    e.currentTarget.style.borderColor = '#388bfd';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = isLatest ? '#161b22' : '#0d1117';
-                    e.currentTarget.style.borderColor = isLatest ? '#388bfd' : '#21262d';
-                  }}
-                  onClick={() => {
-                    setSelectedSha(item.sha);
-                    setModalOpen(true);
-                  }}
-                >
-                  <Group justify="space-between" align="center" wrap="nowrap">
-                    <Group gap="sm" wrap="nowrap" style={{ flex: 1, minWidth: 0 }}>
-                      <Avatar
-                        src={githubAuthor?.avatar_url}
-                        alt={author?.name}
-                        size={32}
-                        radius="xl"
-                        style={{ flexShrink: 0 }}
-                      />
-
-                      <Box style={{ flex: 1, minWidth: 0 }}>
-                        <Group gap="xs" mb={2} wrap="nowrap">
-                          <Text fz={13} fw={600} c="#f0f6fc" truncate>
-                            {title}
-                          </Text>
-                          {isLatest && (
-                            <Badge size="xs" variant="filled" color="green" radius="sm">
-                              HEAD • Mới nhất
-                            </Badge>
-                          )}
-                        </Group>
-
-                        <Group gap={8} wrap="nowrap">
-                          <Text fz={11} fw={500} c="#8b949e">
-                            {author?.name || 'Vô danh'}
-                          </Text>
-                          <Text fz={11} c="#484f58">
-                            •
-                          </Text>
-                          <Tooltip label={formatDateTime(author?.date)} withArrow>
-                            <Text fz={11} c="#8b949e">
-                              {formatRelativeTime(author?.date)}
-                            </Text>
-                          </Tooltip>
-                        </Group>
-                      </Box>
-                    </Group>
-
-                    {/* SHA Badge & Action */}
-                    <Group gap="xs" wrap="nowrap" style={{ flexShrink: 0 }}>
-                      {isLatest && (
-                        <Tooltip label="Bạn nên pull commit này về máy nếu chưa có" withArrow>
-                          <Badge size="xs" variant="light" color="teal">
-                            Nên pull
-                          </Badge>
-                        </Tooltip>
-                      )}
-
-                      <Badge
-                        size="sm"
-                        variant="subtle"
-                        color="gray"
-                        ff="monospace"
-                        styles={{ root: { backgroundColor: '#21262d', color: '#c9d1d9' } }}
-                      >
-                        {shaShort}
-                      </Badge>
-
-                      <CopyButton value={item.sha}>
-                        {({ copied, copy }) => (
-                          <Tooltip label={copied ? 'Đã sao chép SHA' : 'Sao chép SHA'} withArrow>
-                            <ActionIcon
-                              size="sm"
-                              variant="subtle"
-                              color={copied ? 'teal' : 'gray'}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                copy();
-                              }}
-                            >
-                              {copied ? <IconCheck size={14} /> : <IconCopy size={14} />}
-                            </ActionIcon>
-                          </Tooltip>
-                        )}
-                      </CopyButton>
-
-                      <Button
-                        size="compact-xs"
-                        variant="subtle"
-                        color="blue"
-                        rightSection={<IconFileDiff size={12} />}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedSha(item.sha);
-                          setModalOpen(true);
-                        }}
-                      >
-                        Xem diff
-                      </Button>
-                    </Group>
-                  </Group>
-                </Paper>
-              );
-            })}
-          </Stack>
         )}
       </Box>
 
-      {/* Modal xem chi tiết thay đổi commit */}
-      <CommitDetailModal
-        opened={modalOpen}
-        onClose={() => setModalOpen(false)}
-        owner={selectedRepo.owner.login}
-        repo={selectedRepo.name}
-        sha={selectedSha}
-        branch={currentBranch}
-      />
+      {/* Modal chi tiết commit */}
+      {selectedRepo && (
+        <CommitDetailModal
+          opened={modalOpen}
+          onClose={() => setModalOpen(false)}
+          owner={selectedRepo.owner.login}
+          repo={selectedRepo.name}
+          sha={selectedSha}
+          branch={currentBranch}
+        />
+      )}
     </Box>
   );
 }

@@ -1,0 +1,45 @@
+# Kiến trúc Hệ thống & Luồng Dữ liệu
+
+Tài liệu mô tả kiến trúc của nền tảng **GitVN** và cách thức tương tác với GitHub API cũng như thư mục lưu trữ `.gitvn`.
+
+> [!IMPORTANT]
+> Toàn bộ trạng thái công việc và tài liệu được lưu dưới dạng JSON và MDX chuẩn, có thể mở bằng bất kỳ trình soạn thảo nào (VS Code, Vim, Cursor...).
+
+## 1. Sơ đồ Kiến trúc
+
+```
++---------------------------------------------------------+
+|                    GitVN Web App                        |
+|   +------------------+  +---------------------------+   |
+|   |   Kanban Board   |  |     Live MDX Docs         |   |
+|   +------------------+  +---------------------------+   |
++---------------------------------------------------------+
+                            │
+               API Endpoints (/api/gitvn, /api/jira)
+                            │
+         ┌──────────────────┴──────────────────┐
+         ▼                                     ▼
++---------------------+              +--------------------+
+|  Thư mục cục bộ     |              |    GitHub API      |
+|  .gitvn/            |              |  (Commit & Sync)   |
+|  ├── config.json    |              |                    |
+|  ├── tasks.json     |              |                    |
+|  └── docs/*.mdx     |              |                    |
++---------------------+              +--------------------+
+```
+
+## 2. Quy chuẩn Các Cột Kanban (Workflow Statuses)
+
+Dự án hỗ trợ 5 cột trạng thái quy chuẩn được định nghĩa trong `.gitvn/config.json`:
+
+| Cột | Mã ID | Mục đích |
+| :--- | :--- | :--- |
+| **Backlog** | `backlog` | Các công việc ý tưởng hoặc chưa được xếp vào sprint |
+| **To Do** | `todo` | Công việc đã được lên kế hoạch trong sprint hiện tại |
+| **In Progress** | `in_progress` | Đang được các thành viên triển khai |
+| **In Review** | `review` | Đang trong quá trình tạo Pull Request hoặc review |
+| **Done** | `done` | Đã hoàn thành và merge vào nhánh chính |
+
+## 3. Khả năng Mở rộng
+
+Hệ thống cho phép cấu hình thêm các cột tùy chỉnh thông qua việc chỉnh sửa mảng `kanban.columns` trong file `.gitvn/config.json`.

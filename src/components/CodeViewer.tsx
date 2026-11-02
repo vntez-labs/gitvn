@@ -1,20 +1,20 @@
-'use client';
+"use client";
 
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import vscDarkPlus from 'react-syntax-highlighter/dist/esm/styles/prism/vsc-dark-plus';
-import { getLanguageByFileName } from 'file-lang-map';
+import { getLanguageByFileName } from "file-lang-map";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import vs from "react-syntax-highlighter/dist/esm/styles/prism/vs";
 
 // Bảng ánh xạ phụ: Chỉ dành cho các tên mà GitHub Linguist và Prism lệch nhau
 const LINGUIST_TO_PRISM_ALIASES: Record<string, string> = {
-  'c#': 'csharp',
-  'c++': 'cpp',
-  'f#': 'fsharp',
-  'shell': 'bash',
-  'shellscript': 'bash',
-  'dockerfile': 'docker',
-  'protocol buffer': 'protobuf',
-  'jupyter notebook': 'json',
-  'visual basic .net': 'vbnet',
+  "c#": "csharp",
+  "c++": "cpp",
+  "f#": "fsharp",
+  shell: "bash",
+  shellscript: "bash",
+  dockerfile: "docker",
+  "protocol buffer": "protobuf",
+  "jupyter notebook": "json",
+  "visual basic .net": "vbnet",
 };
 
 function resolveLanguage(filename: string): string {
@@ -29,35 +29,41 @@ function resolveLanguage(filename: string): string {
       return LINGUIST_TO_PRISM_ALIASES[rawLang];
     }
 
-    return rawLang.replace(/\s+/g, '-');
+    return rawLang.replace(/\s+/g, "-");
   }
 
   // 2. Dự phòng nếu gặp file không có trong từ điển
-  const ext = filename.split('.').pop()?.toLowerCase();
-  return ext || 'text';
+  const ext = filename.split(".").pop()?.toLowerCase();
+  return ext || "text";
 }
 
-export function CodeViewer({ content, filename }: { content: string; filename: string }) {
+export function CodeViewer({
+  content,
+  filename,
+}: {
+  content: string;
+  filename: string;
+}) {
   const language = resolveLanguage(filename);
 
   return (
     <SyntaxHighlighter
       language={language}
-      style={vscDarkPlus}
+      style={vs}
       customStyle={{
         margin: 0,
-        padding: '12px 16px',
-        background: '#0d1117',
-        fontSize: '13px',
-        lineHeight: '1.6',
+        padding: "16px 20px",
+        background: "#ffffff",
+        fontSize: "13px",
+        lineHeight: "1.6",
         fontFamily: "'JetBrains Mono', 'Fira Code', Menlo, Consolas, monospace",
       }}
       lineNumberStyle={{
-        minWidth: '2.5em',
-        paddingRight: '1em',
-        color: '#484f58',
-        textAlign: 'right',
-        userSelect: 'none',
+        minWidth: "2.5em",
+        paddingRight: "1em",
+        color: "#94a3b8",
+        textAlign: "right",
+        userSelect: "none",
       }}
       showLineNumbers={true}
       wrapLongLines={false}

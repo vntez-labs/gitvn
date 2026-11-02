@@ -22,9 +22,10 @@ import {
   mantineHtmlProps,
 } from "@mantine/core";
 import { Notifications } from "@mantine/notifications";
-import { NavigationProgress } from "@mantine/nprogress";
-import { theme } from "./theme";
+import { Suspense } from "react";
 import { AuthProvider } from "../components/providers/AuthProvider";
+import { GlobalNavigationProgress } from "../components/providers/GlobalNavigationProgress";
+import { theme } from "./theme";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -37,8 +38,64 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "VNTEZ Workspace",
-  description: "Next generation cloud developer platform",
+  metadataBase: new URL("https://gitvn.vercel.app"),
+  title: {
+    default: "GitVN — Nền tảng Git Workspace, Agile Kanban & Sprint Planner",
+    template: "%s | GitVN — VNTEZ",
+  },
+  description:
+    "GitVN là nền tảng quản lý mã nguồn, bảng Kanban Agile, chu kỳ Sprint và tài liệu MDX chuẩn hoá tích hợp trực tiếp với GitHub từ hệ sinh thái VNTEZ.",
+  keywords: [
+    "GitVN",
+    "VNTEZ",
+    "vntez.vercel.app",
+    "Git Workspace",
+    "Kanban board",
+    "Agile Scrum",
+    "Sprint Planning",
+    "GitHub integration",
+    "MDX Docs",
+    "Developer platform",
+    "Quản lý dự án lập trình",
+    "Next.js Mantine",
+  ],
+  authors: [{ name: "VNTEZ Labs", url: "https://vntez.vercel.app" }],
+  creator: "VNTEZ Labs",
+  publisher: "VNTEZ",
+  icons: {
+    icon: "/favicon.svg",
+    shortcut: "/favicon.svg",
+    apple: "/favicon.svg",
+  },
+  openGraph: {
+    type: "website",
+    locale: "vi_VN",
+    url: "https://gitvn.vercel.app",
+    siteName: "GitVN Workspace",
+    title: "GitVN — Nền tảng Git Workspace, Agile Kanban & Sprint Planner",
+    description:
+      "Nền tảng quản lý mã nguồn, bảng Kanban Agile, chu kỳ Sprint và tài liệu MDX chuẩn hoá từ hệ sinh thái VNTEZ.",
+    images: [
+      {
+        url: "/og-image.svg",
+        width: 1200,
+        height: 630,
+        alt: "GitVN Workspace Banner",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "GitVN — Nền tảng Git Workspace, Agile Kanban & Sprint Planner",
+    description:
+      "Nền tảng quản lý mã nguồn, bảng Kanban Agile, chu kỳ Sprint và tài liệu MDX từ VNTEZ.",
+    creator: "@vntez",
+    images: ["/og-image.svg"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({
@@ -53,19 +110,23 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <head>
-        <ColorSchemeScript defaultColorScheme="auto" />
+        <ColorSchemeScript defaultColorScheme="light" />
       </head>
-      <body className="min-h-full flex flex-col bg-background text-foreground">
-        <MantineProvider theme={theme} defaultColorScheme="dark">
-          {/* Thanh loading tiến trình trên đầu trang */}
-          <NavigationProgress />
+      <body className="min-h-full flex flex-col bg-white text-slate-900">
+        <MantineProvider
+          theme={theme}
+          defaultColorScheme="light"
+          forceColorScheme="light"
+        >
+          {/* Thanh loading tiến trình trên đầu trang kiểu YouTube (#fb291a) */}
+          <Suspense fallback={null}>
+            <GlobalNavigationProgress />
+          </Suspense>
 
           {/* Container hiển thị toast notifications */}
           <Notifications position="top-right" zIndex={1000} />
 
-          <AuthProvider>
-            {children}
-          </AuthProvider>
+          <AuthProvider>{children}</AuthProvider>
         </MantineProvider>
       </body>
     </html>

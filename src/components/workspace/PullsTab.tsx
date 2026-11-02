@@ -1,26 +1,25 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useMemo } from 'react';
 import {
   Box,
   Group,
-  Text,
-  SegmentedControl,
-  Loader,
-  Stack,
-  ThemeIcon,
-  TextInput,
   Pagination,
-} from '@mantine/core';
+  SegmentedControl,
+  Skeleton,
+  Stack,
+  Text,
+  TextInput,
+} from "@mantine/core";
 import {
-  IconGitPullRequest,
   IconGitMerge,
+  IconGitPullRequest,
   IconMessageCircle,
   IconSearch,
-} from '@tabler/icons-react';
-import { useDashboardStore } from '@/store/dashboard.store';
-import { PullDetailView } from './pulls/PullDetailView';
-import axios from 'axios';
+} from "@tabler/icons-react";
+import axios from "axios";
+import { useEffect, useMemo, useState } from "react";
+import { useDashboardStore } from "@/store/dashboard.store";
+import { PullDetailView } from "./pulls/PullDetailView";
 
 interface PullsTabProps {
   onPullsLoaded?: (count: number) => void;
@@ -30,15 +29,17 @@ export function PullsTab({ onPullsLoaded }: PullsTabProps) {
   const { selectedRepo } = useDashboardStore();
   const [pulls, setPulls] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [filter, setFilter] = useState<'all' | 'open' | 'closed'>('open');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [filter, setFilter] = useState<"all" | "open" | "closed">("open");
+  const [searchQuery, setSearchQuery] = useState("");
 
   // State phân trang & tổng số PR thực tế
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState<number>(0);
 
-  const [selectedPullNumber, setSelectedPullNumber] = useState<number | null>(null);
+  const [selectedPullNumber, setSelectedPullNumber] = useState<number | null>(
+    null,
+  );
 
   const fetchPulls = () => {
     if (!selectedRepo) return;
@@ -46,7 +47,7 @@ export function PullsTab({ onPullsLoaded }: PullsTabProps) {
 
     axios
       .get(
-        `/api/github/pulls?owner=${selectedRepo.owner.login}&repo=${selectedRepo.name}&state=${filter}&page=${page}&per_page=15`
+        `/api/github/pulls?owner=${selectedRepo.owner.login}&repo=${selectedRepo.name}&state=${filter}&page=${page}&per_page=15`,
       )
       .then((res) => {
         const data = res.data.pulls || [];
@@ -55,11 +56,11 @@ export function PullsTab({ onPullsLoaded }: PullsTabProps) {
         setTotalPages(res.data.totalPages || 1);
         setTotalCount(count);
         // Chỉ cập nhật badge số lượng open PRs khi filter là 'open'
-        if (onPullsLoaded && filter === 'open') {
+        if (onPullsLoaded && filter === "open") {
           onPullsLoaded(count);
         }
       })
-      .catch((err) => console.error('Lỗi tải PRs:', err))
+      .catch((err) => console.error("Lỗi tải PRs:", err))
       .finally(() => setLoading(false));
   };
 
@@ -71,10 +72,10 @@ export function PullsTab({ onPullsLoaded }: PullsTabProps) {
     if (!searchQuery.trim()) return pulls;
     const q = searchQuery.toLowerCase();
     return pulls.filter(
-      (pr) =>
-        pr.title.toLowerCase().includes(q) ||
-        pr.user?.login.toLowerCase().includes(q) ||
-        String(pr.number).includes(q)
+      (item) =>
+        item.title.toLowerCase().includes(q) ||
+        item.user?.login?.toLowerCase().includes(q) ||
+        String(item.number).includes(q),
     );
   }, [pulls, searchQuery]);
 
@@ -84,31 +85,40 @@ export function PullsTab({ onPullsLoaded }: PullsTabProps) {
         pullNumber={selectedPullNumber}
         onBack={() => setSelectedPullNumber(null)}
         onMergedSuccess={() => {
-          setSelectedPullNumber(null);
           fetchPulls();
+          setSelectedPullNumber(null);
         }}
       />
     );
   }
 
   return (
-    <Box className="hide-scrollbar" style={{ flex: 1, overflowY: 'auto', padding: '24px', minHeight: 0 }}>
-      <Box style={{ maxWidth: 960, margin: '0 auto' }}>
-        {/* Toolbar */}
-        <Group justify="space-between" mb="md" align="center">
-          <Group gap="sm" style={{ flex: 1, maxWidth: 500 }}>
+    <Box
+      className="hide-scrollbar"
+      style={{
+        flex: 1,
+        overflowY: "auto",
+        padding: "24px 20px",
+        minHeight: 0,
+        backgroundColor: "#ffffff",
+      }}
+    >
+      <Box style={{ maxWidth: 960, margin: "0 auto" }}>
+        {/* Bộ lọc và Tìm kiếm */}
+        <Group justify="space-between" mb="md" gap="sm" wrap="wrap">
+          <Group gap="sm" wrap="wrap">
             <TextInput
-              placeholder="Tìm theo tiêu đề, tác giả, #id..."
+              placeholder="Tìm kiếm Pull Request..."
+              leftSection={<IconSearch size={14} color="#94a3b8" />}
               size="xs"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.currentTarget.value)}
-              leftSection={<IconSearch size={14} color="#8b949e" />}
-              style={{ flex: 1 }}
+              style={{ width: 280 }}
               styles={{
                 input: {
-                  backgroundColor: '#161b22',
-                  borderColor: '#30363d',
-                  color: '#f0f6fc',
+                  backgroundColor: "#ffffff",
+                  borderColor: "#cbd5e1",
+                  color: "#0f172a",
                 },
               }}
             />
@@ -117,23 +127,26 @@ export function PullsTab({ onPullsLoaded }: PullsTabProps) {
               value={filter}
               onChange={(val) => {
                 setFilter(val as any);
-                setPage(1); // Reset về trang 1 khi đổi bộ lọc
+                setPage(1);
               }}
               size="xs"
               data={[
-                { label: 'Open', value: 'open' },
-                { label: 'Closed', value: 'closed' },
-                { label: 'All', value: 'all' },
+                { label: "Open", value: "open" },
+                { label: "Closed", value: "closed" },
+                { label: "All", value: "all" },
               ]}
               styles={{
-                root: { backgroundColor: '#161b22' },
-                indicator: { backgroundColor: '#21262d' },
-                label: { color: '#c9d1d9' },
+                root: { backgroundColor: "#f1f5f9" },
+                indicator: {
+                  backgroundColor: "#ffffff",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+                },
+                label: { color: "#334155", fontWeight: 600, fontSize: 11 },
               }}
             />
           </Group>
 
-          <Text fz="xs" c="#8b949e">
+          <Text fz="xs" c="#64748b">
             {searchQuery.trim()
               ? `Tìm thấy ${filteredPulls.length} PRs (trong ${totalCount} PRs)`
               : `Trang ${page} / ${totalPages} (${totalCount} PRs)`}
@@ -142,14 +155,49 @@ export function PullsTab({ onPullsLoaded }: PullsTabProps) {
 
         {/* Danh sách Pulls */}
         {loading ? (
-          <Group justify="center" mt={60}>
-            <Loader size="sm" color="gray" />
-          </Group>
+          <Stack
+            gap={1}
+            style={{
+              border: "1px solid #e2e8f0",
+              borderRadius: 8,
+              overflow: "hidden",
+            }}
+          >
+            {[1, 2, 3, 4, 5].map((i) => (
+              <Box
+                key={i}
+                p="sm"
+                bg="#ffffff"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  borderBottom: "1px solid #f1f5f9",
+                }}
+              >
+                <Group gap="sm" style={{ flex: 1 }}>
+                  <Skeleton height={20} width={20} circle />
+                  <Stack gap={4} style={{ flex: 1 }}>
+                    <Skeleton height={15} width="60%" radius="sm" />
+                    <Skeleton height={11} width="35%" radius="sm" />
+                  </Stack>
+                </Group>
+                <Skeleton height={18} width={50} radius="sm" />
+              </Box>
+            ))}
+          </Stack>
         ) : filteredPulls.length > 0 ? (
-          <Stack gap={1} style={{ border: '1px solid #30363d', borderRadius: 6, overflow: 'hidden' }}>
+          <Stack
+            gap={1}
+            style={{
+              border: "1px solid #e2e8f0",
+              borderRadius: 8,
+              overflow: "hidden",
+            }}
+          >
             {filteredPulls.map((pr) => {
               const isMerged = !!pr.merged_at;
-              const isOpen = pr.state === 'open';
+              const isOpen = pr.state === "open";
 
               return (
                 <Box
@@ -157,39 +205,47 @@ export function PullsTab({ onPullsLoaded }: PullsTabProps) {
                   p="sm"
                   onClick={() => setSelectedPullNumber(pr.number)}
                   style={{
-                    backgroundColor: '#0d1117',
-                    borderBottom: '1px solid #21262d',
-                    display: 'flex',
-                    alignItems: 'flex-start',
+                    backgroundColor: "#ffffff",
+                    borderBottom: "1px solid #e2e8f0",
+                    display: "flex",
+                    alignItems: "flex-start",
                     gap: 12,
-                    cursor: 'pointer',
-                    transition: 'background-color 0.12s ease',
+                    cursor: "pointer",
+                    transition: "background-color 0.12s ease",
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#161b22')}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#0d1117')}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.backgroundColor = "#f8fafc")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.backgroundColor = "#ffffff")
+                  }
                 >
                   <Box mt={2}>
                     {isMerged ? (
-                      <IconGitMerge size={16} color="#a371f7" />
+                      <IconGitMerge size={16} color="#7c3aed" />
                     ) : isOpen ? (
-                      <IconGitPullRequest size={16} color="#3fb950" />
+                      <IconGitPullRequest size={16} color="#16a34a" />
                     ) : (
-                      <IconGitPullRequest size={16} color="#f85149" />
+                      <IconGitPullRequest size={16} color="#dc2626" />
                     )}
                   </Box>
 
                   <Box style={{ flex: 1, minWidth: 0 }}>
-                    <Text fz="sm" fw={600} c="#f0f6fc">
+                    <Text fz="sm" fw={600} c="#0f172a">
                       {pr.title}
                     </Text>
-                    <Text fz={11} c="#8b949e" mt={2}>
-                      #{pr.number} by <span style={{ color: '#c9d1d9' }}>{pr.user?.login}</span> • mở vào{' '}
-                      {new Date(pr.created_at).toLocaleDateString()}
+
+                    <Text fz={11} c="#64748b" mt={4}>
+                      #{pr.number} mở bởi{" "}
+                      <span style={{ color: "#334155", fontWeight: 500 }}>
+                        {pr.user?.login}
+                      </span>{" "}
+                      • {new Date(pr.created_at).toLocaleDateString()}
                     </Text>
                   </Box>
 
                   {pr.comments > 0 && (
-                    <Group gap={4} c="#8b949e">
+                    <Group gap={4} c="#64748b">
                       <IconMessageCircle size={14} />
                       <Text fz={11}>{pr.comments}</Text>
                     </Group>
@@ -199,16 +255,22 @@ export function PullsTab({ onPullsLoaded }: PullsTabProps) {
             })}
           </Stack>
         ) : (
-          <Box ta="center" mt={80}>
-            <ThemeIcon size={56} radius="xl" variant="light" color="gray" mb="sm" bg="#161b22">
-              <IconGitPullRequest size={28} color="#8b949e" />
-            </ThemeIcon>
-            <Text fw={600} fz="sm" c="#f0f6fc">Không tìm thấy Pull Request nào</Text>
-            <Text fz="xs" c="#8b949e" mt={4}>Thử thay đổi từ khóa tìm kiếm hoặc đổi bộ lọc trạng thái.</Text>
+          <Box ta="center" mt={60} px="md">
+            <IconGitPullRequest
+              size={38}
+              color="#94a3b8"
+              style={{ margin: "0 auto 10px" }}
+            />
+            <Text fz="sm" fw={500} c="#0f172a">
+              Không có Pull Request nào
+            </Text>
+            <Text fz="xs" c="#64748b" mt={4}>
+              Tất cả các thay đổi đã được xử lý hoặc chưa có PR nào được tạo.
+            </Text>
           </Box>
         )}
 
-        {/* CHỈ HIỂN THỊ PHÂN TRANG KHI CÓ TỪ 2 TRANG TRỞ LÊN */}
+        {/* Phân trang */}
         {totalPages > 1 && (
           <Group justify="center" mt="xl">
             <Pagination
@@ -216,14 +278,7 @@ export function PullsTab({ onPullsLoaded }: PullsTabProps) {
               onChange={setPage}
               total={totalPages}
               size="sm"
-              styles={{
-                control: {
-                  backgroundColor: '#161b22',
-                  borderColor: '#30363d',
-                  color: '#c9d1d9',
-                  '&[data-active]': { backgroundColor: '#21262d', color: '#58a6ff' },
-                },
-              }}
+              radius="md"
             />
           </Group>
         )}

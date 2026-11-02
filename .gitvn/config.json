@@ -1,0 +1,22 @@
+{
+  "$schema": "https://gitvn.dev/schema/v1/config.json",
+  "version": "1.0.0",
+  "name": "gitvn",
+  "description": "Cấu hình chuẩn GitVN Workspace",
+  "modules": {
+    "kanban": true,
+    "docs": true
+  },
+  "kanban": {
+    "columns": [
+      { "id": "todo", "title": "To Do", "color": "#3b82f6" },
+      { "id": "in_progress", "title": "In Progress", "color": "#eab308" },
+      { "id": "review", "title": "In Review", "color": "#a855f7" },
+      { "id": "done", "title": "Done", "color": "#22c55e" }
+    ]
+  },
+  "docs": {
+    "entry": "docs/index.mdx",
+    "files": ["index.mdx", "architecture.mdx"]
+  }
+}

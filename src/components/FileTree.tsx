@@ -1,13 +1,17 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Box, Group, Text, Collapse, UnstyledButton } from '@mantine/core';
-import { IconChevronRight, IconChevronDown } from '@tabler/icons-react';
-import { getIconForFile, getIconForFolder, getIconForOpenFolder } from 'vscode-icons-js';
+import { Box, Collapse, Group, Text, UnstyledButton } from "@mantine/core";
+import { IconChevronDown, IconChevronRight } from "@tabler/icons-react";
+import { useState } from "react";
+import {
+  getIconForFile,
+  getIconForFolder,
+  getIconForOpenFolder,
+} from "vscode-icons-js";
 
 export interface TreeNode {
   path: string;
-  type: 'blob' | 'tree';
+  type: "blob" | "tree";
 }
 
 interface FileTreeProps {
@@ -17,19 +21,29 @@ interface FileTreeProps {
 }
 
 // CDN chính thức của vscode-icons (chứa toàn bộ SVG màu của VS Code)
-const ICON_BASE_URL = 'https://cdn.jsdelivr.net/gh/vscode-icons/vscode-icons@master/icons';
+const ICON_BASE_URL =
+  "https://cdn.jsdelivr.net/gh/vscode-icons/vscode-icons@master/icons";
 
-function FileOrFolderIcon({ name, isFolder, isOpen }: { name: string; isFolder: boolean; isOpen?: boolean }) {
+function FileOrFolderIcon({
+  name,
+  isFolder,
+  isOpen,
+}: {
+  name: string;
+  isFolder: boolean;
+  isOpen?: boolean;
+}) {
   let iconName: string | undefined;
 
   if (isFolder) {
     iconName = isOpen ? getIconForOpenFolder(name) : getIconForFolder(name);
     // Fallback nếu thư mục không có icon riêng (như src, components...)
-    if (!iconName) iconName = isOpen ? 'default_folder_opened.svg' : 'default_folder.svg';
+    if (!iconName)
+      iconName = isOpen ? "default_folder_opened.svg" : "default_folder.svg";
   } else {
     iconName = getIconForFile(name);
     // Fallback cho file lạ
-    if (!iconName) iconName = 'default_file.svg';
+    if (!iconName) iconName = "default_file.svg";
   }
 
   return (
@@ -39,10 +53,11 @@ function FileOrFolderIcon({ name, isFolder, isOpen }: { name: string; isFolder: 
       width={16}
       height={16}
       loading="lazy"
-      style={{ display: 'block', flexShrink: 0, objectFit: 'contain' }}
+      style={{ display: "block", flexShrink: 0, objectFit: "contain" }}
       onError={(e) => {
         // Dự phòng khi gặp file mới mà repo CDN chưa kịp cập nhật
-        (e.target as HTMLImageElement).src = `${ICON_BASE_URL}/${isFolder ? 'default_folder.svg' : 'default_file.svg'}`;
+        (e.target as HTMLImageElement).src =
+          `${ICON_BASE_URL}/${isFolder ? "default_folder.svg" : "default_file.svg"}`;
       }}
     />
   );
@@ -51,14 +66,14 @@ function FileOrFolderIcon({ name, isFolder, isOpen }: { name: string; isFolder: 
 function buildTree(flatData: TreeNode[]) {
   const root: any = { children: {} };
   flatData.forEach((item) => {
-    const parts = item.path.split('/');
+    const parts = item.path.split("/");
     let current = root;
     parts.forEach((part, index) => {
       if (!current.children[part]) {
         current.children[part] = {
           name: part,
-          path: parts.slice(0, index + 1).join('/'),
-          type: index === parts.length - 1 ? item.type : 'tree',
+          path: parts.slice(0, index + 1).join("/"),
+          type: index === parts.length - 1 ? item.type : "tree",
           children: {},
         };
       }
@@ -71,7 +86,7 @@ function buildTree(flatData: TreeNode[]) {
     // Ưu tiên đưa Thư mục lên trước, File ra sau; sắp xếp theo thứ tự chữ cái A-Z
     childrenArray.sort((a: any, b: any) => {
       if (a.type === b.type) return a.name.localeCompare(b.name);
-      return a.type === 'tree' ? -1 : 1;
+      return a.type === "tree" ? -1 : 1;
     });
     node.children = childrenArray;
     node.children.forEach((child: any) => sortNodes(child));
@@ -92,7 +107,7 @@ function TreeItem({
   onFileClick: (p: string) => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
-  const isFolder = node.type === 'tree';
+  const isFolder = node.type === "tree";
   const isActive = activePath === node.path;
 
   return (
@@ -100,39 +115,53 @@ function TreeItem({
       <UnstyledButton
         onClick={() => (isFolder ? setIsOpen(!isOpen) : onFileClick(node.path))}
         style={{
-          display: 'flex',
-          alignItems: 'center',
-          width: '100%',
-          padding: '4px 8px',
+          display: "flex",
+          alignItems: "center",
+          width: "100%",
+          padding: "4px 8px",
           paddingLeft: depth * 12 + 6,
-          // Highlight kiểu VS Code: nền xám xanh nhẹ, không bo tròn cục mịch
-          backgroundColor: isActive ? 'rgba(56, 139, 253, 0.15)' : 'transparent',
-          borderLeft: isActive ? '2px solid #58a6ff' : '2px solid transparent',
-          transition: 'background 0.1s ease',
+          backgroundColor: isActive ? "rgba(37, 99, 235, 0.1)" : "transparent",
+          borderLeft: isActive ? "2px solid #2563eb" : "2px solid transparent",
+          transition: "background 0.1s ease",
         }}
         onMouseEnter={(e) => {
-          if (!isActive) e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.04)';
+          if (!isActive) e.currentTarget.style.backgroundColor = "#f1f5f9";
         }}
         onMouseLeave={(e) => {
-          if (!isActive) e.currentTarget.style.backgroundColor = 'transparent';
+          if (!isActive) e.currentTarget.style.backgroundColor = "transparent";
         }}
       >
-        <Group gap={6} wrap="nowrap" style={{ overflow: 'hidden' }}>
+        <Group gap={6} wrap="nowrap" style={{ overflow: "hidden" }}>
           {/* Mũi tên đóng/mở thư mục */}
-          <Box w={12} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            {isFolder && (
-              isOpen ? <IconChevronDown size={12} color="#8b949e" /> : <IconChevronRight size={12} color="#8b949e" />
-            )}
+          <Box
+            w={12}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            }}
+          >
+            {isFolder &&
+              (isOpen ? (
+                <IconChevronDown size={12} color="#64748b" />
+              ) : (
+                <IconChevronRight size={12} color="#64748b" />
+              ))}
           </Box>
 
           {/* Icon file/folder màu chính hãng VS Code */}
-          <FileOrFolderIcon name={node.name} isFolder={isFolder} isOpen={isOpen} />
+          <FileOrFolderIcon
+            name={node.name}
+            isFolder={isFolder}
+            isOpen={isOpen}
+          />
 
           {/* Tên file */}
           <Text
             fz={13}
             ff="monospace"
-            c={isActive ? '#ffffff' : isFolder ? '#e6edf3' : '#8b949e'}
+            c={isActive ? "#1d4ed8" : isFolder ? "#0f172a" : "#475569"}
             fw={isActive ? 600 : 400}
             truncate
           >
@@ -144,7 +173,12 @@ function TreeItem({
       {/* Đường kẻ gióng lùi dòng khi mở thư mục */}
       {isFolder && (
         <Collapse expanded={isOpen}>
-          <Box style={{ borderLeft: '1px solid rgba(255, 255, 255, 0.08)', marginLeft: depth * 12 + 11 }}>
+          <Box
+            style={{
+              borderLeft: "1px solid #e2e8f0",
+              marginLeft: depth * 12 + 11,
+            }}
+          >
             {node.children.map((child: any) => (
               <TreeItem
                 key={child.path}
@@ -166,7 +200,13 @@ export function FileTree({ data, activePath, onFileClick }: FileTreeProps) {
   return (
     <Box py={2}>
       {tree.map((node: any) => (
-        <TreeItem key={node.path} node={node} depth={0} activePath={activePath} onFileClick={onFileClick} />
+        <TreeItem
+          key={node.path}
+          node={node}
+          depth={0}
+          activePath={activePath}
+          onFileClick={onFileClick}
+        />
       ))}
     </Box>
   );

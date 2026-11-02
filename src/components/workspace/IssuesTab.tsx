@@ -1,25 +1,24 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useMemo } from 'react';
 import {
+  Badge,
   Box,
   Group,
-  Text,
   SegmentedControl,
-  Loader,
+  Skeleton,
   Stack,
-  ThemeIcon,
+  Text,
   TextInput,
-  Badge,
-} from '@mantine/core';
+} from "@mantine/core";
 import {
-  IconCircleDot,
   IconCircleCheck,
+  IconCircleDot,
   IconMessageCircle,
   IconSearch,
-} from '@tabler/icons-react';
-import { useDashboardStore } from '@/store/dashboard.store';
-import axios from 'axios';
+} from "@tabler/icons-react";
+import axios from "axios";
+import { useEffect, useMemo, useState } from "react";
+import { useDashboardStore } from "@/store/dashboard.store";
 
 interface IssuesTabProps {
   onIssuesLoaded?: (count: number) => void;
@@ -29,8 +28,8 @@ export function IssuesTab({ onIssuesLoaded }: IssuesTabProps) {
   const { selectedRepo } = useDashboardStore();
   const [issues, setIssues] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [filter, setFilter] = useState<'open' | 'closed' | 'all'>('open');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [filter, setFilter] = useState<"open" | "closed" | "all">("open");
+  const [searchQuery, setSearchQuery] = useState("");
   const [totalCount, setTotalCount] = useState<number>(0);
 
   useEffect(() => {
@@ -38,17 +37,19 @@ export function IssuesTab({ onIssuesLoaded }: IssuesTabProps) {
     setLoading(true);
 
     axios
-      .get(`/api/github/issues?owner=${selectedRepo.owner.login}&repo=${selectedRepo.name}&state=${filter}`)
+      .get(
+        `/api/github/issues?owner=${selectedRepo.owner.login}&repo=${selectedRepo.name}&state=${filter}`,
+      )
       .then((res) => {
         const data = res.data.issues || [];
         const count = res.data.totalCount ?? data.length;
         setIssues(data);
         setTotalCount(count);
-        if (onIssuesLoaded && filter === 'open') {
+        if (onIssuesLoaded && filter === "open") {
           onIssuesLoaded(count);
         }
       })
-      .catch((err) => console.error('Lỗi tải issues:', err))
+      .catch((err) => console.error("Lỗi tải issues:", err))
       .finally(() => setLoading(false));
   }, [selectedRepo?.id, filter]);
 
@@ -58,29 +59,38 @@ export function IssuesTab({ onIssuesLoaded }: IssuesTabProps) {
     return issues.filter(
       (item) =>
         item.title.toLowerCase().includes(q) ||
-        item.user?.login.toLowerCase().includes(q) ||
-        String(item.number).includes(q)
+        item.user?.login?.toLowerCase().includes(q) ||
+        String(item.number).includes(q),
     );
   }, [issues, searchQuery]);
 
   return (
-    <Box className="hide-scrollbar" style={{ flex: 1, overflowY: 'auto', padding: '24px', minHeight: 0 }}>
-      <Box style={{ maxWidth: 960, margin: '0 auto' }}>
-        {/* Toolbar */}
-        <Group justify="space-between" mb="md" align="center">
-          <Group gap="sm" style={{ flex: 1, maxWidth: 500 }}>
+    <Box
+      className="hide-scrollbar"
+      style={{
+        flex: 1,
+        overflowY: "auto",
+        padding: "24px 20px",
+        minHeight: 0,
+        backgroundColor: "#ffffff",
+      }}
+    >
+      <Box style={{ maxWidth: 960, margin: "0 auto" }}>
+        {/* Bộ lọc và Tìm kiếm */}
+        <Group justify="space-between" mb="md" gap="sm" wrap="wrap">
+          <Group gap="sm" wrap="wrap">
             <TextInput
-              placeholder="Tìm theo tiêu đề, tác giả, #id..."
+              placeholder="Tìm kiếm Issue..."
+              leftSection={<IconSearch size={14} color="#94a3b8" />}
               size="xs"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.currentTarget.value)}
-              leftSection={<IconSearch size={14} color="#8b949e" />}
-              style={{ flex: 1 }}
+              style={{ width: 280 }}
               styles={{
                 input: {
-                  backgroundColor: '#161b22',
-                  borderColor: '#30363d',
-                  color: '#f0f6fc',
+                  backgroundColor: "#ffffff",
+                  borderColor: "#cbd5e1",
+                  color: "#0f172a",
                 },
               }}
             />
@@ -90,34 +100,72 @@ export function IssuesTab({ onIssuesLoaded }: IssuesTabProps) {
               onChange={(val) => setFilter(val as any)}
               size="xs"
               data={[
-                { label: 'Open', value: 'open' },
-                { label: 'Closed', value: 'closed' },
-                { label: 'All', value: 'all' },
+                { label: "Open", value: "open" },
+                { label: "Closed", value: "closed" },
+                { label: "All", value: "all" },
               ]}
               styles={{
-                root: { backgroundColor: '#161b22' },
-                indicator: { backgroundColor: '#21262d' },
-                label: { color: '#c9d1d9' },
+                root: { backgroundColor: "#f1f5f9" },
+                indicator: {
+                  backgroundColor: "#ffffff",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+                },
+                label: { color: "#334155", fontWeight: 600, fontSize: 11 },
               }}
             />
           </Group>
 
-          <Text fz="xs" c="#8b949e">
+          <Text fz="xs" c="#64748b">
             {searchQuery.trim()
-              ? `Tìm thấy ${filteredIssues.length} issues (trong ${totalCount} issues)`
-              : `${totalCount} Issues`}
+              ? `Tìm thấy ${filteredIssues.length} issues`
+              : `Hiển thị ${totalCount} issues`}
           </Text>
         </Group>
 
         {/* Danh sách Issues */}
         {loading ? (
-          <Group justify="center" mt={60}>
-            <Loader size="sm" color="gray" />
-          </Group>
+          <Stack
+            gap={1}
+            style={{
+              border: "1px solid #e2e8f0",
+              borderRadius: 8,
+              overflow: "hidden",
+            }}
+          >
+            {[1, 2, 3, 4, 5].map((i) => (
+              <Box
+                key={i}
+                p="sm"
+                bg="#ffffff"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  borderBottom: "1px solid #f1f5f9",
+                }}
+              >
+                <Group gap="sm" style={{ flex: 1 }}>
+                  <Skeleton height={20} width={20} circle />
+                  <Stack gap={4} style={{ flex: 1 }}>
+                    <Skeleton height={15} width="60%" radius="sm" />
+                    <Skeleton height={11} width="35%" radius="sm" />
+                  </Stack>
+                </Group>
+                <Skeleton height={18} width={50} radius="sm" />
+              </Box>
+            ))}
+          </Stack>
         ) : filteredIssues.length > 0 ? (
-          <Stack gap={1} style={{ border: '1px solid #30363d', borderRadius: 6, overflow: 'hidden' }}>
+          <Stack
+            gap={1}
+            style={{
+              border: "1px solid #e2e8f0",
+              borderRadius: 8,
+              overflow: "hidden",
+            }}
+          >
             {filteredIssues.map((issue) => {
-              const isOpen = issue.state === 'open';
+              const isOpen = issue.state === "open";
 
               return (
                 <Box
@@ -127,35 +175,39 @@ export function IssuesTab({ onIssuesLoaded }: IssuesTabProps) {
                   href={issue.html_url}
                   target="_blank"
                   style={{
-                    backgroundColor: '#0d1117',
-                    borderBottom: '1px solid #21262d',
-                    display: 'flex',
-                    alignItems: 'flex-start',
+                    backgroundColor: "#ffffff",
+                    borderBottom: "1px solid #e2e8f0",
+                    display: "flex",
+                    alignItems: "flex-start",
                     gap: 12,
-                    textDecoration: 'none',
-                    transition: 'background-color 0.12s ease',
+                    textDecoration: "none",
+                    transition: "background-color 0.12s ease",
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#161b22')}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#0d1117')}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.backgroundColor = "#f8fafc")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.backgroundColor = "#ffffff")
+                  }
                 >
                   <Box mt={2}>
                     {isOpen ? (
-                      <IconCircleDot size={16} color="#3fb950" />
+                      <IconCircleDot size={16} color="#16a34a" />
                     ) : (
-                      <IconCircleCheck size={16} color="#a371f7" />
+                      <IconCircleCheck size={16} color="#7c3aed" />
                     )}
                   </Box>
 
                   <Box style={{ flex: 1, minWidth: 0 }}>
                     <Group gap="xs" wrap="wrap">
-                      <Text fz="sm" fw={600} c="#f0f6fc">
+                      <Text fz="sm" fw={600} c="#0f172a">
                         {issue.title}
                       </Text>
                       {issue.labels?.map((label: any) => (
                         <Badge
                           key={label.id}
                           size="xs"
-                          variant="filled"
+                          variant="light"
                           style={{
                             backgroundColor: `#${label.color}25`,
                             color: `#${label.color}`,
@@ -167,14 +219,17 @@ export function IssuesTab({ onIssuesLoaded }: IssuesTabProps) {
                       ))}
                     </Group>
 
-                    <Text fz={11} c="#8b949e" mt={4}>
-                      #{issue.number} mở bởi <span style={{ color: '#c9d1d9' }}>{issue.user?.login}</span> •{' '}
-                      {new Date(issue.created_at).toLocaleDateString()}
+                    <Text fz={11} c="#64748b" mt={4}>
+                      #{issue.number} mở bởi{" "}
+                      <span style={{ color: "#334155", fontWeight: 500 }}>
+                        {issue.user?.login}
+                      </span>{" "}
+                      • {new Date(issue.created_at).toLocaleDateString()}
                     </Text>
                   </Box>
 
                   {issue.comments > 0 && (
-                    <Group gap={4} c="#8b949e">
+                    <Group gap={4} c="#64748b">
                       <IconMessageCircle size={14} />
                       <Text fz={11}>{issue.comments}</Text>
                     </Group>
@@ -184,13 +239,17 @@ export function IssuesTab({ onIssuesLoaded }: IssuesTabProps) {
             })}
           </Stack>
         ) : (
-          <Box ta="center" mt={80}>
-            <ThemeIcon size={56} radius="xl" variant="light" color="gray" mb="sm" bg="#161b22">
-              <IconCircleDot size={28} color="#8b949e" />
-            </ThemeIcon>
-            <Text fw={600} fz="sm" c="#f0f6fc">Không có Issue nào</Text>
-            <Text fz="xs" c="#8b949e" mt={4}>
-              Repository này hiện không có issue nào phù hợp với bộ lọc.
+          <Box ta="center" mt={60} px="md">
+            <IconCircleDot
+              size={38}
+              color="#94a3b8"
+              style={{ margin: "0 auto 10px" }}
+            />
+            <Text fz="sm" fw={500} c="#0f172a">
+              Không có Issue nào
+            </Text>
+            <Text fz="xs" c="#64748b" mt={4}>
+              Repository hiện tại không có lỗi hay yêu cầu tính năng mở nào.
             </Text>
           </Box>
         )}

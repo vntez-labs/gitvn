@@ -1,106 +1,138 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
 import {
-  Modal,
-  Box,
-  Group,
-  Text,
-  Button,
-  Stack,
-  Select,
-  Badge,
-  Paper,
-  Divider,
-  TextInput,
   ActionIcon,
+  Badge,
+  Box,
+  Button,
+  Group,
+  Modal,
+  Paper,
+  Select,
+  Stack,
+  Table,
+  Text,
+  TextInput,
   Tooltip,
-  Checkbox,
-} from '@mantine/core';
+} from "@mantine/core";
 import {
-  IconShieldLock,
-  IconUserPlus,
-  IconTrash,
+  IconAlertCircle,
   IconCheck,
-  IconUsers,
-} from '@tabler/icons-react';
-import { ProjectPermissions, ProjectRole } from '@/interfaces/jira';
+  IconShieldLock,
+  IconTrash,
+  IconUserPlus,
+} from "@tabler/icons-react";
+import { useState } from "react";
+import type { ProjectPermissions, ProjectRole } from "@/interfaces/jira";
 
 interface PermissionsModalProps {
   opened: boolean;
   onClose: () => void;
   permissions: ProjectPermissions;
-  currentUsername: string;
-  isAdminOrPM: boolean;
-  onSavePermissions: (updated: ProjectPermissions) => void;
+  currentUserLogin: string;
+  repoOwner: string;
+  onSavePermissions: (newPermissions: ProjectPermissions) => void;
+  canEdit: boolean;
 }
 
-const ROLES: { value: ProjectRole; label: string; desc: string }[] = [
-  { value: 'admin', label: 'Admin (Quản trị viên)', desc: 'Toàn quyền cấu hình, xóa, phân quyền' },
-  { value: 'pm', label: 'Project Manager (Quản lý dự án)', desc: 'Tạo sprint, quản lý backlog và phân công task' },
-  { value: 'member', label: 'Member / Developer', desc: 'Tạo và kéo thả task trong Sprint' },
-  { value: 'viewer', label: 'Viewer (Người xem)', desc: 'Chỉ xem bảng Kanban, không có quyền sửa' },
+const ROLE_LABELS: Record<
+  ProjectRole,
+  { label: string; desc: string; color: string }
+> = {
+  admin: {
+    label: "Admin (Quản trị)",
+    desc: "Toàn quyền cấu hình, tạo sprint, xóa task và phân quyền thành viên",
+    color: "red",
+  },
+  pm: {
+    label: "PM / Scrum Master",
+    desc: "Có quyền tạo/quản lý Sprint, sắp xếp Backlog và quản lý task",
+    color: "orange",
+  },
+  member: {
+    label: "Member (Thành viên)",
+    desc: "Có quyền tạo task, kéo thả cập nhật trạng thái trong Sprint",
+    color: "blue",
+  },
+  viewer: {
+    label: "Viewer (Người xem)",
+    desc: "Chỉ có quyền xem bảng Kanban và Backlog, không được chỉnh sửa",
+    color: "gray",
+  },
+};
+
+const ROLE_OPTIONS = [
+  { value: "admin", label: "Admin (Toàn quyền)" },
+  { value: "pm", label: "PM / Scrum Master" },
+  { value: "member", label: "Member (Thành viên)" },
+  { value: "viewer", label: "Viewer (Chỉ xem)" },
 ];
 
 export function PermissionsModal({
   opened,
   onClose,
   permissions,
-  currentUsername,
-  isAdminOrPM,
+  currentUserLogin,
+  repoOwner,
   onSavePermissions,
+  canEdit,
 }: PermissionsModalProps) {
-  const [userRoles, setUserRoles] = useState<Record<string, ProjectRole>>(permissions?.userRoles || {});
-  const [canManageSprint, setCanManageSprint] = useState<ProjectRole[]>(permissions?.canManageSprint || ['admin', 'pm']);
-  const [canCreateBacklog, setCanCreateBacklog] = useState<ProjectRole[]>(
-    permissions?.canCreateBacklog || ['admin', 'pm', 'member']
+  const [userRoles, setUserRoles] = useState<Record<string, ProjectRole>>(
+    permissions.userRoles || {},
   );
-  const [newUser, setNewUser] = useState('');
-  const [newRole, setNewRole] = useState<ProjectRole>('member');
+  const [defaultRole, setDefaultRole] = useState<ProjectRole>(
+    permissions.defaultRole || "member",
+  );
+  const [newUsername, setNewUsername] = useState("");
+  const [newRole, setNewRole] = useState<ProjectRole>("member");
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const handleAddUser = () => {
-    const trimmed = newUser.trim().toLowerCase();
-    if (!trimmed) return;
+    const cleanUser = newUsername.trim().toLowerCase();
+    if (!cleanUser) {
+      setErrorMsg("Vui lòng nhập GitHub username");
+      return;
+    }
+
     setUserRoles((prev) => ({
       ...prev,
-      [trimmed]: newRole,
+      [cleanUser]: newRole,
     }));
-    setNewUser('');
+    setNewUsername("");
+    setErrorMsg(null);
   };
 
-  const handleRemoveUser = (login: string) => {
+  const handleRemoveUser = (username: string) => {
+    if (username.toLowerCase() === repoOwner.toLowerCase()) {
+      alert("Không thể xóa quyền của Repo Owner!");
+      return;
+    }
+
     setUserRoles((prev) => {
       const copy = { ...prev };
-      delete copy[login];
+      delete copy[username];
       return copy;
     });
   };
 
+  const handleRoleChange = (username: string, role: ProjectRole) => {
+    setUserRoles((prev) => ({
+      ...prev,
+      [username]: role,
+    }));
+  };
+
   const handleSave = () => {
-    onSavePermissions({
+    const updated: ProjectPermissions = {
       ...permissions,
       userRoles,
-      canManageSprint,
-      canCreateBacklog,
-    });
+      defaultRole,
+    };
+    onSavePermissions(updated);
     onClose();
   };
 
-  const toggleSprintRole = (role: ProjectRole) => {
-    if (canManageSprint.includes(role)) {
-      setCanManageSprint(canManageSprint.filter((r) => r !== role));
-    } else {
-      setCanManageSprint([...canManageSprint, role]);
-    }
-  };
-
-  const toggleBacklogRole = (role: ProjectRole) => {
-    if (canCreateBacklog.includes(role)) {
-      setCanCreateBacklog(canCreateBacklog.filter((r) => r !== role));
-    } else {
-      setCanCreateBacklog([...canCreateBacklog, role]);
-    }
-  };
+  const usersList = Object.entries(userRoles);
 
   return (
     <Modal
@@ -109,234 +141,243 @@ export function PermissionsModal({
       size="lg"
       title={
         <Group gap="xs">
-          <IconShieldLock size={18} color="#58a6ff" />
-          <Text fw={700} fz={15} c="#f0f6fc">
-            Phân quyền dự án (Roles & Permissions)
+          <IconShieldLock size={18} color="#fb291a" />
+          <Text fw={700} fz={15} c="#0f172a">
+            Phân Quyền Dự Án & Vai Trò (Roles)
           </Text>
         </Group>
       }
+      centered
+      radius="md"
       styles={{
         content: {
-          backgroundColor: '#161b22',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-          color: '#f0f6fc',
+          backgroundColor: "#ffffff",
+          border: "1px solid #e2e8f0",
+          color: "#0f172a",
           borderRadius: 12,
         },
         header: {
-          backgroundColor: '#1c2128',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-          padding: '14px 20px',
-        },
-        body: {
-          padding: 20,
+          backgroundColor: "#f8fafc",
+          borderBottom: "1px solid #e2e8f0",
+          padding: "14px 20px",
         },
       }}
     >
       <Stack gap="md">
-        {/* Vai trò của user hiện tại */}
-        <Paper p="xs" px="md" bg="#0d1117" radius="md" style={{ border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-          <Group justify="space-between">
-            <Group gap="xs">
-              <IconUsers size={16} color="#8b949e" />
-              <Text fz={13} c="#c9d1d9">
-                Tài khoản của bạn:{' '}
-                <span style={{ fontWeight: 700, color: '#58a6ff' }}>@{currentUsername}</span>
-              </Text>
-            </Group>
-            <Badge size="sm" color="blue" variant="light" style={{ textTransform: 'uppercase' }}>
-              {(userRoles[currentUsername] || permissions?.defaultRole || 'member')}
-            </Badge>
-          </Group>
+        {/* Giới thiệu các vai trò */}
+        <Paper
+          p="sm"
+          bg="#f8fafc"
+          radius="md"
+          style={{ border: "1px solid #e2e8f0" }}
+        >
+          <Text fz={12} c="#475569" lh={1.5}>
+            Phân quyền xác định ai có thể <strong>kéo thả task</strong>,{" "}
+            <strong>quản lý Sprint</strong>, hoặc{" "}
+            <strong>cấu hình file .gitvn/tasks.json</strong>.
+          </Text>
         </Paper>
 
-        {/* Cấu hình quyền: Ai có quyền tạo Sprint */}
-        <Paper p="md" bg="#0d1117" radius="md" style={{ border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-          <Text fz={13} fw={700} c="#f0f6fc" mb={4}>
-            Ai có quyền tạo & quản lý Sprint?
-          </Text>
-          <Text fz={12} c="#8b949e" mb="sm">
-            Chỉ những vai trò được tích chọn mới có thể tạo Sprint mới, bắt đầu hoặc kết thúc Sprint.
-          </Text>
-          <Group gap="lg">
-            {(['admin', 'pm', 'member'] as ProjectRole[]).map((role) => (
-              <Checkbox
-                key={role}
-                label={role.toUpperCase()}
-                checked={canManageSprint.includes(role)}
-                disabled={!isAdminOrPM || role === 'admin'}
-                onChange={() => toggleSprintRole(role)}
-                styles={{ label: { color: '#f0f6fc', fontSize: 13, fontWeight: 600 } }}
-              />
-            ))}
-          </Group>
-        </Paper>
-
-        {/* Cấu hình quyền: Ai có quyền tạo Backlog */}
-        <Paper p="md" bg="#0d1117" radius="md" style={{ border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-          <Text fz={13} fw={700} c="#f0f6fc" mb={4}>
-            Ai có quyền tạo Backlog / Task?
-          </Text>
-          <Text fz={12} c="#8b949e" mb="sm">
-            Những vai trò được phép thêm công việc mới vào danh sách Backlog.
-          </Text>
-          <Group gap="lg">
-            {(['admin', 'pm', 'member', 'viewer'] as ProjectRole[]).map((role) => (
-              <Checkbox
-                key={role}
-                label={role.toUpperCase()}
-                checked={canCreateBacklog.includes(role)}
-                disabled={!isAdminOrPM || role === 'admin'}
-                onChange={() => toggleBacklogRole(role)}
-                styles={{ label: { color: '#f0f6fc', fontSize: 13, fontWeight: 600 } }}
-              />
-            ))}
-          </Group>
-        </Paper>
-
-        {/* Danh sách thành viên & Gán vai trò */}
-        <Box>
-          <Text fz={13} fw={700} c="#f0f6fc" mb={8}>
-            Thành viên & Vai trò trong dự án
-          </Text>
-
-          {isAdminOrPM && (
-            <Group gap="xs" mb="sm">
+        {/* Thêm thành viên mới */}
+        {canEdit && (
+          <Box>
+            <Text fz={12} fw={600} c="#334155" mb={6}>
+              Gán vai trò cho thành viên mới
+            </Text>
+            <Group gap="xs" align="flex-start">
               <TextInput
-                placeholder="Nhập GitHub username..."
+                placeholder="GitHub username (vd: octocat)"
                 size="xs"
-                value={newUser}
-                onChange={(e) => setNewUser(e.currentTarget.value)}
+                value={newUsername}
+                onChange={(e) => {
+                  setNewUsername(e.currentTarget.value);
+                  if (errorMsg) setErrorMsg(null);
+                }}
+                error={errorMsg}
                 style={{ flex: 1 }}
                 styles={{
                   input: {
-                    backgroundColor: '#0d1117',
-                    borderColor: 'rgba(255, 255, 255, 0.1)',
-                    color: '#f0f6fc',
-                    borderRadius: 6,
+                    backgroundColor: "#ffffff",
+                    borderColor: "#cbd5e1",
+                    color: "#0f172a",
                   },
                 }}
               />
               <Select
                 size="xs"
-                data={ROLES.map((r) => ({ value: r.value, label: r.label }))}
+                data={ROLE_OPTIONS}
                 value={newRole}
-                onChange={(val) => setNewRole(val as ProjectRole)}
-                style={{ width: 220 }}
+                onChange={(val) => setNewRole((val as ProjectRole) || "member")}
+                style={{ width: 180 }}
                 styles={{
                   input: {
-                    backgroundColor: '#0d1117',
-                    borderColor: 'rgba(255, 255, 255, 0.1)',
-                    color: '#f0f6fc',
-                    borderRadius: 6,
+                    backgroundColor: "#ffffff",
+                    borderColor: "#cbd5e1",
+                    color: "#0f172a",
                   },
-                  dropdown: { backgroundColor: '#161b22', borderColor: '#30363d' },
                 }}
               />
               <Button
                 size="xs"
-                variant="light"
-                color="blue"
+                color="indigo"
                 leftSection={<IconUserPlus size={14} />}
                 onClick={handleAddUser}
               >
-                Gán vai trò
+                Gán quyền
               </Button>
             </Group>
-          )}
+          </Box>
+        )}
 
-          <Stack gap={6} style={{ maxHeight: 200, overflowY: 'auto' }}>
-            {Object.entries(userRoles).map(([login, role]) => (
-              <Group
-                key={login}
-                justify="space-between"
-                p="xs"
-                bg="#0d1117"
-                style={{ border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: 6 }}
+        {/* Danh sách thành viên hiện tại */}
+        <Box>
+          <Text fz={12} fw={600} c="#334155" mb={8}>
+            Danh sách thành viên & vai trò ({usersList.length})
+          </Text>
+
+          <Paper
+            p={0}
+            bg="#ffffff"
+            radius="md"
+            style={{ border: "1px solid #e2e8f0", overflow: "hidden" }}
+          >
+            <Table horizontalSpacing="md" verticalSpacing="xs">
+              <Table.Thead
+                style={{
+                  backgroundColor: "#f8fafc",
+                  borderBottom: "1px solid #e2e8f0",
+                }}
               >
-                <Group gap="xs">
-                  <Text fz={13} fw={600} c="#f0f6fc">
-                    @{login}
-                  </Text>
-                  {login === currentUsername && (
-                    <Badge size="xs" variant="outline" color="blue">
-                      Bạn
-                    </Badge>
-                  )}
-                </Group>
+                <Table.Tr>
+                  <Table.Th style={{ color: "#64748b", fontSize: 11 }}>
+                    USERNAME
+                  </Table.Th>
+                  <Table.Th style={{ color: "#64748b", fontSize: 11 }}>
+                    VAI TRÒ
+                  </Table.Th>
+                  <Table.Th style={{ width: 50 }} />
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {usersList.map(([username, role]) => {
+                  const isOwner =
+                    username.toLowerCase() === repoOwner.toLowerCase();
+                  const isCurrent =
+                    username.toLowerCase() === currentUserLogin.toLowerCase();
+                  const meta = ROLE_LABELS[role] || ROLE_LABELS.member;
 
-                <Group gap="xs">
-                  {isAdminOrPM ? (
-                    <Select
-                      size="xs"
-                      data={ROLES.map((r) => ({ value: r.value, label: r.label }))}
-                      value={role}
-                      onChange={(val) =>
-                        setUserRoles((prev) => ({ ...prev, [login]: (val as ProjectRole) || 'member' }))
-                      }
-                      style={{ width: 190 }}
-                      styles={{
-                        input: {
-                          backgroundColor: '#161b22',
-                          borderColor: 'rgba(255, 255, 255, 0.1)',
-                          color: '#f0f6fc',
-                          height: 28,
-                          borderRadius: 6,
-                        },
-                        dropdown: { backgroundColor: '#161b22', borderColor: '#30363d' },
-                      }}
-                    />
-                  ) : (
-                    <Badge size="xs" color="blue">
-                      {role.toUpperCase()}
-                    </Badge>
-                  )}
+                  return (
+                    <Table.Tr
+                      key={username}
+                      style={{ borderBottom: "1px solid #e2e8f0" }}
+                    >
+                      <Table.Td>
+                        <Group gap={6}>
+                          <Text
+                            fz={13}
+                            fw={600}
+                            c="#0f172a"
+                            ff="var(--font-geist-mono), monospace"
+                          >
+                            {username}
+                          </Text>
+                          {isOwner && (
+                            <Badge size="xs" color="teal" variant="light">
+                              Owner
+                            </Badge>
+                          )}
+                          {isCurrent && (
+                            <Badge size="xs" color="vntez" variant="outline">
+                              Bạn
+                            </Badge>
+                          )}
+                        </Group>
+                      </Table.Td>
 
-                  {isAdminOrPM && login !== currentUsername && (
-                    <Tooltip label="Xóa vai trò" withArrow>
-                      <ActionIcon size="sm" variant="subtle" color="red" onClick={() => handleRemoveUser(login)}>
-                        <IconTrash size={14} />
-                      </ActionIcon>
-                    </Tooltip>
-                  )}
-                </Group>
-              </Group>
-            ))}
-          </Stack>
+                      <Table.Td>
+                        {canEdit && !isOwner ? (
+                          <Select
+                            size="xs"
+                            data={ROLE_OPTIONS}
+                            value={role}
+                            onChange={(val) =>
+                              handleRoleChange(username, val as ProjectRole)
+                            }
+                            style={{ width: 170 }}
+                            styles={{
+                              input: {
+                                backgroundColor: "#ffffff",
+                                borderColor: "#cbd5e1",
+                                color: "#0f172a",
+                              },
+                            }}
+                          />
+                        ) : (
+                          <Badge size="sm" color={meta.color} variant="light">
+                            {meta.label}
+                          </Badge>
+                        )}
+                      </Table.Td>
+
+                      <Table.Td>
+                        {canEdit && !isOwner && (
+                          <Tooltip label="Gỡ quyền thành viên" withArrow>
+                            <ActionIcon
+                              size="sm"
+                              variant="subtle"
+                              color="red"
+                              onClick={() => handleRemoveUser(username)}
+                            >
+                              <IconTrash size={14} />
+                            </ActionIcon>
+                          </Tooltip>
+                        )}
+                      </Table.Td>
+                    </Table.Tr>
+                  );
+                })}
+              </Table.Tbody>
+            </Table>
+          </Paper>
         </Box>
 
-        <Divider color="rgba(255, 255, 255, 0.08)" />
-
-        <Group justify="flex-end">
-          <Button
-            variant="default"
+        {/* Vai trò mặc định cho người ngoài */}
+        <Group justify="space-between" align="center" mt="xs">
+          <Box>
+            <Text fz={12} fw={600} c="#334155">
+              Vai trò mặc định cho thành viên khác:
+            </Text>
+            <Text fz={11} c="#64748b">
+              Áp dụng khi người dùng mở repo mà chưa được cấu hình vai trò riêng
+            </Text>
+          </Box>
+          <Select
             size="xs"
-            onClick={onClose}
+            data={ROLE_OPTIONS.filter((r) => r.value !== "admin")}
+            value={defaultRole}
+            onChange={(val) => setDefaultRole((val as ProjectRole) || "member")}
+            disabled={!canEdit}
+            style={{ width: 170 }}
             styles={{
-              root: {
-                backgroundColor: '#21262d',
-                borderColor: 'rgba(255, 255, 255, 0.12)',
-                color: '#c9d1d9',
-                borderRadius: 8,
+              input: {
+                backgroundColor: "#ffffff",
+                borderColor: "#cbd5e1",
+                color: "#0f172a",
               },
             }}
-          >
+          />
+        </Group>
+
+        {/* Nút Footer */}
+        <Group justify="flex-end" mt="md">
+          <Button variant="default" onClick={onClose}>
             Hủy
           </Button>
-          {isAdminOrPM && (
+          {canEdit && (
             <Button
-              variant="filled"
-              size="xs"
+              color="vntez"
               leftSection={<IconCheck size={14} />}
               onClick={handleSave}
-              styles={{
-                root: {
-                  backgroundColor: '#238636',
-                  color: '#ffffff',
-                  fontWeight: 600,
-                  borderRadius: 8,
-                  '&:hover': { backgroundColor: '#2ea043' },
-                },
-              }}
             >
               Lưu phân quyền
             </Button>

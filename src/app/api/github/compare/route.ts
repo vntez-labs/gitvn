@@ -1,21 +1,24 @@
-import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const owner = searchParams.get('owner');
-  const repo = searchParams.get('repo');
-  const base = searchParams.get('base') || 'main';
-  const head = searchParams.get('head');
+  const owner = searchParams.get("owner");
+  const repo = searchParams.get("repo");
+  const base = searchParams.get("base") || "main";
+  const head = searchParams.get("head");
 
   if (!owner || !repo || !head) {
-    return NextResponse.json({ error: 'Thiếu owner, repo hoặc head branch' }, { status: 400 });
+    return NextResponse.json(
+      { error: "Thiếu owner, repo hoặc head branch" },
+      { status: 400 },
+    );
   }
 
   // Nếu base và head giống nhau thì không cần gọi GitHub
   if (base === head) {
     return NextResponse.json({
-      status: 'identical',
+      status: "identical",
       ahead_by: 0,
       behind_by: 0,
       total_commits: 0,
@@ -26,10 +29,10 @@ export async function GET(request: Request) {
   }
 
   const cookieStore = await cookies();
-  const token = cookieStore.get('github_access_token')?.value;
+  const token = cookieStore.get("github_access_token")?.value;
 
   if (!token) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
@@ -38,15 +41,15 @@ export async function GET(request: Request) {
       {
         headers: {
           Authorization: `Bearer ${token}`,
-          Accept: 'application/vnd.github+json',
+          Accept: "application/vnd.github+json",
         },
-        cache: 'no-store',
-      }
+        cache: "no-store",
+      },
     );
 
     if (res.status === 404) {
       return NextResponse.json({
-        status: 'not_found',
+        status: "not_found",
         ahead_by: 0,
         behind_by: 0,
         total_commits: 0,
@@ -58,7 +61,10 @@ export async function GET(request: Request) {
 
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      return NextResponse.json({ error: data.message || 'Lỗi compare branches' }, { status: res.status });
+      return NextResponse.json(
+        { error: data.message || "Lỗi compare branches" },
+        { status: res.status },
+      );
     }
 
     const data = await res.json();
@@ -75,6 +81,9 @@ export async function GET(request: Request) {
         `https://github.com/${owner}/${repo}/compare/${encodeURIComponent(base)}...${encodeURIComponent(head)}?expand=1`,
     });
   } catch {
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 },
+    );
   }
 }

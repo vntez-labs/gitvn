@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="100%" stop-color="#fff1f0" />
+    </linearGradient>
+    <linearGradient id="brandGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fb291a" />
+      <stop offset="100%" stop-color="#f77241" />
+    </linearGradient>
+    <linearGradient id="textGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#fb291a" />
+      <stop offset="100%" stop-color="#ea580c" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bgGrad)" />
+
+  <!-- Subtle Grid Lines -->
+  <g stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 8" opacity="0.3">
+    <line x1="80" y1="0" x2="80" y2="630" />
+    <line x1="280" y1="0" x2="280" y2="630" />
+    <line x1="480" y1="0" x2="480" y2="630" />
+    <line x1="680" y1="0" x2="680" y2="630" />
+    <line x1="880" y1="0" x2="880" y2="630" />
+    <line x1="1080" y1="0" x2="1080" y2="630" />
+    <line x1="0" y1="120" x2="1200" y2="120" />
+    <line x1="0" y1="280" x2="1200" y2="280" />
+    <line x1="0" y1="440" x2="1200" y2="440" />
+  </g>
+
+  <!-- Brand Badge Top -->
+  <g transform="translate(100, 100)">
+    <rect width="160" height="42" rx="21" fill="#fff1f0" stroke="#ffc5be" stroke-width="1.5" />
+    <circle cx="24" cy="21" r="6" fill="#fb291a" />
+    <text x="40" y="26" font-family="system-ui, sans-serif" font-size="15" font-weight="700" fill="#fb291a">VNTEZ LABS</text>
+  </g>
+
+  <!-- Big Title -->
+  <text x="100" y="230" font-family="system-ui, -apple-system, sans-serif" font-size="64" font-weight="900" fill="#0f172a" letter-spacing="-1.5">
+    GitVN Workspace
+  </text>
+  <text x="100" y="300" font-family="system-ui, -apple-system, sans-serif" font-size="52" font-weight="800" fill="url(#textGrad)" letter-spacing="-1">
+    Git Cloud &amp; Agile Scrum Sprint
+  </text>
+
+  <!-- Subtitle -->
+  <text x="100" y="370" font-family="system-ui, -apple-system, sans-serif" font-size="24" font-weight="500" fill="#475569">
+    Quản lý mã nguồn, bảng Kanban, chu kỳ Sprint và tài liệu MDX chuẩn hoá cho lập trình viên.
+  </text>
+
+  <!-- Tags Bottom -->
+  <g transform="translate(100, 470)">
+    <rect x="0" y="0" width="160" height="44" rx="8" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5" />
+    <text x="24" y="28" font-family="system-ui, sans-serif" font-size="16" font-weight="600" fill="#0f172a">⚡ Bảng Kanban</text>
+
+    <rect x="180" y="0" width="180" height="44" rx="8" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5" />
+    <text x="204" y="28" font-family="system-ui, sans-serif" font-size="16" font-weight="600" fill="#0f172a">🏃 Sprint Planner</text>
+
+    <rect x="380" y="0" width="170" height="44" rx="8" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5" />
+    <text x="404" y="28" font-family="system-ui, sans-serif" font-size="16" font-weight="600" fill="#0f172a">📝 Docs (MDX)</text>
+
+    <rect x="570" y="0" width="170" height="44" rx="8" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5" />
+    <text x="594" y="28" font-family="system-ui, sans-serif" font-size="16" font-weight="600" fill="#0f172a">🐙 GitHub Synced</text>
+  </g>
+
+  <!-- Right Logo Mark -->
+  <g transform="translate(860, 160)">
+    <rect width="240" height="240" rx="60" fill="url(#brandGrad)" />
+    <g fill="none" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M78 70 V 170" stroke-width="20" />
+      <path d="M78 120 C 104 120, 150 110, 162 90" stroke-width="18" />
+      <path d="M120 170 L 162 170" stroke-width="18" />
+
+      <circle cx="78" cy="70" r="16" fill="#ffffff" />
+      <circle cx="78" cy="170" r="16" fill="#ffffff" />
+      <circle cx="162" cy="85" r="16" fill="#ffffff" />
+    </g>
+  </g>
+</svg>

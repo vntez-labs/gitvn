@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="vntezGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fb291a" />
+      <stop offset="100%" stop-color="#f77241" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background Squircle -->
+  <rect width="512" height="512" rx="128" fill="url(#vntezGrad)" />
+
+  <!-- Git Branching / 'V' Nodes Monogram in White -->
+  <g fill="none" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M168 152 V 360" stroke-width="42" />
+    <path d="M168 256 C 220 256, 320 240, 344 196" stroke-width="38" />
+    <path d="M256 360 L 344 360" stroke-width="38" />
+
+    <circle cx="168" cy="152" r="34" fill="#ffffff" />
+    <circle cx="168" cy="360" r="34" fill="#ffffff" />
+    <circle cx="344" cy="180" r="34" fill="#ffffff" />
+  </g>
+</svg>

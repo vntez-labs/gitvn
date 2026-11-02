@@ -1,21 +1,24 @@
-import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const owner = searchParams.get('owner');
-  const repo = searchParams.get('repo');
-  const branch = searchParams.get('branch') || 'HEAD'; // Mặc định là HEAD nếu không truyền
+  const owner = searchParams.get("owner");
+  const repo = searchParams.get("repo");
+  const branch = searchParams.get("branch") || "HEAD"; // Mặc định là HEAD nếu không truyền
 
   if (!owner || !repo) {
-    return NextResponse.json({ error: 'Thiếu owner hoặc repo' }, { status: 400 });
+    return NextResponse.json(
+      { error: "Thiếu owner hoặc repo" },
+      { status: 400 },
+    );
   }
 
   const cookieStore = await cookies();
-  const token = cookieStore.get('github_access_token')?.value;
+  const token = cookieStore.get("github_access_token")?.value;
 
   if (!token) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
@@ -25,10 +28,10 @@ export async function GET(request: Request) {
       {
         headers: {
           Authorization: `Bearer ${token}`,
-          Accept: 'application/vnd.github+json',
+          Accept: "application/vnd.github+json",
         },
-        cache: 'no-store', // Không cache tĩnh để khi đổi branch là có dữ liệu mới
-      }
+        cache: "no-store", // Không cache tĩnh để khi đổi branch là có dữ liệu mới
+      },
     );
 
     if (!res.ok) {
@@ -36,12 +39,18 @@ export async function GET(request: Request) {
       if (res.status === 409 || res.status === 404) {
         return NextResponse.json({ tree: [], empty: true });
       }
-      return NextResponse.json({ error: 'Lỗi tải tree từ GitHub' }, { status: res.status });
+      return NextResponse.json(
+        { error: "Lỗi tải tree từ GitHub" },
+        { status: res.status },
+      );
     }
 
     const data = await res.json();
     return NextResponse.json({ tree: data.tree || [] });
   } catch {
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 },
+    );
   }
 }

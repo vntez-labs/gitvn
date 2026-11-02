@@ -7,58 +7,22 @@
       "id": "GITVN-1",
       "title": "Thiết kế kiến trúc hệ thống và luồng dữ liệu",
       "description": "### Mục tiêu\n\n- Xác định các entity chính\n- Xây dựng sơ đồ luồng dữ liệu (Data flow)\n- Chuẩn bị API endpoints\n\n> [!NOTE]\n> Cần tham khảo tài liệu kỹ thuật trước khi chốt spec.",
-      "status": "done",
+      "status": "todo",
       "priority": "high",
       "assignee": {
-        "login": "anonymous",
-        "name": "anonymous"
+        "login": "hnamhocit",
+        "name": "hnamhocit",
+        "avatar_url": "https://github.com/hnamhocit.png"
       },
       "reporter": {
-        "login": "anonymous",
-        "name": "anonymous"
+        "login": "hnamhocit",
+        "name": "hnamhocit",
+        "avatar_url": "https://github.com/hnamhocit.png"
       },
       "sprintId": "sprint-1",
       "storyPoints": 5,
       "createdAt": "2026-10-26T13:02:50.857Z",
-      "updatedAt": "2026-10-26T13:02:50.857Z"
-    },
-    {
-      "id": "GITVN-2",
-      "title": "Tích hợp giao diện Kanban kéo thả (Drag & Drop)",
-      "description": "### Yêu cầu chức năng\n\n1. Kéo thả mượt mà giữa các cột: **To Do**, **In Progress**, **In Review**, **Done**\n2. Hỗ trợ cập nhật ngay lập tức\n3. Hỗ trợ hiển thị Markdown cho task description",
-      "status": "in_progress",
-      "priority": "urgent",
-      "assignee": {
-        "login": "anonymous",
-        "name": "anonymous"
-      },
-      "reporter": {
-        "login": "anonymous",
-        "name": "anonymous"
-      },
-      "sprintId": "sprint-1",
-      "storyPoints": 8,
-      "createdAt": "2026-10-26T13:02:50.857Z",
-      "updatedAt": "2026-10-26T13:02:50.857Z"
-    },
-    {
-      "id": "GITVN-3",
-      "title": "Phân quyền tạo Sprint và Backlog theo vai trò",
-      "description": "### Phân quyền theo Role\n\n- **Admin / PM**: Có quyền tạo Sprint, kích hoạt Sprint và tạo Backlog\n- **Member**: Có quyền tạo task và cập nhật trạng thái trong Sprint\n- **Viewer**: Chỉ xem bảng Kanban",
-      "status": "todo",
-      "priority": "medium",
-      "assignee": {
-        "login": "anonymous",
-        "name": "anonymous"
-      },
-      "reporter": {
-        "login": "anonymous",
-        "name": "anonymous"
-      },
-      "sprintId": "sprint-1",
-      "storyPoints": 3,
-      "createdAt": "2026-10-26T13:02:50.857Z",
-      "updatedAt": "2026-10-26T13:02:50.857Z"
+      "updatedAt": "2026-11-02T09:16:18.153Z"
     },
     {
       "id": "GITVN-4",
@@ -67,8 +31,9 @@
       "status": "backlog",
       "priority": "low",
       "reporter": {
-        "login": "anonymous",
-        "name": "anonymous"
+        "login": "hnamhocit",
+        "name": "hnamhocit",
+        "avatar_url": "https://github.com/hnamhocit.png"
       },
       "sprintId": null,
       "storyPoints": 2,
@@ -77,6 +42,14 @@
     }
   ],
   "sprints": [
+    {
+      "id": "sprint-1793603323174",
+      "name": "Sprint 2",
+      "startDate": "2026-11-02",
+      "endDate": "2026-11-16",
+      "status": "planned",
+      "createdAt": "2026-11-02T07:08:43.174Z"
+    },
     {
       "id": "sprint-1",
       "name": "Sprint 1 - Khởi động dự án",
@@ -89,18 +62,11 @@
   ],
   "permissions": {
     "userRoles": {
-      "anonymous": "admin",
+      "hnamhocit": "admin",
       "vntez-labs": "admin"
     },
     "defaultRole": "member",
-    "canManageSprint": [
-      "admin",
-      "pm"
-    ],
-    "canCreateBacklog": [
-      "admin",
-      "pm",
-      "member"
-    ]
+    "canManageSprint": ["admin", "pm"],
+    "canCreateBacklog": ["admin", "pm", "member"]
   }
 }

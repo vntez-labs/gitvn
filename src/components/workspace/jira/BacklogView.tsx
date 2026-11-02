@@ -1,102 +1,190 @@
-'use client';
+"use client";
 
 import {
-  Box,
-  Group,
-  Text,
-  Badge,
-  Button,
-  Stack,
-  Paper,
   ActionIcon,
-  Tooltip,
-  Menu,
   Avatar,
-  Progress,
-} from '@mantine/core';
+  Badge,
+  Box,
+  Button,
+  Checkbox,
+  Group,
+  Menu,
+  Paper,
+  Stack,
+  Text,
+  Tooltip,
+} from "@mantine/core";
 import {
-  IconPlus,
-  IconPlayerPlay,
-  IconCheck,
   IconDotsVertical,
-  IconArrowRight,
-  IconTrash,
+  IconGripVertical,
   IconInbox,
-  IconCalendar,
-} from '@tabler/icons-react';
-import { JiraSprint, JiraTask } from '@/interfaces/jira';
+  IconPlus,
+} from "@tabler/icons-react";
+import { useMemo, useState } from "react";
+import type { JiraSprint, JiraTask, SprintStatus } from "@/interfaces/jira";
+import { getGitHubAvatarUrl } from "@/lib/avatar";
+import { getStoryPointsForTask } from "@/lib/jira-priority";
+import { FloatingBulkActionBar } from "./FloatingBulkActionBar";
+import { PRIORITY_BADGE, SprintItem } from "./SprintItem";
 
 interface BacklogViewProps {
   sprints: JiraSprint[];
   tasks: JiraTask[];
+  onSelectTask: (task: JiraTask) => void;
+  onOpenCreateTask: (defaultSprintId?: string | null) => void;
+  onOpenCreateSprint: () => void;
+  onUpdateSprintStatus: (sprintId: string, status: SprintStatus) => void;
+  onMoveTaskToSprint: (taskId: string, targetSprintId: string | null) => void;
+  onBulkMoveTasks?: (taskIds: string[], targetSprintId: string | null) => void;
+  onBulkDeleteTasks?: (taskIds: string[]) => void;
   canManageSprint: boolean;
   canCreateBacklog: boolean;
-  onOpenCreateTask: (sprintId: string | null) => void;
-  onOpenCreateSprint: () => void;
-  onSelectTask: (task: JiraTask) => void;
-  onMoveTaskToSprint: (taskId: string, sprintId: string | null) => void;
-  onStartSprint: (sprintId: string) => void;
-  onCompleteSprint: (sprintId: string) => void;
-  onDeleteSprint: (sprintId: string) => void;
 }
 
 export function BacklogView({
   sprints,
   tasks,
-  canManageSprint,
-  canCreateBacklog,
+  onSelectTask,
   onOpenCreateTask,
   onOpenCreateSprint,
-  onSelectTask,
+  onUpdateSprintStatus,
   onMoveTaskToSprint,
-  onStartSprint,
-  onCompleteSprint,
-  onDeleteSprint,
+  onBulkMoveTasks,
+  onBulkDeleteTasks,
+  canManageSprint,
+  canCreateBacklog,
 }: BacklogViewProps) {
-  const backlogTasks = tasks.filter((t) => !t.sprintId || t.status === 'backlog');
+  const [dragOverTargetId, setDragOverTargetId] = useState<string | null>(null);
+  const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
+
+  // Tasks trong Backlog (sprintId === null hoặc status === "backlog")
+  const backlogTasks = useMemo(() => {
+    return tasks.filter((t) => !t.sprintId || t.status === "backlog");
+  }, [tasks]);
+
+  const totalBacklogPoints = useMemo(() => {
+    return backlogTasks.reduce((sum, t) => sum + getStoryPointsForTask(t), 0);
+  }, [backlogTasks]);
+
+  // Kéo thả HTML5
+  const handleDragStart = (e: React.DragEvent, taskId: string) => {
+    e.dataTransfer.setData("text/plain", taskId);
+  };
+
+  const handleDragOver = (e: React.DragEvent, targetId: string) => {
+    e.preventDefault();
+    if (dragOverTargetId !== targetId) {
+      setDragOverTargetId(targetId);
+    }
+  };
+
+  const handleDragLeave = () => {
+    setDragOverTargetId(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, targetSprintId: string | null) => {
+    e.preventDefault();
+    setDragOverTargetId(null);
+    const taskId = e.dataTransfer.getData("text/plain");
+    if (!taskId) return;
+
+    if (selectedTaskIds.includes(taskId) && selectedTaskIds.length > 1) {
+      if (onBulkMoveTasks) {
+        onBulkMoveTasks(selectedTaskIds, targetSprintId);
+      } else {
+        selectedTaskIds.forEach((id) => onMoveTaskToSprint(id, targetSprintId));
+      }
+      setSelectedTaskIds([]);
+    } else {
+      onMoveTaskToSprint(taskId, targetSprintId);
+    }
+  };
+
+  // Chọn checkbox nhiều task
+  const toggleSelectTask = (taskId: string) => {
+    setSelectedTaskIds((prev) =>
+      prev.includes(taskId)
+        ? prev.filter((id) => id !== taskId)
+        : [...prev, taskId],
+    );
+  };
+
+  const toggleSelectAllSprint = (sprintTasks: JiraTask[]) => {
+    const taskIds = sprintTasks.map((t) => t.id);
+    const allSelected = taskIds.every((id) => selectedTaskIds.includes(id));
+    if (allSelected) {
+      setSelectedTaskIds((prev) => prev.filter((id) => !taskIds.includes(id)));
+    } else {
+      setSelectedTaskIds((prev) => Array.from(new Set([...prev, ...taskIds])));
+    }
+  };
+
+  const toggleSelectAllBacklog = () => {
+    const taskIds = backlogTasks.map((t) => t.id);
+    const allSelected = taskIds.every((id) => selectedTaskIds.includes(id));
+    if (allSelected) {
+      setSelectedTaskIds((prev) => prev.filter((id) => !taskIds.includes(id)));
+    } else {
+      setSelectedTaskIds((prev) => Array.from(new Set([...prev, ...taskIds])));
+    }
+  };
+
+  // Thao tác hàng loạt
+  const handleBulkMove = (targetSprintId: string | null) => {
+    if (onBulkMoveTasks) {
+      onBulkMoveTasks(selectedTaskIds, targetSprintId);
+    } else {
+      selectedTaskIds.forEach((id) => onMoveTaskToSprint(id, targetSprintId));
+    }
+    setSelectedTaskIds([]);
+  };
+
+  const handleBulkDelete = () => {
+    if (
+      confirm(
+        `Bạn có chắc chắn muốn xóa ${selectedTaskIds.length} việc đã chọn?`,
+      )
+    ) {
+      if (onBulkDeleteTasks) {
+        onBulkDeleteTasks(selectedTaskIds);
+      }
+      setSelectedTaskIds([]);
+    }
+  };
 
   return (
     <Box
       className="hide-scrollbar"
       style={{
         flex: 1,
-        overflowY: 'auto',
-        padding: '24px 32px',
-        backgroundColor: '#090d16',
+        overflowY: "auto",
+        padding: "24px 24px 80px",
+        backgroundColor: "#f8fafc",
         minHeight: 0,
       }}
     >
-      <Box style={{ maxWidth: 1040, margin: '0 auto', width: '100%' }}>
-        {/* Header Backlog & Sprints */}
-        <Group justify="space-between" mb="xl">
+      <Box style={{ maxWidth: 1100, margin: "0 auto" }}>
+        {/* Header Toolbar */}
+        <Group justify="space-between" mb="lg" wrap="wrap" gap="md">
           <Box>
-            <Text fw={700} fz={18} c="#f0f6fc">
-              Lập kế hoạch Sprint & Backlog
+            <Text fw={800} fz={20} c="#0f172a">
+              Quản Lý Backlog &amp; Chu Kỳ Sprints
             </Text>
-            <Text fz={12.5} c="#8b949e" mt={2}>
-              Tổ chức công việc vào các chu kỳ phát triển (Sprint) hoặc quản lý tồn đọng (Backlog).
+            <Text fz={13} c="#64748b">
+              Lập kế hoạch phân bổ công việc vào các chu kỳ Sprint hoặc đưa vào
+              Backlog tồn đọng
             </Text>
           </Box>
 
           <Group gap="xs">
             {canCreateBacklog && (
               <Button
-                size="xs"
+                size="sm"
                 variant="default"
-                leftSection={<IconPlus size={14} />}
+                radius="md"
+                leftSection={<IconPlus size={15} />}
                 onClick={() => onOpenCreateTask(null)}
-                styles={{
-                  root: {
-                    backgroundColor: '#161b22',
-                    borderColor: 'rgba(255, 255, 255, 0.12)',
-                    color: '#c9d1d9',
-                    borderRadius: 8,
-                    '&:hover': {
-                      backgroundColor: '#21262d',
-                      color: '#ffffff',
-                    },
-                  },
-                }}
+                style={{ fontWeight: 600 }}
               >
                 Thêm vào Backlog
               </Button>
@@ -104,19 +192,13 @@ export function BacklogView({
 
             {canManageSprint && (
               <Button
-                size="xs"
+                size="sm"
                 variant="filled"
-                leftSection={<IconPlus size={14} />}
+                color="vntez"
+                radius="md"
+                leftSection={<IconPlus size={15} />}
                 onClick={onOpenCreateSprint}
-                styles={{
-                  root: {
-                    backgroundColor: '#1f6feb',
-                    color: '#ffffff',
-                    fontWeight: 600,
-                    borderRadius: 8,
-                    '&:hover': { backgroundColor: '#388bfd' },
-                  },
-                }}
+                style={{ fontWeight: 600 }}
               >
                 Tạo Sprint mới
               </Button>
@@ -128,489 +210,287 @@ export function BacklogView({
         <Stack gap="lg">
           {sprints.map((sprint) => {
             const sprintTasks = tasks.filter((t) => t.sprintId === sprint.id);
-            const totalPoints = sprintTasks.reduce((sum, t) => sum + (t.storyPoints || 0), 0);
-            const doneTasks = sprintTasks.filter((t) => t.status === 'done');
-            const donePoints = doneTasks.reduce((sum, t) => sum + (t.storyPoints || 0), 0);
-            const progressPercent =
-              sprintTasks.length > 0 ? Math.round((doneTasks.length / sprintTasks.length) * 100) : 0;
-
-            const isCompleted = sprint.status === 'completed';
-            const isActive = sprint.status === 'active';
+            const isDragOver = dragOverTargetId === sprint.id;
 
             return (
-              <Paper
+              <SprintItem
                 key={sprint.id}
-                p="md"
-                bg="#161b22"
-                radius="md"
-                style={{
-                  border: `1px solid ${isActive ? 'rgba(56, 139, 253, 0.4)' : 'rgba(255, 255, 255, 0.08)'}`,
-                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.25)',
-                }}
-              >
-                {/* Sprint Header */}
-                <Group justify="space-between" mb="xs" wrap="wrap">
-                  <Group gap="xs">
-                    <Text fw={700} fz={15} c="#f0f6fc">
-                      {sprint.name}
-                    </Text>
-
-                    <Badge
-                      size="xs"
-                      variant="filled"
-                      styles={{
-                        root: {
-                          backgroundColor: isActive
-                            ? 'rgba(46, 160, 67, 0.15)'
-                            : isCompleted
-                              ? 'rgba(139, 148, 158, 0.15)'
-                              : 'rgba(56, 139, 253, 0.15)',
-                          color: isActive ? '#3fb950' : isCompleted ? '#8b949e' : '#58a6ff',
-                          border: `1px solid ${isActive ? '#2ea043' : isCompleted ? '#30363d' : '#388bfd'}44`,
-                          fontWeight: 600,
-                          fontSize: 10,
-                          textTransform: 'uppercase',
-                        },
-                      }}
-                    >
-                      {sprint.status}
-                    </Badge>
-
-                    {sprint.startDate && sprint.endDate && (
-                      <Group gap={4}>
-                        <IconCalendar size={13} color="#8b949e" />
-                        <Text fz={11.5} c="#8b949e">
-                          {sprint.startDate} ~ {sprint.endDate}
-                        </Text>
-                      </Group>
-                    )}
-                  </Group>
-
-                  <Group gap="xs">
-                    <Badge
-                      size="xs"
-                      variant="outline"
-                      styles={{
-                        root: {
-                          backgroundColor: 'rgba(255, 255, 255, 0.04)',
-                          borderColor: 'rgba(255, 255, 255, 0.1)',
-                          color: '#8b949e',
-                          fontWeight: 600,
-                        },
-                      }}
-                    >
-                      {sprintTasks.length} việc • {totalPoints} SP
-                    </Badge>
-
-                    {canManageSprint && (
-                      <>
-                        {sprint.status === 'planned' && (
-                          <Button
-                            size="compact-xs"
-                            variant="filled"
-                            leftSection={<IconPlayerPlay size={12} />}
-                            onClick={() => onStartSprint(sprint.id)}
-                            styles={{
-                              root: {
-                                backgroundColor: '#238636',
-                                color: '#ffffff',
-                                fontWeight: 600,
-                                borderRadius: 6,
-                                '&:hover': { backgroundColor: '#2ea043' },
-                              },
-                            }}
-                          >
-                            Bắt đầu Sprint
-                          </Button>
-                        )}
-                        {sprint.status === 'active' && (
-                          <Button
-                            size="compact-xs"
-                            variant="default"
-                            leftSection={<IconCheck size={12} color="#58a6ff" />}
-                            onClick={() => onCompleteSprint(sprint.id)}
-                            styles={{
-                              root: {
-                                backgroundColor: '#21262d',
-                                borderColor: 'rgba(255, 255, 255, 0.12)',
-                                color: '#f0f6fc',
-                                borderRadius: 6,
-                                '&:hover': { backgroundColor: '#30363d' },
-                              },
-                            }}
-                          >
-                            Hoàn thành Sprint
-                          </Button>
-                        )}
-
-                        <Menu shadow="md" width={160} position="bottom-end">
-                          <Menu.Target>
-                            <ActionIcon size="sm" variant="subtle" color="gray">
-                              <IconDotsVertical size={14} />
-                            </ActionIcon>
-                          </Menu.Target>
-                          <Menu.Dropdown bg="#161b22" style={{ borderColor: '#30363d' }}>
-                            <Menu.Item
-                              color="red"
-                              leftSection={<IconTrash size={13} />}
-                              onClick={() => onDeleteSprint(sprint.id)}
-                            >
-                              Xóa Sprint
-                            </Menu.Item>
-                          </Menu.Dropdown>
-                        </Menu>
-                      </>
-                    )}
-                  </Group>
-                </Group>
-
-                {sprint.goal && (
-                  <Text fz={12} c="#8b949e" mb="sm" fs="italic">
-                    Mục tiêu: {sprint.goal}
-                  </Text>
-                )}
-
-                {/* Progress bar */}
-                {sprintTasks.length > 0 && (
-                  <Box mb="md">
-                    <Group justify="space-between" mb={4}>
-                      <Text fz={11} c="#8b949e">
-                        Tiến độ: {doneTasks.length}/{sprintTasks.length} hoàn thành ({progressPercent}%)
-                      </Text>
-                      <Text fz={11} c="#8b949e">
-                        {donePoints}/{totalPoints} SP
-                      </Text>
-                    </Group>
-                    <Progress
-                      value={progressPercent}
-                      size="xs"
-                      color="teal"
-                      radius="xl"
-                      styles={{ root: { backgroundColor: 'rgba(255, 255, 255, 0.08)' } }}
-                    />
-                  </Box>
-                )}
-
-                {/* Danh sách task trong Sprint */}
-                <Stack gap={6}>
-                  {sprintTasks.length === 0 ? (
-                    <Box
-                      py={24}
-                      ta="center"
-                      style={{
-                        border: '1px dashed rgba(255, 255, 255, 0.08)',
-                        borderRadius: 6,
-                      }}
-                    >
-                      <Text fz={12} c="#6e7681">
-                        Chưa có công việc nào trong Sprint này. Thêm việc hoặc chuyển từ Backlog vào.
-                      </Text>
-                    </Box>
-                  ) : (
-                    sprintTasks.map((t) => (
-                      <Paper
-                        key={t.id}
-                        px="md"
-                        py={10}
-                        bg="#0d1117"
-                        radius="sm"
-                        style={{
-                          border: '1px solid rgba(255, 255, 255, 0.08)',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          transition: 'all 0.12s ease',
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = '#161b22';
-                          e.currentTarget.style.borderColor = 'rgba(88, 166, 255, 0.4)';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = '#0d1117';
-                          e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
-                        }}
-                        onClick={() => onSelectTask(t)}
-                      >
-                        <Group gap="sm" style={{ flex: 1, minWidth: 0 }}>
-                          <Text
-                            fz={11.5}
-                            fw={600}
-                            c="#58a6ff"
-                            ff="var(--font-geist-mono), monospace"
-                            style={{ flexShrink: 0 }}
-                          >
-                            {t.id}
-                          </Text>
-                          <Text fz={13} fw={500} c="#e6edf3" truncate>
-                            {t.title}
-                          </Text>
-                        </Group>
-
-                        <Group gap="xs" style={{ flexShrink: 0 }}>
-                          <Badge
-                            size="xs"
-                            variant="filled"
-                            styles={{
-                              root: {
-                                backgroundColor:
-                                  t.status === 'done'
-                                    ? 'rgba(46, 160, 67, 0.15)'
-                                    : t.status === 'in_progress'
-                                      ? 'rgba(56, 139, 253, 0.15)'
-                                      : 'rgba(255, 255, 255, 0.06)',
-                                color:
-                                  t.status === 'done'
-                                    ? '#3fb950'
-                                    : t.status === 'in_progress'
-                                      ? '#79c0ff'
-                                      : '#8b949e',
-                                fontSize: 10,
-                                fontWeight: 600,
-                              },
-                            }}
-                          >
-                            {t.status.toUpperCase()}
-                          </Badge>
-
-                          {typeof t.storyPoints === 'number' && (
-                            <Badge
-                              size="xs"
-                              variant="outline"
-                              styles={{
-                                root: {
-                                  backgroundColor: 'rgba(255, 255, 255, 0.03)',
-                                  borderColor: 'rgba(255, 255, 255, 0.08)',
-                                  color: '#8b949e',
-                                  fontSize: 10,
-                                },
-                              }}
-                            >
-                              {t.storyPoints} SP
-                            </Badge>
-                          )}
-
-                          {t.assignee && (
-                            <Avatar
-                              src={t.assignee.avatar_url}
-                              size={20}
-                              radius="xl"
-                              style={{ border: '1px solid #30363d' }}
-                            >
-                              {(t.assignee.name || t.assignee.login).slice(0, 2).toUpperCase()}
-                            </Avatar>
-                          )}
-
-                          {canManageSprint && (
-                            <Tooltip label="Chuyển về Backlog" withArrow>
-                              <ActionIcon
-                                size="xs"
-                                variant="subtle"
-                                color="gray"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onMoveTaskToSprint(t.id, null);
-                                }}
-                              >
-                                <IconArrowRight size={13} />
-                              </ActionIcon>
-                            </Tooltip>
-                          )}
-                        </Group>
-                      </Paper>
-                    ))
-                  )}
-
-                  <Button
-                    size="compact-xs"
-                    variant="subtle"
-                    color="gray"
-                    leftSection={<IconPlus size={12} />}
-                    onClick={() => onOpenCreateTask(sprint.id)}
-                    style={{ alignSelf: 'flex-start', marginTop: 4, color: '#58a6ff', fontWeight: 600 }}
-                  >
-                    Thêm việc vào {sprint.name}
-                  </Button>
-                </Stack>
-              </Paper>
+                sprint={sprint}
+                sprintTasks={sprintTasks}
+                allSprints={sprints}
+                selectedTaskIds={selectedTaskIds}
+                isDragOver={isDragOver}
+                canManageSprint={canManageSprint}
+                onSelectTask={onSelectTask}
+                onOpenCreateTask={onOpenCreateTask}
+                onUpdateSprintStatus={onUpdateSprintStatus}
+                onMoveTaskToSprint={onMoveTaskToSprint}
+                onToggleSelectTask={toggleSelectTask}
+                onToggleSelectAllSprint={toggleSelectAllSprint}
+                onDragStart={handleDragStart}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              />
             );
           })}
 
-          {/* BACKLOG SECTION */}
-          <Paper
-            p="md"
-            bg="#161b22"
-            radius="md"
-            style={{
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.25)',
-            }}
-          >
-            <Group justify="space-between" mb="sm">
-              <Group gap="xs">
-                <Text fw={700} fz={15} c="#f0f6fc">
-                  📁 Backlog (Tồn đọng dự án)
-                </Text>
-                <Badge
-                  size="xs"
-                  variant="filled"
-                  styles={{
-                    root: {
-                      backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                      color: '#c9d1d9',
-                      fontWeight: 600,
-                      fontSize: 10,
-                    },
-                  }}
-                >
-                  {backlogTasks.length} việc
-                </Badge>
-              </Group>
+          {/* CỘT BACKLOG ITEM CONTAINER */}
+          {(() => {
+            const isDragOver = dragOverTargetId === "backlog";
+            const backlogTaskIds = backlogTasks.map((t) => t.id);
+            const allBacklogSelected =
+              backlogTaskIds.length > 0 &&
+              backlogTaskIds.every((id) => selectedTaskIds.includes(id));
+            const someBacklogSelected =
+              backlogTaskIds.some((id) => selectedTaskIds.includes(id)) &&
+              !allBacklogSelected;
 
-              {canCreateBacklog && (
-                <Button
-                  size="compact-xs"
-                  variant="default"
-                  leftSection={<IconPlus size={12} />}
-                  onClick={() => onOpenCreateTask(null)}
-                  styles={{
-                    root: {
-                      backgroundColor: '#21262d',
-                      borderColor: 'rgba(255, 255, 255, 0.1)',
-                      color: '#c9d1d9',
-                      borderRadius: 6,
-                      '&:hover': { backgroundColor: '#30363d', color: '#ffffff' },
-                    },
-                  }}
+            return (
+              <Paper
+                p="md"
+                bg="#ffffff"
+                radius="md"
+                onDragOver={(e) => handleDragOver(e, "backlog")}
+                onDragLeave={handleDragLeave}
+                onDrop={(e) => handleDrop(e, null)}
+                style={{
+                  border: `2px ${isDragOver ? "dashed #fb291a" : "solid #e2e8f0"}`,
+                  backgroundColor: isDragOver ? "#fff1f0" : "#ffffff",
+                  boxShadow: "0 1px 3px rgba(0, 0, 0, 0.04)",
+                  transition: "all 0.15s ease",
+                  userSelect: "none",
+                }}
+              >
+                <Group
+                  justify="space-between"
+                  mb="sm"
+                  wrap="nowrap"
+                  align="center"
+                  style={{ userSelect: "none" }}
                 >
-                  Thêm vào Backlog
-                </Button>
-              )}
-            </Group>
+                  <Group gap="sm" wrap="nowrap" align="center">
+                    {backlogTasks.length > 0 && (
+                      <Checkbox
+                        size="xs"
+                        checked={allBacklogSelected}
+                        indeterminate={someBacklogSelected}
+                        onChange={toggleSelectAllBacklog}
+                        aria-label="Chọn tất cả task trong Backlog"
+                      />
+                    )}
 
-            <Stack gap={6}>
-              {backlogTasks.length === 0 ? (
-                <Box
-                  py={28}
-                  ta="center"
-                  style={{
-                    border: '1px dashed rgba(255, 255, 255, 0.08)',
-                    borderRadius: 6,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 4,
-                  }}
-                >
-                  <IconInbox size={20} color="#6e7681" />
-                  <Text fz={12} c="#6e7681">
-                    Backlog đang trống.
-                  </Text>
-                </Box>
-              ) : (
-                backlogTasks.map((t) => (
-                  <Paper
-                    key={t.id}
-                    px="md"
-                    py={10}
-                    bg="#0d1117"
-                    radius="sm"
-                    style={{
-                      border: '1px solid rgba(255, 255, 255, 0.08)',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      transition: 'all 0.12s ease',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = '#161b22';
-                      e.currentTarget.style.borderColor = 'rgba(88, 166, 255, 0.4)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = '#0d1117';
-                      e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
-                    }}
-                    onClick={() => onSelectTask(t)}
-                  >
-                    <Group gap="sm" style={{ flex: 1, minWidth: 0 }}>
-                      <Text
-                        fz={11.5}
-                        fw={600}
-                        c="#8b949e"
-                        ff="var(--font-geist-mono), monospace"
-                        style={{ flexShrink: 0 }}
-                      >
-                        {t.id}
+                    <Text fw={700} fz={16} c="#0f172a">
+                      📁 Backlog (Tồn đọng dự án)
+                    </Text>
+                    <Badge size="sm" variant="light" color="gray">
+                      {backlogTasks.length} việc
+                    </Badge>
+                    {totalBacklogPoints > 0 && (
+                      <Badge size="sm" variant="outline" color="vntez">
+                        {totalBacklogPoints} SP
+                      </Badge>
+                    )}
+                  </Group>
+
+                  {canCreateBacklog && (
+                    <Button
+                      size="xs"
+                      variant="default"
+                      radius="md"
+                      leftSection={<IconPlus size={13} />}
+                      onClick={() => onOpenCreateTask(null)}
+                      style={{ fontWeight: 600 }}
+                    >
+                      Thêm vào Backlog
+                    </Button>
+                  )}
+                </Group>
+
+                <Stack gap={6}>
+                  {backlogTasks.length === 0 ? (
+                    <Box
+                      py={32}
+                      ta="center"
+                      style={{
+                        border: "2px dashed #cbd5e1",
+                        borderRadius: 8,
+                        backgroundColor: isDragOver ? "#fff1f0" : "#f8fafc",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 6,
+                        userSelect: "none",
+                      }}
+                    >
+                      <IconInbox size={24} color="#94a3b8" />
+                      <Text fz={13} c="#64748b">
+                        Backlog đang trống. Kéo thả việc vào đây hoặc bấm
+                        &quot;Thêm vào Backlog&quot;.
                       </Text>
-                      <Text fz={13} fw={500} c="#e6edf3" truncate>
-                        {t.title}
-                      </Text>
-                    </Group>
+                    </Box>
+                  ) : (
+                    backlogTasks.map((t) => {
+                      const isSelected = selectedTaskIds.includes(t.id);
+                      const prio =
+                        PRIORITY_BADGE[t.priority] || PRIORITY_BADGE.medium;
 
-                    <Group gap="xs" style={{ flexShrink: 0 }}>
-                      {typeof t.storyPoints === 'number' && (
-                        <Badge
-                          size="xs"
-                          variant="outline"
-                          styles={{
-                            root: {
-                              backgroundColor: 'rgba(255, 255, 255, 0.03)',
-                              borderColor: 'rgba(255, 255, 255, 0.08)',
-                              color: '#8b949e',
-                              fontSize: 10,
-                            },
+                      return (
+                        <Paper
+                          key={t.id}
+                          px="md"
+                          py={10}
+                          bg={isSelected ? "#fff1f0" : "#ffffff"}
+                          radius="sm"
+                          draggable
+                          onDragStart={(e) => handleDragStart(e, t.id)}
+                          style={{
+                            border: `1px solid ${isSelected ? "#fb291a" : "#e2e8f0"}`,
+                            cursor: "grab",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            transition: "all 0.12s ease",
+                            userSelect: "none",
                           }}
+                          onMouseEnter={(e) => {
+                            if (!isSelected) {
+                              e.currentTarget.style.backgroundColor = "#f8fafc";
+                              e.currentTarget.style.borderColor = "#ffc5be";
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!isSelected) {
+                              e.currentTarget.style.backgroundColor = "#ffffff";
+                              e.currentTarget.style.borderColor = "#e2e8f0";
+                            }
+                          }}
+                          onClick={() => onSelectTask(t)}
                         >
-                          {t.storyPoints} SP
-                        </Badge>
-                      )}
+                          <Group gap="sm" style={{ flex: 1, minWidth: 0 }}>
+                            <IconGripVertical
+                              size={15}
+                              color="#94a3b8"
+                              style={{ cursor: "grab", flexShrink: 0 }}
+                            />
 
-                      {/* Dropdown chuyển vào Sprint */}
-                      {canManageSprint && sprints.length > 0 && (
-                        <Menu shadow="md" width={180} position="bottom-end">
-                          <Menu.Target>
-                            <Button
-                              size="compact-xs"
-                              variant="subtle"
-                              color="blue"
-                              rightSection={<IconArrowRight size={11} />}
+                            <Checkbox
+                              size="xs"
+                              checked={isSelected}
                               onClick={(e) => e.stopPropagation()}
-                              styles={{
-                                root: {
-                                  color: '#58a6ff',
-                                  '&:hover': { backgroundColor: 'rgba(56, 139, 253, 0.1)' },
-                                },
-                              }}
+                              onChange={() => toggleSelectTask(t.id)}
+                              aria-label={`Chọn task ${t.id}`}
+                            />
+
+                            <Text
+                              fz={12.5}
+                              fw={700}
+                              c="#fb291a"
+                              ff="var(--font-geist-mono), monospace"
+                              style={{ flexShrink: 0 }}
                             >
-                              Vào Sprint
-                            </Button>
-                          </Menu.Target>
-                          <Menu.Dropdown bg="#161b22" style={{ borderColor: '#30363d' }}>
-                            <Menu.Label c="#8b949e">Chọn Sprint</Menu.Label>
-                            {sprints.map((s) => (
-                              <Menu.Item
-                                key={s.id}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onMoveTaskToSprint(t.id, s.id);
+                              {t.id}
+                            </Text>
+
+                            <Text fz={14} fw={600} c="#0f172a" truncate>
+                              {t.title}
+                            </Text>
+                          </Group>
+
+                          <Group
+                            gap="xs"
+                            style={{ flexShrink: 0, userSelect: "none" }}
+                          >
+                            {/* Avatar Người thực hiện với getGitHubAvatarUrl */}
+                            <Tooltip
+                              label={`Người thực hiện: ${t.assignee?.name || t.assignee?.login || "Chưa gán"}`}
+                              withArrow
+                            >
+                              <Avatar
+                                src={getGitHubAvatarUrl(t.assignee, 48)}
+                                size={22}
+                                radius="xl"
+                                style={{
+                                  border: "1px solid #cbd5e1",
+                                  backgroundColor: "#fff1f0",
+                                  color: "#fb291a",
+                                  fontSize: 10,
+                                  fontWeight: 700,
                                 }}
                               >
-                                {s.name}
-                              </Menu.Item>
-                            ))}
-                          </Menu.Dropdown>
-                        </Menu>
-                      )}
-                    </Group>
-                  </Paper>
-                ))
-              )}
-            </Stack>
-          </Paper>
+                                {t.assignee?.login?.slice(0, 2).toUpperCase() ||
+                                  "?"}
+                              </Avatar>
+                            </Tooltip>
+
+                            <Badge
+                              size="xs"
+                              variant="dot"
+                              color={prio.color}
+                              styles={{ root: { textTransform: "none" } }}
+                            >
+                              {prio.label}
+                            </Badge>
+
+                            <Badge size="xs" variant="outline" color="gray">
+                              {getStoryPointsForTask(t)} SP
+                            </Badge>
+
+                            {canManageSprint && sprints.length > 0 && (
+                              <Menu shadow="sm" position="bottom-end">
+                                <Menu.Target>
+                                  <ActionIcon
+                                    size="xs"
+                                    variant="subtle"
+                                    color="gray"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <IconDotsVertical size={13} />
+                                  </ActionIcon>
+                                </Menu.Target>
+                                <Menu.Dropdown
+                                  bg="#ffffff"
+                                  style={{ borderColor: "#e2e8f0" }}
+                                >
+                                  <Menu.Label fz={11}>
+                                    Đưa vào Sprint
+                                  </Menu.Label>
+                                  {sprints.map((s) => (
+                                    <Menu.Item
+                                      key={s.id}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        onMoveTaskToSprint(t.id, s.id);
+                                      }}
+                                    >
+                                      🏃 {s.name}
+                                    </Menu.Item>
+                                  ))}
+                                </Menu.Dropdown>
+                              </Menu>
+                            )}
+                          </Group>
+                        </Paper>
+                      );
+                    })
+                  )}
+                </Stack>
+              </Paper>
+            );
+          })()}
         </Stack>
       </Box>
+
+      {/* FLOATING BULK ACTIONS TOOLBAR */}
+      <FloatingBulkActionBar
+        selectedCount={selectedTaskIds.length}
+        sprints={sprints}
+        canManageSprint={canManageSprint}
+        onBulkMove={handleBulkMove}
+        onBulkDelete={handleBulkDelete}
+        onClearSelection={() => setSelectedTaskIds([])}
+      />
     </Box>
   );
 }

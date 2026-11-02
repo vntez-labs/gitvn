@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Button, Menu, Loader } from '@mantine/core';
-import { IconGitBranch, IconChevronDown } from '@tabler/icons-react';
-import { useDashboardStore } from '@/store/dashboard.store';
-import axios from 'axios';
+import { Button, Loader, Menu } from "@mantine/core";
+import { IconChevronDown, IconGitBranch } from "@tabler/icons-react";
+import axios from "axios";
+import { useState } from "react";
+import { useDashboardStore } from "@/store/dashboard.store";
 
 export function BranchSelector() {
   const { selectedRepo, currentBranch, changeBranch } = useDashboardStore();
@@ -12,18 +12,18 @@ export function BranchSelector() {
   const [loading, setLoading] = useState(false);
 
   if (!selectedRepo) return null;
-  const defaultBranch = (selectedRepo as any)?.default_branch || 'main';
+  const defaultBranch = (selectedRepo as any)?.default_branch || "main";
 
   const handleOpen = async () => {
     if (branches.length > 0) return;
     setLoading(true);
     try {
       const { data } = await axios.get(
-        `/api/github/branches?owner=${selectedRepo.owner.login}&repo=${selectedRepo.name}`
+        `/api/github/branches?owner=${selectedRepo.owner.login}&repo=${selectedRepo.name}`,
       );
       setBranches(data.branches || []);
     } catch (err) {
-      console.error('Lỗi lấy branches:', err);
+      console.error("Lỗi lấy branches:", err);
     } finally {
       setLoading(false);
     }
@@ -33,18 +33,23 @@ export function BranchSelector() {
     <Menu shadow="md" width={220} onOpen={handleOpen}>
       <Menu.Target>
         <Button
-          size="compact-xs"
-          variant="subtle"
-          color="gray"
-          leftSection={<IconGitBranch size={13} color="#8b949e" />}
+          size="compact-sm"
+          variant="default"
+          leftSection={<IconGitBranch size={14} color="#64748b" />}
           rightSection={
-            loading ? <Loader size={10} color="gray" /> : <IconChevronDown size={11} color="#8b949e" />
+            loading ? (
+              <Loader size={12} color="gray" />
+            ) : (
+              <IconChevronDown size={13} color="#64748b" />
+            )
           }
           styles={{
             root: {
-              backgroundColor: 'rgba(255,255,255,0.05)',
-              color: '#c9d1d9',
-              fontFamily: 'monospace',
+              backgroundColor: "#f8fafc",
+              borderColor: "#e2e8f0",
+              color: "#1e293b",
+              fontFamily: "monospace",
+              fontSize: 13,
               fontWeight: 500,
             },
           }}
@@ -53,22 +58,30 @@ export function BranchSelector() {
         </Button>
       </Menu.Target>
 
-      <Menu.Dropdown bg="#161b22" style={{ borderColor: '#30363d', maxHeight: 300, overflowY: 'auto' }}>
-        <Menu.Label c="#8b949e">Select Branch ({branches.length || 1})</Menu.Label>
+      <Menu.Dropdown
+        bg="#ffffff"
+        style={{ borderColor: "#e2e8f0", maxHeight: 300, overflowY: "auto" }}
+      >
+        <Menu.Label c="#64748b" fz={12}>
+          Select Branch ({branches.length || 1})
+        </Menu.Label>
         {branches.length > 0 ? (
           branches.map((b) => (
             <Menu.Item
               key={b.name}
-              leftSection={<IconGitBranch size={13} />}
+              leftSection={<IconGitBranch size={14} />}
               onClick={() => changeBranch(b.name)}
-              c={currentBranch === b.name ? '#58a6ff' : '#c9d1d9'}
-              style={{ fontSize: 12, fontFamily: 'monospace' }}
+              c={currentBranch === b.name ? "#fb291a" : "#1e293b"}
+              style={{ fontSize: 13, fontFamily: "monospace" }}
             >
-              {b.name} {b.name === defaultBranch && '(default)'}
+              {b.name} {b.name === defaultBranch && "(default)"}
             </Menu.Item>
           ))
         ) : (
-          <Menu.Item c="#58a6ff" style={{ fontSize: 12, fontFamily: 'monospace' }}>
+          <Menu.Item
+            c="#fb291a"
+            style={{ fontSize: 13, fontFamily: "monospace" }}
+          >
             {defaultBranch} (default)
           </Menu.Item>
         )}

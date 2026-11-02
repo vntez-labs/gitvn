@@ -1,50 +1,53 @@
-import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const owner = searchParams.get('owner');
-  const repo = searchParams.get('repo');
-  const state = searchParams.get('state') || 'open';
+  const owner = searchParams.get("owner");
+  const repo = searchParams.get("repo");
+  const state = searchParams.get("state") || "open";
 
   if (!owner || !repo) {
-    return NextResponse.json({ error: 'Thiếu owner hoặc repo' }, { status: 400 });
+    return NextResponse.json(
+      { error: "Thiếu owner hoặc repo" },
+      { status: 400 },
+    );
   }
 
   const cookieStore = await cookies();
-  const token = cookieStore.get('github_access_token')?.value;
+  const token = cookieStore.get("github_access_token")?.value;
 
   if (!token) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const headers = {
     Authorization: `Bearer ${token}`,
-    Accept: 'application/vnd.github+json',
+    Accept: "application/vnd.github+json",
   };
 
   try {
     const issueStatesMap: Record<string, string[]> = {
-      open: ['OPEN'],
-      closed: ['CLOSED'],
-      all: ['OPEN', 'CLOSED'],
+      open: ["OPEN"],
+      closed: ["CLOSED"],
+      all: ["OPEN", "CLOSED"],
     };
 
-    const targetStates = issueStatesMap[state] || ['OPEN'];
+    const targetStates = issueStatesMap[state] || ["OPEN"];
 
     const [res, gqlRes] = await Promise.all([
       fetch(
         `https://api.github.com/repos/${owner}/${repo}/issues?state=${state}&per_page=50&sort=created&direction=desc`,
         {
           headers,
-          cache: 'no-store',
-        }
+          cache: "no-store",
+        },
       ),
-      fetch('https://api.github.com/graphql', {
-        method: 'POST',
+      fetch("https://api.github.com/graphql", {
+        method: "POST",
         headers: {
           ...headers,
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           query: `
@@ -58,7 +61,7 @@ export async function GET(request: Request) {
           `,
           variables: { owner, name: repo, states: targetStates },
         }),
-        cache: 'no-store',
+        cache: "no-store",
       })
         .then((r) => (r.ok ? r.json() : null))
         .catch(() => null),
@@ -75,11 +78,12 @@ export async function GET(request: Request) {
 
     // Lọc bỏ Pull Request ra khỏi Issues
     const issues = rawData.filter((item: any) => !item.pull_request);
-    const totalCount = gqlRes?.data?.repository?.issues?.totalCount ?? issues.length;
+    const totalCount =
+      gqlRes?.data?.repository?.issues?.totalCount ?? issues.length;
 
     return NextResponse.json({ issues, totalCount });
   } catch (error) {
-    console.error('Lỗi lấy issues:', error);
+    console.error("Lỗi lấy issues:", error);
     return NextResponse.json({ issues: [], totalCount: 0 }, { status: 200 });
   }
 }

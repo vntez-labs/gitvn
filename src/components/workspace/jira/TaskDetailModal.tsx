@@ -1,32 +1,35 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
 import {
-  Modal,
-  Box,
-  Group,
-  Text,
   Badge,
+  Box,
   Button,
-  Stack,
-  TextInput,
-  Textarea,
-  Select,
-  NumberInput,
-  Tabs,
-  Avatar,
   Divider,
-} from '@mantine/core';
+  Group,
+  Modal,
+  Stack,
+  Text,
+  TextInput,
+} from "@mantine/core";
+import { IconCheck, IconTrash } from "@tabler/icons-react";
+import { useEffect, useMemo, useState } from "react";
+import type {
+  JiraSprint,
+  JiraTask,
+  TaskAssignee,
+  TaskPriority,
+  TaskStatus,
+} from "@/interfaces/jira";
+import { getGitHubAvatarUrl } from "@/lib/avatar";
 import {
-  IconCheck,
-  IconTrash,
-  IconEdit,
-  IconEye,
-  IconClock,
-} from '@tabler/icons-react';
-import { JiraTask, TaskPriority, TaskStatus, JiraSprint } from '@/interfaces/jira';
-import { MarkdownViewer } from '@/components/MarkdownViewer';
-import { formatRelativeTime } from '@/lib/time';
+  PRIORITY_OPTIONS,
+  PRIORITY_TO_POINTS,
+  pointsToPriority,
+} from "@/lib/jira-priority";
+import { formatRelativeTime } from "@/lib/time";
+import { TaskAssigneeMeta } from "./TaskAssigneeMeta";
+import { TaskDescriptionEditor } from "./TaskDescriptionEditor";
+import { TaskMetaFields } from "./TaskMetaFields";
 
 interface TaskDetailModalProps {
   opened: boolean;
@@ -36,21 +39,17 @@ interface TaskDetailModalProps {
   onUpdateTask: (updatedTask: JiraTask) => void;
   onDeleteTask: (taskId: string) => void;
   canEdit: boolean;
+  members?: TaskAssignee[];
 }
 
-const PRIORITY_OPTIONS = [
-  { value: 'urgent', label: '🔴 Khẩn cấp (Urgent)' },
-  { value: 'high', label: '🟠 Cao (High)' },
-  { value: 'medium', label: '🔵 Trung bình (Medium)' },
-  { value: 'low', label: '⚪ Thấp (Low)' },
-];
+export const PRIORITY_DEFAULT_POINTS = PRIORITY_TO_POINTS;
 
 const STATUS_OPTIONS = [
-  { value: 'backlog', label: 'Backlog' },
-  { value: 'todo', label: 'To Do' },
-  { value: 'in_progress', label: 'In Progress' },
-  { value: 'review', label: 'In Review' },
-  { value: 'done', label: 'Done' },
+  { value: "backlog", label: "Backlog" },
+  { value: "todo", label: "To Do" },
+  { value: "in_progress", label: "In Progress" },
+  { value: "review", label: "In Review" },
+  { value: "done", label: "Done" },
 ];
 
 export function TaskDetailModal({
@@ -61,54 +60,86 @@ export function TaskDetailModal({
   onUpdateTask,
   onDeleteTask,
   canEdit,
+  members = [],
 }: TaskDetailModalProps) {
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [status, setStatus] = useState<TaskStatus>('todo');
-  const [priority, setPriority] = useState<TaskPriority>('medium');
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [status, setStatus] = useState<TaskStatus>("todo");
+  const [priority, setPriority] = useState<TaskPriority>("medium");
   const [sprintId, setSprintId] = useState<string | null>(null);
-  const [storyPoints, setStoryPoints] = useState<number | ''>(3);
-  const [assigneeName, setAssigneeName] = useState('');
-  const [descTab, setDescTab] = useState<string | null>('preview');
+  const [storyPoints, setStoryPoints] = useState<number | "">("");
+  const [assignee, setAssignee] = useState<TaskAssignee | undefined>(undefined);
 
   useEffect(() => {
     if (task) {
       setTitle(task.title);
-      setDescription(task.description || '');
+      setDescription(task.description || "");
       setStatus(task.status);
       setPriority(task.priority);
       setSprintId(task.sprintId);
-      setStoryPoints(task.storyPoints ?? '');
-      setAssigneeName(task.assignee?.name || task.assignee?.login || '');
-      setDescTab(task.description ? 'preview' : 'edit');
+      setStoryPoints(
+        typeof task.storyPoints === "number" ? task.storyPoints : "",
+      );
+      setAssignee(task.assignee);
     }
   }, [task]);
+
+  const memberOptions = useMemo(() => {
+    const map = new Map<string, TaskAssignee>();
+    if (task?.assignee)
+      map.set(task.assignee.login.toLowerCase(), task.assignee);
+    if (task?.reporter)
+      map.set(task.reporter.login.toLowerCase(), task.reporter);
+    for (const m of members) {
+      map.set(m.login.toLowerCase(), m);
+    }
+    return Array.from(map.values());
+  }, [members, task?.assignee, task?.reporter]);
 
   if (!task) return null;
 
   const handleSave = () => {
+    if (!title.trim()) return;
+
+    const cleanAssignee: TaskAssignee | undefined = assignee
+      ? {
+          ...assignee,
+          avatar_url: getGitHubAvatarUrl(assignee),
+        }
+      : undefined;
+
+    const cleanReporter: TaskAssignee = task.reporter
+      ? {
+          ...task.reporter,
+          avatar_url: getGitHubAvatarUrl(task.reporter),
+        }
+      : {
+          login: "unknown",
+          name: "Unknown",
+        };
+
     const updated: JiraTask = {
       ...task,
-      title: title.trim() || task.title,
-      description,
+      title: title.trim(),
+      description: description.trim(),
       status,
       priority,
       sprintId,
-      storyPoints: typeof storyPoints === 'number' ? storyPoints : undefined,
-      assignee: assigneeName.trim()
-        ? { login: assigneeName.trim(), name: assigneeName.trim() }
-        : undefined,
+      storyPoints: typeof storyPoints === "number" ? storyPoints : undefined,
+      assignee: cleanAssignee,
+      reporter: cleanReporter,
       updatedAt: new Date().toISOString(),
     };
+
     onUpdateTask(updated);
     onClose();
   };
 
   const sprintOptions = [
-    { value: 'backlog', label: '📁 Backlog (Chưa vào Sprint)' },
+    { value: "null", label: "📦 Backlog (Chưa vào Sprint)" },
     ...sprints.map((s) => ({
       value: s.id,
-      label: `${s.name} (${s.status.toUpperCase()})`,
+      label: `🏃 ${s.name} (${s.status.toUpperCase()})`,
     })),
   ];
 
@@ -123,32 +154,32 @@ export function TaskDetailModal({
             size="sm"
             styles={{
               root: {
-                backgroundColor: 'rgba(56, 139, 253, 0.15)',
-                color: '#58a6ff',
+                backgroundColor: "#fff1f0",
+                color: "#fb291a",
                 fontWeight: 700,
-                fontFamily: 'var(--font-geist-mono), monospace',
+                fontFamily: "var(--font-geist-mono), monospace",
                 borderRadius: 6,
               },
             }}
           >
             {task.id}
           </Badge>
-          <Text fw={700} fz={15} c="#f0f6fc">
+          <Text fw={700} fz={15} c="#0f172a">
             Chi tiết Công việc
           </Text>
         </Group>
       }
       styles={{
         content: {
-          backgroundColor: '#161b22',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-          color: '#f0f6fc',
+          backgroundColor: "#ffffff",
+          border: "1px solid #e2e8f0",
+          color: "#0f172a",
           borderRadius: 12,
         },
         header: {
-          backgroundColor: '#1c2128',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-          padding: '14px 20px',
+          backgroundColor: "#f8fafc",
+          borderBottom: "1px solid #e2e8f0",
+          padding: "14px 20px",
         },
         body: {
           padding: 20,
@@ -164,208 +195,87 @@ export function TaskDetailModal({
           disabled={!canEdit}
           styles={{
             input: {
-              backgroundColor: '#0d1117',
-              borderColor: 'rgba(255, 255, 255, 0.1)',
-              color: '#f0f6fc',
+              backgroundColor: "#ffffff",
+              borderColor: "#cbd5e1",
+              color: "#0f172a",
               fontWeight: 600,
               fontSize: 14,
               borderRadius: 8,
             },
-            label: { color: '#c9d1d9', fontWeight: 600, fontSize: 12, marginBottom: 4 },
+            label: {
+              color: "#334155",
+              fontWeight: 600,
+              fontSize: 12,
+              marginBottom: 4,
+            },
           }}
         />
 
-        {/* Thông số cột & trạng thái */}
-        <Group grow align="flex-start">
-          <Select
-            label="Trạng thái"
-            data={STATUS_OPTIONS}
-            value={status}
-            onChange={(val) => setStatus(val as TaskStatus)}
-            disabled={!canEdit}
-            styles={{
-              input: { backgroundColor: '#0d1117', borderColor: 'rgba(255, 255, 255, 0.1)', color: '#f0f6fc', borderRadius: 8 },
-              label: { color: '#c9d1d9', fontWeight: 600, fontSize: 12, marginBottom: 4 },
-              dropdown: { backgroundColor: '#161b22', borderColor: '#30363d' },
-            }}
-          />
+        {/* Thông số cột & trạng thái & Story Points */}
+        <TaskMetaFields
+          status={status}
+          setStatus={setStatus}
+          priority={priority}
+          setPriority={setPriority}
+          sprintId={sprintId}
+          setSprintId={setSprintId}
+          storyPoints={storyPoints}
+          setStoryPoints={setStoryPoints}
+          sprintOptions={sprintOptions}
+          canEdit={canEdit}
+        />
 
-          <Select
-            label="Mức độ ưu tiên"
-            data={PRIORITY_OPTIONS}
-            value={priority}
-            onChange={(val) => setPriority(val as TaskPriority)}
-            disabled={!canEdit}
-            styles={{
-              input: { backgroundColor: '#0d1117', borderColor: 'rgba(255, 255, 255, 0.1)', color: '#f0f6fc', borderRadius: 8 },
-              label: { color: '#c9d1d9', fontWeight: 600, fontSize: 12, marginBottom: 4 },
-              dropdown: { backgroundColor: '#161b22', borderColor: '#30363d' },
-            }}
-          />
+        {/* Mô tả hỗ trợ Markdown & Preview */}
+        <TaskDescriptionEditor
+          description={description}
+          setDescription={setDescription}
+          canEdit={canEdit}
+        />
 
-          <Select
-            label="Sprint"
-            data={sprintOptions}
-            value={sprintId || 'backlog'}
-            onChange={(val) => setSprintId(val === 'backlog' ? null : val)}
-            disabled={!canEdit}
-            styles={{
-              input: { backgroundColor: '#0d1117', borderColor: 'rgba(255, 255, 255, 0.1)', color: '#f0f6fc', borderRadius: 8 },
-              label: { color: '#c9d1d9', fontWeight: 600, fontSize: 12, marginBottom: 4 },
-              dropdown: { backgroundColor: '#161b22', borderColor: '#30363d' },
-            }}
-          />
-        </Group>
+        {/* Thông tin Meta: Người báo cáo, Người nhận, Thời gian */}
+        <TaskAssigneeMeta
+          assignee={assignee}
+          setAssignee={setAssignee}
+          reporter={task.reporter}
+          updatedAt={task.updatedAt}
+          createdAt={task.createdAt}
+          canEdit={canEdit}
+          memberOptions={memberOptions}
+        />
 
-        <Group grow align="flex-start">
-          <TextInput
-            label="Người thực hiện (Assignee)"
-            placeholder="Username GitHub..."
-            value={assigneeName}
-            onChange={(e) => setAssigneeName(e.currentTarget.value)}
-            disabled={!canEdit}
-            styles={{
-              input: { backgroundColor: '#0d1117', borderColor: 'rgba(255, 255, 255, 0.1)', color: '#f0f6fc', borderRadius: 8 },
-              label: { color: '#c9d1d9', fontWeight: 600, fontSize: 12, marginBottom: 4 },
-            }}
-          />
+        <Divider color="#e2e8f0" my={4} />
 
-          <NumberInput
-            label="Story Points (Độ khó)"
-            placeholder="1, 2, 3, 5, 8..."
-            min={0}
-            max={100}
-            value={storyPoints}
-            onChange={(val) => setStoryPoints(typeof val === 'number' ? val : '')}
-            disabled={!canEdit}
-            styles={{
-              input: { backgroundColor: '#0d1117', borderColor: 'rgba(255, 255, 255, 0.1)', color: '#f0f6fc', borderRadius: 8 },
-              label: { color: '#c9d1d9', fontWeight: 600, fontSize: 12, marginBottom: 4 },
-            }}
-          />
-        </Group>
-
-        {/* Mô tả Markdown */}
-        <Box>
-          <Group justify="space-between" mb={6}>
-            <Text fz={12} fw={600} c="#c9d1d9">
-              Mô tả chi tiết (Markdown)
-            </Text>
-            <Tabs value={descTab} onChange={setDescTab} variant="pills" color="blue">
-              <Tabs.List>
-                <Tabs.Tab value="edit" leftSection={<IconEdit size={12} />}>
-                  Chỉnh sửa
-                </Tabs.Tab>
-                <Tabs.Tab value="preview" leftSection={<IconEye size={12} />}>
-                  Xem trước
-                </Tabs.Tab>
-              </Tabs.List>
-            </Tabs>
-          </Group>
-
-          {descTab === 'edit' ? (
-            <Textarea
-              placeholder="Nhập mô tả task với định dạng Markdown (### Tiêu đề, - Danh sách, **In đậm**)..."
-              value={description}
-              onChange={(e) => setDescription(e.currentTarget.value)}
-              minRows={6}
-              disabled={!canEdit}
-              styles={{
-                input: {
-                  backgroundColor: '#0d1117',
-                  borderColor: 'rgba(255, 255, 255, 0.1)',
-                  color: '#f0f6fc',
-                  fontFamily: 'var(--font-geist-mono), monospace',
-                  fontSize: 12.5,
-                  borderRadius: 8,
-                },
-              }}
-            />
-          ) : (
-            <Box
-              p="md"
-              style={{
-                backgroundColor: '#0d1117',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                borderRadius: 8,
-                minHeight: 140,
-                maxHeight: 320,
-                overflowY: 'auto',
-                color: '#c9d1d9',
-              }}
-            >
-              {description ? (
-                <MarkdownViewer content={description} />
-              ) : (
-                <Text fz={12.5} c="#8b949e" fs="italic">
-                  Chưa có nội dung mô tả.
-                </Text>
-              )}
-            </Box>
-          )}
-        </Box>
-
-        <Divider color="rgba(255, 255, 255, 0.08)" />
-
-        {/* Footer */}
-        <Group justify="space-between" align="center">
-          <Group gap="xs">
-            <IconClock size={14} color="#8b949e" />
-            <Text fz={11.5} c="#8b949e">
-              Tạo bởi <span style={{ color: '#f0f6fc', fontWeight: 600 }}>{task.reporter?.name || task.reporter?.login || 'Admin'}</span> •{' '}
-              {formatRelativeTime(task.createdAt)}
-            </Text>
-          </Group>
-
-          <Group gap="xs">
-            {canEdit && (
-              <Button
-                variant="subtle"
-                color="red"
-                size="xs"
-                leftSection={<IconTrash size={14} />}
-                onClick={() => {
-                  if (confirm(`Bạn có chắc muốn xóa task ${task.id}?`)) {
-                    onDeleteTask(task.id);
-                    onClose();
-                  }
-                }}
-              >
-                Xóa việc
-              </Button>
-            )}
-
+        {/* Nút hành động Lưu / Xóa */}
+        <Group justify="space-between">
+          {canEdit ? (
             <Button
-              variant="default"
+              variant="subtle"
+              color="red"
               size="xs"
-              onClick={onClose}
-              styles={{
-                root: {
-                  backgroundColor: '#21262d',
-                  borderColor: 'rgba(255, 255, 255, 0.12)',
-                  color: '#c9d1d9',
-                  borderRadius: 8,
-                },
+              leftSection={<IconTrash size={14} />}
+              onClick={() => {
+                if (confirm(`Bạn có chắc chắn muốn xóa task ${task.id}?`)) {
+                  onDeleteTask(task.id);
+                  onClose();
+                }
               }}
             >
+              Xóa công việc
+            </Button>
+          ) : (
+            <Box />
+          )}
+
+          <Group gap="xs">
+            <Button variant="default" size="xs" onClick={onClose}>
               Đóng
             </Button>
-
             {canEdit && (
               <Button
-                variant="filled"
+                color="vntez"
                 size="xs"
                 leftSection={<IconCheck size={14} />}
                 onClick={handleSave}
-                styles={{
-                  root: {
-                    backgroundColor: '#238636',
-                    color: '#ffffff',
-                    fontWeight: 600,
-                    borderRadius: 8,
-                    '&:hover': { backgroundColor: '#2ea043' },
-                  },
-                }}
               >
                 Lưu thay đổi
               </Button>

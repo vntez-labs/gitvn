@@ -1,5 +1,5 @@
-export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
-export type TaskStatus = 'backlog' | 'todo' | 'in_progress' | 'review' | 'done';
+export type TaskPriority = "low" | "medium" | "high" | "urgent";
+export type TaskStatus = "backlog" | "todo" | "in_progress" | "review" | "done";
 
 export interface TaskAssignee {
   login: string;
@@ -21,7 +21,7 @@ export interface JiraTask {
   updatedAt: string;
 }
 
-export type SprintStatus = 'planned' | 'active' | 'completed';
+export type SprintStatus = "planned" | "active" | "completed";
 
 export interface JiraSprint {
   id: string;
@@ -33,7 +33,7 @@ export interface JiraSprint {
   createdAt: string;
 }
 
-export type ProjectRole = 'admin' | 'pm' | 'member' | 'viewer';
+export type ProjectRole = "admin" | "pm" | "member" | "viewer";
 
 export interface ProjectPermissions {
   // Mapping username => role

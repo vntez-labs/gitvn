@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
 
 // In-Memory Cache lưu kết quả thống kê từng repo
 interface CacheEntry {
@@ -11,9 +11,13 @@ const statsCache = new Map<string, CacheEntry>();
 const CACHE_TTL_MS = 15 * 1000; // 15s cache để dữ liệu luôn tươi mới khi refresh/switch tab
 
 // Helper parse JSON an toàn tuyệt đối
-async function safeFetchJson(url: string, headers: Record<string, string>, fallback: any = []) {
+async function safeFetchJson(
+  url: string,
+  headers: Record<string, string>,
+  fallback: any = [],
+) {
   try {
-    const res = await fetch(url, { headers, cache: 'no-store' });
+    const res = await fetch(url, { headers, cache: "no-store" });
     if (!res.ok || res.status === 204) return fallback;
 
     const text = await res.text();
@@ -30,25 +34,28 @@ function isBot(login?: string, type?: string): boolean {
   if (!login) return false;
   const lower = login.toLowerCase();
   return (
-    type === 'Bot' ||
-    lower.endsWith('[bot]') ||
-    lower === 'copilot' ||
-    lower.includes('copilot') ||
-    lower === 'github-actions' ||
-    lower === 'dependabot' ||
-    lower === 'web-flow' ||
-    lower === 'ghost'
+    type === "Bot" ||
+    lower.endsWith("[bot]") ||
+    lower === "copilot" ||
+    lower.includes("copilot") ||
+    lower === "github-actions" ||
+    lower === "dependabot" ||
+    lower === "web-flow" ||
+    lower === "ghost"
   );
 }
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const owner = searchParams.get('owner');
-  const repo = searchParams.get('repo');
-  const forceRefresh = searchParams.get('refresh') === 'true';
+  const owner = searchParams.get("owner");
+  const repo = searchParams.get("repo");
+  const forceRefresh = searchParams.get("refresh") === "true";
 
   if (!owner || !repo) {
-    return NextResponse.json({ error: 'Thiếu owner hoặc repo' }, { status: 400 });
+    return NextResponse.json(
+      { error: "Thiếu owner hoặc repo" },
+      { status: 400 },
+    );
   }
 
   const cacheKey = `${owner}/${repo}`.toLowerCase();
@@ -67,15 +74,15 @@ export async function GET(request: Request) {
   }
 
   const cookieStore = await cookies();
-  const token = cookieStore.get('github_access_token')?.value;
+  const token = cookieStore.get("github_access_token")?.value;
 
   if (!token) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const headers = {
     Authorization: `Bearer ${token}`,
-    Accept: 'application/vnd.github+json',
+    Accept: "application/vnd.github+json",
   };
 
   try {
@@ -95,11 +102,11 @@ export async function GET(request: Request) {
       basicContributors,
       activity,
     ] = await Promise.all([
-      fetch('https://api.github.com/graphql', {
-        method: 'POST',
+      fetch("https://api.github.com/graphql", {
+        method: "POST",
         headers: {
           ...headers,
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           query: `
@@ -182,29 +189,53 @@ export async function GET(request: Request) {
           `,
           variables: { owner, name: repo },
         }),
-        cache: 'no-store',
+        cache: "no-store",
       })
         .then((r) => (r.ok ? r.json() : null))
         .catch(() => null),
 
-      safeFetchJson(`https://api.github.com/repos/${owner}/${repo}/collaborators?per_page=100`, headers, []),
-      safeFetchJson(`https://api.github.com/repos/${owner}/${repo}/invitations`, headers, []),
+      safeFetchJson(
+        `https://api.github.com/repos/${owner}/${repo}/collaborators?per_page=100`,
+        headers,
+        [],
+      ),
+      safeFetchJson(
+        `https://api.github.com/repos/${owner}/${repo}/invitations`,
+        headers,
+        [],
+      ),
       safeFetchJson(`https://api.github.com/users/${owner}`, headers, null),
-      safeFetchJson(`https://api.github.com/repos/${owner}/${repo}/contributors?per_page=30`, headers, []),
-      safeFetchJson(`https://api.github.com/repos/${owner}/${repo}/stats/commit_activity`, headers, []),
+      safeFetchJson(
+        `https://api.github.com/repos/${owner}/${repo}/contributors?per_page=30`,
+        headers,
+        [],
+      ),
+      safeFetchJson(
+        `https://api.github.com/repos/${owner}/${repo}/stats/commit_activity`,
+        headers,
+        [],
+      ),
     ]);
 
     const repoGql = gqlRes?.data?.repository;
 
     if (gqlRes?.errors) {
-      console.warn('[GitHub Stats] GraphQL errors:', JSON.stringify(gqlRes.errors));
+      console.warn(
+        "[GitHub Stats] GraphQL errors:",
+        JSON.stringify(gqlRes.errors),
+      );
     }
 
     // 3. Khởi tạo danh bạ thành viên thực tế của dự án
     const teamMembersMap = new Map<
       string,
       {
-        author: { login: string; avatar_url: string; html_url: string; name?: string };
+        author: {
+          login: string;
+          avatar_url: string;
+          html_url: string;
+          name?: string;
+        };
         commits: number;
         additions: number;
         deletions: number;
@@ -226,7 +257,7 @@ export async function GET(request: Request) {
         name?: string;
         type?: string;
       },
-      role = 'Collaborator'
+      role = "Collaborator",
     ) => {
       if (!user?.login || isBot(user.login, user.type)) return;
       const key = user.login.toLowerCase();
@@ -235,8 +266,12 @@ export async function GET(request: Request) {
         teamMembersMap.set(key, {
           author: {
             login: user.login,
-            avatar_url: user.avatarUrl || user.avatar_url || `https://avatars.githubusercontent.com/${user.login}`,
-            html_url: user.url || user.html_url || `https://github.com/${user.login}`,
+            avatar_url:
+              user.avatarUrl ||
+              user.avatar_url ||
+              `https://avatars.githubusercontent.com/${user.login}`,
+            html_url:
+              user.url || user.html_url || `https://github.com/${user.login}`,
             name: user.name || user.login,
           },
           commits: 0,
@@ -248,7 +283,11 @@ export async function GET(request: Request) {
           role,
         });
       } else {
-        if (user.name && (!existing.author.name || existing.author.name === existing.author.login)) {
+        if (
+          user.name &&
+          (!existing.author.name ||
+            existing.author.name === existing.author.login)
+        ) {
           existing.author.name = user.name;
         }
       }
@@ -259,7 +298,9 @@ export async function GET(request: Request) {
     teamMembersMap.set(ownerKey, {
       author: {
         login: owner,
-        avatar_url: ownerUserRes?.avatar_url || `https://avatars.githubusercontent.com/${owner}`,
+        avatar_url:
+          ownerUserRes?.avatar_url ||
+          `https://avatars.githubusercontent.com/${owner}`,
         html_url: ownerUserRes?.html_url || `https://github.com/${owner}`,
         name: ownerUserRes?.name || owner,
       },
@@ -269,31 +310,40 @@ export async function GET(request: Request) {
       linesChanged: 0,
       mergedPRs: 0,
       mergedByCount: 0,
-      role: 'Owner / Nhóm trưởng',
+      role: "Owner / Nhóm trưởng",
     });
 
     // 3b. Đưa tất cả Collaborators từ GraphQL
     const gqlCollabs = repoGql?.collaborators?.nodes || [];
-    gqlCollabs.forEach((collab: any) => addMemberIfMissing(collab, 'Collaborator'));
+    gqlCollabs.forEach((collab: any) => {
+      addMemberIfMissing(collab, "Collaborator");
+    });
 
     // 3c. Đưa tất cả assignableUsers & mentionableUsers từ GraphQL (bắt trọn cả collaborator chưa commit)
     const gqlAssignable = repoGql?.assignableUsers?.nodes || [];
-    gqlAssignable.forEach((u: any) => addMemberIfMissing(u, 'Collaborator'));
+    gqlAssignable.forEach((u: any) => {
+      addMemberIfMissing(u, "Collaborator");
+    });
 
     const gqlMentionable = repoGql?.mentionableUsers?.nodes || [];
-    gqlMentionable.forEach((u: any) => addMemberIfMissing(u, 'Collaborator'));
+    gqlMentionable.forEach((u: any) => {
+      addMemberIfMissing(u, "Collaborator");
+    });
 
     // 3d. Đưa tất cả Collaborators từ REST (loại bỏ Bot như Copilot)
     if (Array.isArray(collaboratorsRes)) {
-      collaboratorsRes.forEach((collab: any) =>
-        addMemberIfMissing(collab, collab.permissions?.admin ? 'Admin' : 'Collaborator')
-      );
+      collaboratorsRes.forEach((collab: any) => {
+        addMemberIfMissing(
+          collab,
+          collab.permissions?.admin ? "Admin" : "Collaborator",
+        );
+      });
     }
 
     // 3e. Đưa thêm các thành viên đang có lời mời (Invitations)
     if (Array.isArray(invitationsRes)) {
       invitationsRes.forEach((inv: any) => {
-        if (inv?.invitee) addMemberIfMissing(inv.invitee, 'Collaborator');
+        if (inv?.invitee) addMemberIfMissing(inv.invitee, "Collaborator");
       });
     }
 
@@ -307,7 +357,9 @@ export async function GET(request: Request) {
         const existing = teamMembersMap.get(key) || {
           author: {
             login,
-            avatar_url: pr.author.avatarUrl || `https://avatars.githubusercontent.com/${login}`,
+            avatar_url:
+              pr.author.avatarUrl ||
+              `https://avatars.githubusercontent.com/${login}`,
             html_url: pr.author.url || `https://github.com/${login}`,
             name: login,
           },
@@ -319,7 +371,7 @@ export async function GET(request: Request) {
           mergedByCount: 0,
         };
 
-        if (pr.state === 'MERGED') {
+        if (pr.state === "MERGED") {
           existing.mergedPRs += 1;
           existing.additions += pr.additions || 0;
           existing.deletions += pr.deletions || 0;
@@ -336,7 +388,9 @@ export async function GET(request: Request) {
         const existing = teamMembersMap.get(key) || {
           author: {
             login: mergerLogin,
-            avatar_url: pr.mergedBy.avatarUrl || `https://avatars.githubusercontent.com/${mergerLogin}`,
+            avatar_url:
+              pr.mergedBy.avatarUrl ||
+              `https://avatars.githubusercontent.com/${mergerLogin}`,
             html_url: pr.mergedBy.url || `https://github.com/${mergerLogin}`,
             name: mergerLogin,
           },
@@ -361,7 +415,9 @@ export async function GET(request: Request) {
       const existing = teamMembersMap.get(key) || {
         author: {
           login,
-          avatar_url: node.author?.avatarUrl || `https://avatars.githubusercontent.com/${login}`,
+          avatar_url:
+            node.author?.avatarUrl ||
+            `https://avatars.githubusercontent.com/${login}`,
           html_url: node.author?.user?.url || `https://github.com/${login}`,
           name: node.author?.name || login,
         },
@@ -451,16 +507,22 @@ export async function GET(request: Request) {
       openPulls = repoGql.openPulls?.totalCount ?? 0;
       mergedPulls = repoGql.mergedPulls?.totalCount ?? 0;
       closedPulls = repoGql.closedPulls?.totalCount ?? 0;
-      mergeRate = totalPulls > 0 ? Math.round((mergedPulls / totalPulls) * 100) : 0;
+      mergeRate =
+        totalPulls > 0 ? Math.round((mergedPulls / totalPulls) * 100) : 0;
 
       totalIssues = repoGql.totalIssues?.totalCount ?? 0;
       openIssues = repoGql.openIssues?.totalCount ?? 0;
       closedIssues = repoGql.closedIssues?.totalCount ?? 0;
-      closeRate = totalIssues > 0 ? Math.round((closedIssues / totalIssues) * 100) : 0;
+      closeRate =
+        totalIssues > 0 ? Math.round((closedIssues / totalIssues) * 100) : 0;
 
       totalCommits = repoGql.defaultBranchRef?.target?.history?.totalCount;
     } else {
-      const repoDetails = await safeFetchJson(`https://api.github.com/repos/${owner}/${repo}`, headers, null);
+      const repoDetails = await safeFetchJson(
+        `https://api.github.com/repos/${owner}/${repo}`,
+        headers,
+        null,
+      );
       if (repoDetails) {
         openIssues = repoDetails.open_issues_count || 0;
       }

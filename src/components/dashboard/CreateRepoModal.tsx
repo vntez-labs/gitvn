@@ -1,24 +1,22 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
 import {
-  Box,
-  Modal,
-  TextInput,
-  Textarea,
   Button,
   Group,
+  Modal,
+  Select,
   Stack,
   Text,
-  Select,
-  Radio,
-  Paper,
-} from '@mantine/core';
-import { IconBook, IconLock, IconWorld, IconPlus } from '@tabler/icons-react';
-import { notifications } from '@mantine/notifications';
-import { useAuthStore } from '@/store/auth.store';
-import { useDashboardStore } from '@/store/dashboard.store';
-import axios from 'axios';
+  Textarea,
+  TextInput,
+} from "@mantine/core";
+import { notifications } from "@mantine/notifications";
+import { IconBook, IconPlus } from "@tabler/icons-react";
+import axios from "axios";
+import { useEffect, useMemo, useState } from "react";
+import { useAuthStore } from "@/store/auth.store";
+import { useDashboardStore } from "@/store/dashboard.store";
+import { RepoVisibilitySelector } from "./RepoVisibilitySelector";
 
 interface CreateRepoModalProps {
   opened: boolean;
@@ -29,9 +27,9 @@ export function CreateRepoModal({ opened, onClose }: CreateRepoModalProps) {
   const { user } = useAuthStore();
   const { orgs, selectedOrg, addRepo } = useDashboardStore();
 
-  const [owner, setOwner] = useState<string>(selectedOrg || user?.login || '');
-  const [repoName, setRepoName] = useState('');
-  const [description, setDescription] = useState('');
+  const [owner, setOwner] = useState<string>(selectedOrg || user?.login || "");
+  const [repoName, setRepoName] = useState("");
+  const [description, setDescription] = useState("");
   const [isPrivate, setIsPrivate] = useState<boolean>(true);
   const [submitting, setSubmitting] = useState(false);
   const [nameError, setNameError] = useState<string | null>(null);
@@ -39,61 +37,76 @@ export function CreateRepoModal({ opened, onClose }: CreateRepoModalProps) {
   // Cập nhật owner mặc định khi modal mở hoặc selectedOrg thay đổi
   useEffect(() => {
     if (opened) {
-      setOwner(selectedOrg || user?.login || '');
-      setRepoName('');
-      setDescription('');
+      setOwner(selectedOrg || user?.login || "");
+      setRepoName("");
+      setDescription("");
       setIsPrivate(true);
       setNameError(null);
     }
   }, [opened, selectedOrg, user?.login]);
 
-  const ownerOptions = [
-    ...(user ? [{ value: user.login, label: `${user.login} (Cá nhân)` }] : []),
-    ...orgs.map((org) => ({ value: org.login, label: `${org.login} (Organization)` })),
-  ];
+  const ownerOptions = useMemo(() => {
+    const list = [
+      ...(user
+        ? [{ value: user.login, label: `${user.login} (Cá nhân)` }]
+        : []),
+      ...orgs.map((org) => ({
+        value: org.login,
+        label: `${org.login} (Organization)`,
+      })),
+    ];
+    const seen = new Set<string>();
+    return list.filter((item) => {
+      if (seen.has(item.value)) return false;
+      seen.add(item.value);
+      return true;
+    });
+  }, [user, orgs]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanName = repoName.trim();
 
     if (!cleanName) {
-      setNameError('Vui lòng nhập tên repository');
+      setNameError("Vui lòng nhập tên repository");
       return;
     }
 
     if (!/^[a-zA-Z0-9._-]+$/.test(cleanName)) {
-      setNameError('Tên repo chỉ chứa chữ cái, số, dấu gạch ngang (-), gạch dưới (_) và chấm (.)');
+      setNameError(
+        "Tên repo chỉ được chứa chữ cái, số, gạch ngang, gạch dưới và dấu chấm",
+      );
       return;
     }
 
-    setNameError(null);
     setSubmitting(true);
+    setNameError(null);
 
     try {
-      const isOrgOwner = owner !== user?.login;
-      const res = await axios.post('/api/github/repo', {
+      const { data } = await axios.post("/api/github/repo", {
         name: cleanName,
-        description: description.trim(),
-        is_private: isPrivate,
-        org: isOrgOwner ? owner : undefined,
+        description: description.trim() || undefined,
+        private: isPrivate,
+        owner,
       });
-
-      const newRepo = res.data.repo;
-      addRepo(newRepo);
 
       notifications.show({
-        title: 'Tạo thành công',
-        message: `Repository ${cleanName} đã được tạo!`,
-        color: 'teal',
+        title: "Tạo thành công!",
+        message: `Repository ${data.repo.full_name} đã sẵn sàng.`,
+        color: "teal",
       });
 
+      // Tự động thêm repo mới vào danh sách và chọn luôn để mở workspace
+      addRepo(data.repo);
       onClose();
-    } catch (error: any) {
-      const message = error.response?.data?.error || 'Có lỗi xảy ra khi tạo repository';
+    } catch (err: any) {
+      const msg =
+        err.response?.data?.error || "Có lỗi xảy ra khi tạo repository";
+      setNameError(msg);
       notifications.show({
-        title: 'Không thể tạo repository',
-        message,
-        color: 'red',
+        title: "Tạo repository thất bại",
+        message: msg,
+        color: "red",
       });
     } finally {
       setSubmitting(false);
@@ -106,8 +119,8 @@ export function CreateRepoModal({ opened, onClose }: CreateRepoModalProps) {
       onClose={onClose}
       title={
         <Group gap="xs">
-          <IconBook size={18} color="#58a6ff" />
-          <Text fw={600} fz={15} c="#f0f6fc">
+          <IconBook size={18} color="#fb291a" />
+          <Text fw={600} fz={15} c="#0f172a">
             Tạo repository mới
           </Text>
         </Group>
@@ -115,8 +128,11 @@ export function CreateRepoModal({ opened, onClose }: CreateRepoModalProps) {
       centered
       radius="md"
       styles={{
-        content: { backgroundColor: '#161b22', border: '1px solid #30363d' },
-        header: { backgroundColor: '#161b22', borderBottom: '1px solid #30363d' },
+        content: { backgroundColor: "#ffffff", border: "1px solid #e2e8f0" },
+        header: {
+          backgroundColor: "#f8fafc",
+          borderBottom: "1px solid #e2e8f0",
+        },
       }}
     >
       <form onSubmit={handleSubmit}>
@@ -125,12 +141,20 @@ export function CreateRepoModal({ opened, onClose }: CreateRepoModalProps) {
             label="Owner"
             data={ownerOptions}
             value={owner}
-            onChange={(val) => setOwner(val || user?.login || '')}
+            onChange={(val) => setOwner(val || user?.login || "")}
             allowDeselect={false}
             styles={{
-              input: { backgroundColor: '#0d1117', borderColor: '#30363d', color: '#c9d1d9' },
-              dropdown: { backgroundColor: '#161b22', borderColor: '#30363d' },
-              option: { color: '#c9d1d9' },
+              label: {
+                color: "#334155",
+                fontWeight: 600,
+                fontSize: 13,
+                marginBottom: 4,
+              },
+              input: {
+                backgroundColor: "#ffffff",
+                borderColor: "#cbd5e1",
+                color: "#0f172a",
+              },
             }}
           />
 
@@ -145,11 +169,17 @@ export function CreateRepoModal({ opened, onClose }: CreateRepoModalProps) {
             }}
             error={nameError}
             styles={{
+              label: {
+                color: "#334155",
+                fontWeight: 600,
+                fontSize: 13,
+                marginBottom: 4,
+              },
               input: {
-                backgroundColor: '#0d1117',
-                borderColor: '#30363d',
-                color: '#c9d1d9',
-                fontFamily: 'monospace',
+                backgroundColor: "#ffffff",
+                borderColor: "#cbd5e1",
+                color: "#0f172a",
+                fontFamily: "monospace",
               },
             }}
           />
@@ -161,94 +191,35 @@ export function CreateRepoModal({ opened, onClose }: CreateRepoModalProps) {
             value={description}
             onChange={(e) => setDescription(e.currentTarget.value)}
             styles={{
-              input: { backgroundColor: '#0d1117', borderColor: '#30363d', color: '#c9d1d9' },
+              label: {
+                color: "#334155",
+                fontWeight: 600,
+                fontSize: 13,
+                marginBottom: 4,
+              },
+              input: {
+                backgroundColor: "#ffffff",
+                borderColor: "#cbd5e1",
+                color: "#0f172a",
+              },
             }}
           />
 
-          {/* Visibility */}
-          <Box>
-            <Text fz={13} fw={500} c="#c9d1d9" mb={6}>
-              Chế độ hiển thị
-            </Text>
-            <Radio.Group
-              value={isPrivate ? 'private' : 'public'}
-              onChange={(val) => setIsPrivate(val === 'private')}
-            >
-              <Stack gap="xs">
-                <Paper
-                  p="xs"
-                  bg={isPrivate ? 'rgba(56, 139, 253, 0.08)' : 'transparent'}
-                  style={{
-                    border: `1px solid ${isPrivate ? '#388bfd' : '#30363d'}`,
-                    borderRadius: 6,
-                    cursor: 'pointer',
-                  }}
-                  onClick={() => setIsPrivate(true)}
-                >
-                  <Radio
-                    value="private"
-                    label={
-                      <Group gap="xs">
-                        <IconLock size={15} color="#e3b341" />
-                        <Box>
-                          <Text fz={13} fw={500} c="#e6edf3">
-                            Private
-                          </Text>
-                          <Text fz={11} c="#8b949e">
-                            Chỉ bạn và những người được cấp quyền mới có thể xem repo này.
-                          </Text>
-                        </Box>
-                      </Group>
-                    }
-                  />
-                </Paper>
-
-                <Paper
-                  p="xs"
-                  bg={!isPrivate ? 'rgba(56, 139, 253, 0.08)' : 'transparent'}
-                  style={{
-                    border: `1px solid ${!isPrivate ? '#388bfd' : '#30363d'}`,
-                    borderRadius: 6,
-                    cursor: 'pointer',
-                  }}
-                  onClick={() => setIsPrivate(false)}
-                >
-                  <Radio
-                    value="public"
-                    label={
-                      <Group gap="xs">
-                        <IconWorld size={15} color="#58a6ff" />
-                        <Box>
-                          <Text fz={13} fw={500} c="#e6edf3">
-                            Public
-                          </Text>
-                          <Text fz={11} c="#8b949e">
-                            Bất kỳ ai trên internet đều có thể xem repository này.
-                          </Text>
-                        </Box>
-                      </Group>
-                    }
-                  />
-                </Paper>
-              </Stack>
-            </Radio.Group>
-          </Box>
+          <RepoVisibilitySelector
+            isPrivate={isPrivate}
+            setIsPrivate={setIsPrivate}
+          />
 
           <Group justify="flex-end" mt="md">
-            <Button variant="subtle" color="gray" onClick={onClose} disabled={submitting} size="xs">
+            <Button variant="default" onClick={onClose} disabled={submitting}>
               Hủy
             </Button>
             <Button
               type="submit"
+              color="vntez"
               loading={submitting}
-              leftSection={<IconPlus size={14} />}
-              size="xs"
-              styles={{
-                root: {
-                  backgroundColor: '#238636',
-                  '&:hover': { backgroundColor: '#2ea043' },
-                },
-              }}
+              leftSection={<IconPlus size={16} />}
+              style={{ fontWeight: 600 }}
             >
               Tạo repository
             </Button>

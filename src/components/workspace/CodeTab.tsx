@@ -1,36 +1,38 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
 import {
-  Box,
-  Group,
-  Text,
-  Badge,
-  Loader,
-  CopyButton,
-  Tooltip,
   ActionIcon,
-  Button,
   Avatar,
-} from '@mantine/core';
+  Badge,
+  Box,
+  Button,
+  CopyButton,
+  Group,
+  Skeleton,
+  Stack,
+  Text,
+  Tooltip,
+} from "@mantine/core";
 import {
+  IconArrowDown,
   IconCheck,
   IconCopy,
-  IconGitCommit,
-  IconArrowDown,
   IconFileCode,
-} from '@tabler/icons-react';
-import { FileTree } from '@/components/FileTree';
-import { MarkdownViewer } from '@/components/MarkdownViewer';
-import { CodeViewer } from '@/components/CodeViewer';
-import { EmptyRepoView } from '@/components/workspace/EmptyRepoView';
-import { CommitDetailModal } from '@/components/workspace/CommitDetailModal';
-import { WorkspaceTab } from '@/components/workspace/WorkspaceHeader';
-import { useDashboardStore } from '@/store/dashboard.store';
-import { formatRelativeTime } from '@/lib/time';
-import { getIconForFile } from 'vscode-icons-js';
-import { ICON_BASE_URL } from './constants';
-import axios from 'axios';
+  IconGitCommit,
+} from "@tabler/icons-react";
+import axios from "axios";
+import { useEffect, useState } from "react";
+import { getIconForFile } from "vscode-icons-js";
+import { CodeViewer } from "@/components/CodeViewer";
+import { FileTree } from "@/components/FileTree";
+import { MarkdownViewer } from "@/components/MarkdownViewer";
+import { CommitDetailModal } from "@/components/workspace/CommitDetailModal";
+import { EmptyRepoView } from "@/components/workspace/EmptyRepoView";
+import type { WorkspaceTab } from "@/components/workspace/WorkspaceHeader";
+import { formatRelativeTime } from "@/lib/time";
+import { useDashboardStore } from "@/store/dashboard.store";
+import { FileEditorHeader } from "./code/FileEditorHeader";
+import { ICON_BASE_URL } from "./constants";
 
 interface CodeTabProps {
   onNavigateTab?: (tab: WorkspaceTab) => void;
@@ -64,8 +66,8 @@ export function CodeTab({ onNavigateTab }: CodeTabProps) {
     axios
       .get(
         `/api/github/commits?owner=${selectedRepo.owner.login}&repo=${selectedRepo.name}&branch=${encodeURIComponent(
-          currentBranch
-        )}&path=${encodeURIComponent(activeFile)}&per_page=1`
+          currentBranch,
+        )}&path=${encodeURIComponent(activeFile)}&per_page=1`,
       )
       .then((res) => {
         const commits = res.data.commits || [];
@@ -80,13 +82,52 @@ export function CodeTab({ onNavigateTab }: CodeTabProps) {
       <Box
         style={{
           flex: 1,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: '#0d1117',
+          display: "grid",
+          gridTemplateColumns: "280px 1fr",
+          overflow: "hidden",
+          minHeight: 0,
+          backgroundColor: "#ffffff",
         }}
       >
-        <Loader size="sm" color="gray" />
+        {/* Left Explorer Skeleton */}
+        <Box
+          p="md"
+          style={{
+            borderRight: "1px solid #e2e8f0",
+            backgroundColor: "#f8fafc",
+          }}
+        >
+          <Skeleton height={28} radius="sm" mb="md" />
+          <Stack gap={8}>
+            <Skeleton height={20} width="60%" radius="sm" />
+            <Skeleton height={20} width="80%" radius="sm" />
+            <Skeleton height={20} width="70%" radius="sm" />
+            <Skeleton height={20} width="85%" radius="sm" />
+            <Skeleton height={20} width="50%" radius="sm" />
+            <Skeleton height={20} width="65%" radius="sm" />
+            <Skeleton height={20} width="75%" radius="sm" />
+          </Stack>
+        </Box>
+
+        {/* Right Code Pane Skeleton */}
+        <Box p="md">
+          <Group justify="space-between" mb="lg">
+            <Skeleton height={24} width={200} radius="sm" />
+            <Skeleton height={24} width={120} radius="sm" />
+          </Group>
+          <Stack gap={8}>
+            <Skeleton height={14} width="35%" radius="sm" />
+            <Skeleton height={14} width="75%" radius="sm" />
+            <Skeleton height={14} width="50%" radius="sm" />
+            <Skeleton height={14} width="80%" radius="sm" />
+            <Skeleton height={14} width="60%" radius="sm" />
+            <Skeleton height={14} width="90%" radius="sm" />
+            <Skeleton height={14} width="40%" radius="sm" />
+            <Skeleton height={14} width="70%" radius="sm" />
+            <Skeleton height={14} width="55%" radius="sm" />
+            <Skeleton height={14} width="85%" radius="sm" />
+          </Stack>
+        </Box>
       </Box>
     );
   }
@@ -95,28 +136,33 @@ export function CodeTab({ onNavigateTab }: CodeTabProps) {
     return <EmptyRepoView repo={selectedRepo} />;
   }
 
-  const isMarkdown = activeFile?.toLowerCase().endsWith('.md');
-  const lineCount = fileContent ? fileContent.split('\n').length : 0;
-  const activeFileName = activeFile?.split('/').pop() || '';
-  const activeFileIcon = activeFile ? getIconForFile(activeFileName) : 'default_file.svg';
+  const isMarkdown =
+    activeFile?.toLowerCase().endsWith(".md") ||
+    activeFile?.toLowerCase().endsWith(".mdx");
+  const lineCount = fileContent ? fileContent.split("\n").length : 0;
+  const activeFileName = activeFile?.split("/").pop() || "";
+  const activeFileIcon = activeFile
+    ? getIconForFile(activeFileName)
+    : "default_file.svg";
 
   return (
     <Box
       style={{
         flex: 1,
-        display: 'grid',
-        gridTemplateColumns: '260px 1fr',
-        overflow: 'hidden',
+        display: "grid",
+        gridTemplateColumns: "260px 1fr",
+        overflow: "hidden",
         minHeight: 0,
+        backgroundColor: "#ffffff",
       }}
     >
       {/* File Explorer */}
       <Box
         style={{
-          borderRight: '1px solid #21262d',
-          backgroundColor: '#010409',
-          display: 'flex',
-          flexDirection: 'column',
+          borderRight: "1px solid #e2e8f0",
+          backgroundColor: "#f8fafc",
+          display: "flex",
+          flexDirection: "column",
           minHeight: 0,
         }}
       >
@@ -124,23 +170,39 @@ export function CodeTab({ onNavigateTab }: CodeTabProps) {
           justify="space-between"
           px="md"
           py={8}
-          style={{ borderBottom: '1px solid #21262d', flexShrink: 0 }}
+          style={{ borderBottom: "1px solid #e2e8f0", flexShrink: 0 }}
         >
-          <Text fz={10} fw={700} c="#8b949e" style={{ letterSpacing: '0.08em' }}>
+          <Text
+            fz={10}
+            fw={700}
+            c="#64748b"
+            style={{ letterSpacing: "0.08em" }}
+          >
             FILES
           </Text>
-          <Badge size="xs" variant="transparent" c="#8b949e" p={0}>
-            {tree.filter((t) => t.type === 'blob').length} files
+          <Badge size="xs" variant="transparent" c="#64748b" p={0}>
+            {tree.filter((t) => t.type === "blob").length} files
           </Badge>
         </Group>
 
-        <Box className="hide-scrollbar" style={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
+        <Box
+          className="hide-scrollbar"
+          style={{ flex: 1, overflow: "auto", minHeight: 0 }}
+        >
           {loadingTree ? (
-            <Group justify="center" mt="xl">
-              <Loader size="xs" color="gray" />
-            </Group>
+            <Stack gap={6} p="xs">
+              <Skeleton height={20} width="70%" radius="sm" />
+              <Skeleton height={20} width="85%" radius="sm" />
+              <Skeleton height={20} width="60%" radius="sm" />
+              <Skeleton height={20} width="75%" radius="sm" />
+              <Skeleton height={20} width="90%" radius="sm" />
+            </Stack>
           ) : (
-            <FileTree data={tree} activePath={activeFile} onFileClick={selectFile} />
+            <FileTree
+              data={tree}
+              activePath={activeFile}
+              onFileClick={selectFile}
+            />
           )}
         </Box>
       </Box>
@@ -148,164 +210,53 @@ export function CodeTab({ onNavigateTab }: CodeTabProps) {
       {/* Editor Content */}
       <Box
         style={{
-          backgroundColor: '#0d1117',
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
+          backgroundColor: "#ffffff",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
           minHeight: 0,
         }}
       >
         {activeFile && (
-          <>
-            {/* Header file chính */}
-            <Box
-              px="md"
-              py={6}
-              style={{
-                borderBottom: '1px solid #21262d',
-                backgroundColor: '#161b22',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                flexShrink: 0,
-              }}
-            >
-              <Group gap="xs">
-                <img
-                  src={`${ICON_BASE_URL}/${activeFileIcon}`}
-                  alt=""
-                  width={14}
-                  height={14}
-                  style={{ display: 'block' }}
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = `${ICON_BASE_URL}/default_file.svg`;
-                  }}
-                />
-                <Text fz={12} c="#e6edf3" fw={500} ff="monospace">
-                  {activeFile}
-                </Text>
-                {lineCount > 0 && !isMarkdown && (
-                  <Badge size="xs" variant="subtle" color="gray">
-                    {lineCount} lines
-                  </Badge>
-                )}
-              </Group>
-
-              <CopyButton value={fileContent}>
-                {({ copied, copy }) => (
-                  <Tooltip label={copied ? 'Đã sao chép' : 'Sao chép mã'} withArrow>
-                    <ActionIcon size="sm" variant="subtle" color={copied ? 'teal' : 'gray'} onClick={copy}>
-                      {copied ? <IconCheck size={14} /> : <IconCopy size={14} />}
-                    </ActionIcon>
-                  </Tooltip>
-                )}
-              </CopyButton>
-            </Box>
-
-            {/* GitLens Blame Bar (Commit gần nhất của file) */}
-            {lastFileCommit && (
-              <Box
-                px="md"
-                py={4}
-                style={{
-                  borderBottom: '1px solid #21262d',
-                  backgroundColor: '#11161d',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  flexShrink: 0,
-                  fontSize: 11,
-                }}
-              >
-                <Group gap={6} wrap="nowrap" style={{ overflow: 'hidden', flex: 1 }}>
-                  <Avatar
-                    src={lastFileCommit.author?.avatar_url}
-                    alt={lastFileCommit.commit?.author?.name}
-                    size={16}
-                    radius="xl"
-                  />
-                  <Text fz={11} c="#8b949e" truncate>
-                    <span style={{ color: '#c9d1d9', fontWeight: 500 }}>
-                      {lastFileCommit.commit?.author?.name || 'Ai đó'}
-                    </span>
-                    {' • '}
-                    {formatRelativeTime(lastFileCommit.commit?.author?.date)}
-                    {': "'}
-                    <span style={{ color: '#e6edf3' }}>
-                      {lastFileCommit.commit?.message?.split('\n')[0]}
-                    </span>
-                    {'"'}
-                  </Text>
-                  <Badge size="xs" variant="outline" color="blue" ff="monospace" style={{ flexShrink: 0 }}>
-                    {lastFileCommit.sha?.slice(0, 7)}
-                  </Badge>
-                </Group>
-
-                <Button
-                  size="compact-xs"
-                  variant="subtle"
-                  color="blue"
-                  onClick={() => {
-                    setSelectedSha(lastFileCommit.sha);
-                    setModalOpen(true);
-                  }}
-                  style={{ flexShrink: 0, fontSize: 11 }}
-                >
-                  Xem commit
-                </Button>
-              </Box>
-            )}
-
-            {/* Git Sync / Pull Reminder cho người mới */}
-            <Box
-              px="md"
-              py={4}
-              style={{
-                borderBottom: '1px solid #21262d',
-                backgroundColor: 'rgba(56, 139, 253, 0.04)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                flexShrink: 0,
-              }}
-            >
-              <Group gap={6} wrap="nowrap">
-                <IconArrowDown size={12} color="#58a6ff" />
-                <Text fz={11} c="#8b949e">
-                  Cần lấy code mới nhất về máy tính? Chạy{' '}
-                  <span style={{ fontFamily: 'monospace', color: '#79c0ff' }}>
-                    git pull origin {currentBranch}
-                  </span>
-                </Text>
-              </Group>
-
-              <CopyButton value={`git pull origin ${currentBranch}`}>
-                {({ copied, copy }) => (
-                  <Button
-                    size="compact-xs"
-                    variant="transparent"
-                    color={copied ? 'teal' : 'gray'}
-                    onClick={copy}
-                    leftSection={copied ? <IconCheck size={11} /> : <IconCopy size={11} />}
-                    style={{ fontSize: 11 }}
-                  >
-                    {copied ? 'Đã sao chép' : 'Copy lệnh pull'}
-                  </Button>
-                )}
-              </CopyButton>
-            </Box>
-          </>
+          <FileEditorHeader
+            activeFile={activeFile}
+            activeFileIcon={activeFileIcon}
+            lineCount={lineCount}
+            isMarkdown={isMarkdown}
+            fileContent={fileContent}
+            lastFileCommit={lastFileCommit}
+            currentBranch={currentBranch}
+            onViewCommit={(sha) => {
+              setSelectedSha(sha);
+              setModalOpen(true);
+            }}
+          />
         )}
 
         {/* Nội dung file hoặc màn hình chờ */}
-        <Box className="hide-scrollbar" style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
+        <Box
+          className="hide-scrollbar"
+          style={{ flex: 1, overflowY: "auto", minHeight: 0 }}
+        >
           {loadingContent ? (
-            <Group justify="center" mt={100}>
-              <Loader size="sm" color="gray" />
-            </Group>
+            <Box p="md">
+              <Stack gap={8}>
+                <Skeleton height={14} width="40%" radius="sm" />
+                <Skeleton height={14} width="70%" radius="sm" />
+                <Skeleton height={14} width="55%" radius="sm" />
+                <Skeleton height={14} width="85%" radius="sm" />
+                <Skeleton height={14} width="60%" radius="sm" />
+                <Skeleton height={14} width="75%" radius="sm" />
+                <Skeleton height={14} width="45%" radius="sm" />
+                <Skeleton height={14} width="90%" radius="sm" />
+              </Stack>
+            </Box>
           ) : activeFile ? (
             isMarkdown ? (
-              <Box p="xl" style={{ maxWidth: 880, margin: '0 auto', color: '#c9d1d9' }}>
+              <Box
+                p="xl"
+                style={{ maxWidth: 880, margin: "0 auto", color: "#0f172a" }}
+              >
                 <MarkdownViewer content={fileContent} />
               </Box>
             ) : (
@@ -313,20 +264,24 @@ export function CodeTab({ onNavigateTab }: CodeTabProps) {
             )
           ) : (
             <Box ta="center" mt={120} px="md">
-              <IconFileCode size={38} color="#8b949e" style={{ margin: '0 auto 10px' }} />
-              <Text fz="sm" fw={500} c="#c9d1d9" mb={4}>
+              <IconFileCode
+                size={38}
+                color="#94a3b8"
+                style={{ margin: "0 auto 10px" }}
+              />
+              <Text fz="sm" fw={500} c="#0f172a" mb={4}>
                 Chọn một file từ Explorer để xem mã nguồn
               </Text>
-              <Text fz="xs" c="#8b949e" mb="md">
+              <Text fz="xs" c="#64748b" mb="md">
                 Hoặc xem lịch sử các lần thay đổi code của repository.
               </Text>
               {onNavigateTab && (
                 <Button
                   size="xs"
                   variant="light"
-                  color="blue"
+                  color="vntez"
                   leftSection={<IconGitCommit size={14} />}
-                  onClick={() => onNavigateTab('commits')}
+                  onClick={() => onNavigateTab("commits")}
                 >
                   Xem lịch sử Commits ({currentBranch})
                 </Button>

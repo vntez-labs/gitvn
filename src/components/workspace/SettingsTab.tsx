@@ -1,46 +1,56 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
 import {
-  Box,
-  Text,
-  TextInput,
-  Textarea,
-  Button,
-  Paper,
-  Stack,
-  Divider,
-  Modal,
   Alert,
-  Loader,
+  Box,
+  Button,
+  Divider,
   Group,
-  Switch,
+  Loader,
+  Modal,
+  Paper,
   Select,
-} from '@mantine/core';
+  Stack,
+  Switch,
+  Text,
+  Textarea,
+  TextInput,
+} from "@mantine/core";
 import {
   IconAlertTriangle,
-  IconCheck,
-  IconLock,
-  IconWorld,
   IconArchive,
-  IconTrash,
+  IconCheck,
   IconGitBranch,
-} from '@tabler/icons-react';
-import { useDashboardStore } from '@/store/dashboard.store';
-import axios from 'axios';
+  IconLock,
+  IconTrash,
+  IconWorld,
+} from "@tabler/icons-react";
+import axios from "axios";
+import { useEffect, useState } from "react";
+import { DangerZoneModals } from "./settings/DangerZoneModals";
+import { useDashboardStore } from "@/store/dashboard.store";
 
 export function SettingsTab() {
   const { selectedRepo, selectRepo, fetchInitialData } = useDashboardStore();
 
   // 1. General Info State
-  const [repoName, setRepoName] = useState(selectedRepo?.name || '');
-  const [description, setDescription] = useState(selectedRepo?.description || '');
-  const [homepage, setHomepage] = useState((selectedRepo as any)?.homepage || '');
+  const [repoName, setRepoName] = useState(selectedRepo?.name || "");
+  const [description, setDescription] = useState(
+    selectedRepo?.description || "",
+  );
+  const [homepage, setHomepage] = useState(
+    (selectedRepo as any)?.homepage || "",
+  );
   const [savingGeneral, setSavingGeneral] = useState(false);
-  const [generalMessage, setGeneralMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [generalMessage, setGeneralMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
 
   // 2. Default Branch State
-  const [defaultBranch, setDefaultBranch] = useState((selectedRepo as any)?.default_branch || 'main');
+  const [defaultBranch, setDefaultBranch] = useState(
+    (selectedRepo as any)?.default_branch || "main",
+  );
   const [availableBranches, setAvailableBranches] = useState<string[]>([]);
   const [loadingBranches, setLoadingBranches] = useState(false);
   const [savingBranch, setSavingBranch] = useState(false);
@@ -53,7 +63,8 @@ export function SettingsTab() {
     allow_squash_merge: (selectedRepo as any)?.allow_squash_merge ?? true,
     allow_merge_commit: (selectedRepo as any)?.allow_merge_commit ?? true,
     allow_rebase_merge: (selectedRepo as any)?.allow_rebase_merge ?? true,
-    delete_branch_on_merge: (selectedRepo as any)?.delete_branch_on_merge ?? false,
+    delete_branch_on_merge:
+      (selectedRepo as any)?.delete_branch_on_merge ?? false,
   });
   const [savingFeatures, setSavingFeatures] = useState(false);
 
@@ -61,56 +72,70 @@ export function SettingsTab() {
   const [visibilityModalOpen, setVisibilityModalOpen] = useState(false);
   const [archiveModalOpen, setArchiveModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [confirmInput, setConfirmInput] = useState('');
+  const [confirmInput, setConfirmInput] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!selectedRepo) return;
+    setRepoName(selectedRepo.name);
+    setDescription(selectedRepo.description || "");
+    setHomepage((selectedRepo as any).homepage || "");
+    setDefaultBranch((selectedRepo as any).default_branch || "main");
+
+    // Tải danh sách branches
     setLoadingBranches(true);
     axios
-      .get(`/api/github/branches?owner=${selectedRepo.owner.login}&repo=${selectedRepo.name}`)
+      .get(
+        `/api/github/branches?owner=${selectedRepo.owner.login}&repo=${selectedRepo.name}`,
+      )
       .then((res) => {
-        const branchList = (res.data.branches || []).map((b: any) => b.name);
-        setAvailableBranches(branchList);
+        const branchNames = (res.data.branches || []).map((b: any) => b.name);
+        setAvailableBranches(branchNames);
       })
-      .catch((err) => console.error(err))
+      .catch((err) => console.error("Lỗi tải branches:", err))
       .finally(() => setLoadingBranches(false));
-  }, [selectedRepo]);
+  }, [selectedRepo?.id]);
 
   if (!selectedRepo) return null;
 
-  const repoFullName = `${selectedRepo.owner.login}/${selectedRepo.name}`;
   const isPrivate = selectedRepo.private;
-  const isArchived = (selectedRepo as any)?.archived;
+  const isArchived = (selectedRepo as any).archived;
+  const expectedConfirmText = `${selectedRepo.owner.login}/${selectedRepo.name}`;
 
-  // Cập nhật thông tin chung
   const handleSaveGeneral = async () => {
     setSavingGeneral(true);
     setGeneralMessage(null);
     try {
-      const { data } = await axios.patch('/api/github/repo', {
+      const { data } = await axios.patch("/api/github/repo", {
         owner: selectedRepo.owner.login,
         repo: selectedRepo.name,
-        name: repoName.trim(),
+        name:
+          repoName.trim() !== selectedRepo.name ? repoName.trim() : undefined,
         description: description.trim(),
         homepage: homepage.trim(),
       });
-      setGeneralMessage({ type: 'success', text: 'Cập nhật thông tin cơ bản thành công!' });
+
+      setGeneralMessage({
+        type: "success",
+        text: "Cập nhật thông tin repository thành công!",
+      });
       await fetchInitialData();
       await selectRepo(data.repo);
     } catch (err: any) {
-      setGeneralMessage({ type: 'error', text: err.response?.data?.error || 'Có lỗi xảy ra khi lưu thông tin.' });
+      setGeneralMessage({
+        type: "error",
+        text: err.response?.data?.error || "Có lỗi xảy ra khi lưu thông tin.",
+      });
     } finally {
       setSavingGeneral(false);
     }
   };
 
-  // Cập nhật Default Branch
-  const handleSaveBranch = async () => {
+  const handleSaveDefaultBranch = async () => {
     setSavingBranch(true);
     try {
-      const { data } = await axios.patch('/api/github/repo', {
+      const { data } = await axios.patch("/api/github/repo", {
         owner: selectedRepo.owner.login,
         repo: selectedRepo.name,
         default_branch: defaultBranch,
@@ -118,47 +143,48 @@ export function SettingsTab() {
       await fetchInitialData();
       await selectRepo(data.repo);
     } catch (err: any) {
-      console.error(err);
+      alert(err.response?.data?.error || "Đổi nhánh mặc định thất bại.");
     } finally {
       setSavingBranch(false);
     }
   };
 
-  // Cập nhật Features / PR switches
-  const handleToggleFeature = async (key: keyof typeof features, value: boolean) => {
+  const handleToggleFeature = async (
+    key: keyof typeof features,
+    value: boolean,
+  ) => {
     const updated = { ...features, [key]: value };
     setFeatures(updated);
     setSavingFeatures(true);
     try {
-      const { data } = await axios.patch('/api/github/repo', {
+      const { data } = await axios.patch("/api/github/repo", {
         owner: selectedRepo.owner.login,
         repo: selectedRepo.name,
         [key]: value,
       });
       await selectRepo(data.repo);
     } catch (err: any) {
-      setFeatures(features); // Rollback nếu lỗi
+      console.error("Lỗi lưu cài đặt tính năng:", err);
     } finally {
       setSavingFeatures(false);
     }
   };
 
-  // Visibility, Archive, Delete handlers
-  const handleToggleVisibility = async () => {
+  const handleChangeVisibility = async () => {
     setActionLoading(true);
     setActionError(null);
     try {
-      const { data } = await axios.patch('/api/github/repo', {
+      const { data } = await axios.patch("/api/github/repo", {
         owner: selectedRepo.owner.login,
         repo: selectedRepo.name,
         private: !isPrivate,
       });
       setVisibilityModalOpen(false);
-      setConfirmInput('');
+      setConfirmInput("");
       await fetchInitialData();
       await selectRepo(data.repo);
     } catch (err: any) {
-      setActionError(err.response?.data?.error || 'Đổi visibility thất bại.');
+      setActionError(err.response?.data?.error || "Đổi visibility thất bại.");
     } finally {
       setActionLoading(false);
     }
@@ -168,17 +194,17 @@ export function SettingsTab() {
     setActionLoading(true);
     setActionError(null);
     try {
-      const { data } = await axios.patch('/api/github/repo', {
+      const { data } = await axios.patch("/api/github/repo", {
         owner: selectedRepo.owner.login,
         repo: selectedRepo.name,
         archived: true,
       });
       setArchiveModalOpen(false);
-      setConfirmInput('');
+      setConfirmInput("");
       await fetchInitialData();
       await selectRepo(data.repo);
     } catch (err: any) {
-      setActionError(err.response?.data?.error || 'Lưu trữ repo thất bại.');
+      setActionError(err.response?.data?.error || "Lưu trữ repo thất bại.");
     } finally {
       setActionLoading(false);
     }
@@ -188,34 +214,52 @@ export function SettingsTab() {
     setActionLoading(true);
     setActionError(null);
     try {
-      await axios.delete('/api/github/repo', {
+      await axios.delete("/api/github/repo", {
         data: { owner: selectedRepo.owner.login, repo: selectedRepo.name },
       });
       setDeleteModalOpen(false);
-      setConfirmInput('');
+      setConfirmInput("");
       await fetchInitialData();
       await selectRepo(null);
     } catch (err: any) {
-      setActionError(err.response?.data?.error || 'Xóa repo thất bại.');
+      setActionError(err.response?.data?.error || "Xóa repo thất bại.");
     } finally {
       setActionLoading(false);
     }
   };
 
   return (
-    <Box className="hide-scrollbar" style={{ flex: 1, overflowY: 'auto', padding: '32px 24px', minHeight: 0 }}>
-      <Box style={{ maxWidth: 840, margin: '0 auto' }}>
-
+    <Box
+      className="hide-scrollbar"
+      style={{
+        flex: 1,
+        overflowY: "auto",
+        padding: "32px 24px",
+        minHeight: 0,
+        backgroundColor: "#f8fafc",
+      }}
+    >
+      <Box style={{ maxWidth: 840, margin: "0 auto" }}>
         {/* 1. GENERAL SETTINGS */}
         <Box mb="md">
-          <Text fz={18} fw={700} c="#f0f6fc">General Settings</Text>
-          <Text fz="xs" c="#8b949e" mt={2}>Cấu hình tên, mô tả và website hiển thị của dự án</Text>
+          <Text fz={18} fw={700} c="#0f172a">
+            General Settings
+          </Text>
+          <Text fz="xs" c="#64748b" mt={2}>
+            Cấu hình tên, mô tả và website hiển thị của dự án
+          </Text>
         </Box>
 
         {generalMessage && (
           <Alert
-            color={generalMessage.type === 'success' ? 'green' : 'red'}
-            icon={generalMessage.type === 'success' ? <IconCheck size={16} /> : <IconAlertTriangle size={16} />}
+            color={generalMessage.type === "success" ? "green" : "red"}
+            icon={
+              generalMessage.type === "success" ? (
+                <IconCheck size={16} />
+              ) : (
+                <IconAlertTriangle size={16} />
+              )
+            }
             mb="lg"
             withCloseButton
             onClose={() => setGeneralMessage(null)}
@@ -224,7 +268,16 @@ export function SettingsTab() {
           </Alert>
         )}
 
-        <Paper p="lg" radius="md" bg="#161b22" style={{ border: '1px solid #30363d' }} mb="xl">
+        <Paper
+          p="lg"
+          radius="md"
+          bg="#ffffff"
+          style={{
+            border: "1px solid #e2e8f0",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+          }}
+          mb="xl"
+        >
           <Stack gap="md">
             <TextInput
               label="Repository name"
@@ -232,8 +285,13 @@ export function SettingsTab() {
               onChange={(e) => setRepoName(e.currentTarget.value)}
               size="xs"
               styles={{
-                label: { color: '#f0f6fc', fontWeight: 600, marginBottom: 6 },
-                input: { backgroundColor: '#0d1117', borderColor: '#30363d', color: '#f0f6fc', fontFamily: 'monospace' },
+                label: { color: "#334155", fontWeight: 600, marginBottom: 6 },
+                input: {
+                  backgroundColor: "#ffffff",
+                  borderColor: "#cbd5e1",
+                  color: "#0f172a",
+                  fontFamily: "monospace",
+                },
               }}
             />
 
@@ -245,8 +303,12 @@ export function SettingsTab() {
               rows={3}
               size="xs"
               styles={{
-                label: { color: '#f0f6fc', fontWeight: 600, marginBottom: 6 },
-                input: { backgroundColor: '#0d1117', borderColor: '#30363d', color: '#f0f6fc' },
+                label: { color: "#334155", fontWeight: 600, marginBottom: 6 },
+                input: {
+                  backgroundColor: "#ffffff",
+                  borderColor: "#cbd5e1",
+                  color: "#0f172a",
+                },
               }}
             />
 
@@ -256,358 +318,292 @@ export function SettingsTab() {
               value={homepage}
               onChange={(e) => setHomepage(e.currentTarget.value)}
               size="xs"
-              leftSection={<IconWorld size={14} color="#8b949e" />}
+              leftSection={<IconWorld size={14} color="#64748b" />}
               styles={{
-                label: { color: '#f0f6fc', fontWeight: 600, marginBottom: 6 },
-                input: { backgroundColor: '#0d1117', borderColor: '#30363d', color: '#f0f6fc' },
+                label: { color: "#334155", fontWeight: 600, marginBottom: 6 },
+                input: {
+                  backgroundColor: "#ffffff",
+                  borderColor: "#cbd5e1",
+                  color: "#0f172a",
+                },
               }}
             />
 
-            <Box mt="xs">
+            <Group justify="flex-end" mt="xs">
               <Button
                 size="xs"
+                color="indigo"
                 loading={savingGeneral}
                 onClick={handleSaveGeneral}
-                styles={{ root: { backgroundColor: '#238636', '&:hover': { backgroundColor: '#2ea043' } } }}
+                style={{ fontWeight: 600 }}
               >
-                Save changes
+                Lưu thay đổi
               </Button>
-            </Box>
+            </Group>
           </Stack>
         </Paper>
 
-        <Divider my="xl" color="#30363d" />
-
         {/* 2. DEFAULT BRANCH */}
         <Box mb="md">
-          <Text fz={18} fw={700} c="#f0f6fc">Default Branch</Text>
-          <Text fz="xs" c="#8b949e" mt={2}>Nhánh mặc định dùng khi clone và tạo Pull Request</Text>
+          <Text fz={18} fw={700} c="#0f172a">
+            Default Branch
+          </Text>
+          <Text fz="xs" c="#64748b" mt={2}>
+            Nhánh mặc định cho các thao tác clone, commit và pull request
+          </Text>
         </Box>
 
-        <Paper p="lg" radius="md" bg="#161b22" style={{ border: '1px solid #30363d' }} mb="xl">
-          <Group justify="space-between" align="flex-end">
-            <Box style={{ flex: 1, maxWidth: 360 }}>
+        <Paper
+          p="lg"
+          radius="md"
+          bg="#ffffff"
+          style={{
+            border: "1px solid #e2e8f0",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+          }}
+          mb="xl"
+        >
+          <Group justify="space-between" align="flex-end" wrap="wrap" gap="md">
+            <Box style={{ flex: 1, minWidth: 260 }}>
               <Select
-                label="Switch default branch"
+                label="Nhánh mặc định"
+                data={availableBranches.map((b) => ({ value: b, label: b }))}
                 value={defaultBranch}
-                onChange={(val) => setDefaultBranch(val || 'main')}
-                data={availableBranches}
-                rightSection={loadingBranches ? <Loader size={12} color="gray" /> : null}
-                leftSection={<IconGitBranch size={14} color="#8b949e" />}
+                onChange={(val) => setDefaultBranch(val || "main")}
                 size="xs"
+                leftSection={<IconGitBranch size={14} color="#64748b" />}
                 styles={{
-                  label: { color: '#f0f6fc', fontWeight: 600, marginBottom: 6 },
-                  input: { backgroundColor: '#0d1117', borderColor: '#30363d', color: '#f0f6fc', fontFamily: 'monospace' },
+                  label: { color: "#334155", fontWeight: 600, marginBottom: 6 },
+                  input: {
+                    backgroundColor: "#ffffff",
+                    borderColor: "#cbd5e1",
+                    color: "#0f172a",
+                    fontFamily: "monospace",
+                  },
                 }}
               />
             </Box>
+
             <Button
               size="xs"
               variant="default"
               loading={savingBranch}
-              onClick={handleSaveBranch}
-              styles={{ root: { borderColor: '#30363d', color: '#f0f6fc', '&:hover': { backgroundColor: '#21262d' } } }}
+              onClick={handleSaveDefaultBranch}
+              disabled={defaultBranch === (selectedRepo as any).default_branch}
             >
-              Update branch
+              Cập nhật nhánh mặc định
             </Button>
           </Group>
         </Paper>
 
-        <Divider my="xl" color="#30363d" />
-
-        {/* 3. REPOSITORY FEATURES & PR MERGES */}
+        {/* 3. FEATURES & MERGE STRATEGY */}
         <Box mb="md">
-          <Group justify="space-between" align="center">
-            <Box>
-              <Text fz={18} fw={700} c="#f0f6fc">Features & Pull Requests</Text>
-              <Text fz="xs" c="#8b949e" mt={2}>Bật/tắt các công cụ cộng tác và chiến lược merge mã nguồn</Text>
-            </Box>
-            {savingFeatures && (
-              <Group gap={6}>
-                <Loader size={12} color="gray" />
-                <Text fz={11} c="#8b949e">Đang đồng bộ...</Text>
-              </Group>
-            )}
-          </Group>
+          <Text fz={18} fw={700} c="#0f172a">
+            Features & Pull Requests
+          </Text>
+          <Text fz="xs" c="#64748b" mt={2}>
+            Bật/tắt các tính năng bổ sung và chiến lược hợp nhất PR
+          </Text>
         </Box>
 
-        <Paper p="lg" radius="md" bg="#161b22" style={{ border: '1px solid #30363d' }} mb="2rem">
-          <Stack gap="md">
-            <Group justify="space-between">
+        <Paper
+          p="lg"
+          radius="md"
+          bg="#ffffff"
+          style={{
+            border: "1px solid #e2e8f0",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+          }}
+          mb="xl"
+        >
+          <Stack gap="lg">
+            <Group justify="space-between" align="center">
               <Box>
-                <Text fz="sm" fw={600} c="#f0f6fc">Issues</Text>
-                <Text fz="xs" c="#8b949e">Theo dõi lỗi, phản hồi và danh sách việc cần làm</Text>
+                <Text fz="sm" fw={600} c="#0f172a">
+                  Issues
+                </Text>
+                <Text fz="xs" c="#64748b">
+                  Theo dõi lỗi và yêu cầu công việc
+                </Text>
               </Box>
               <Switch
                 checked={features.has_issues}
-                onChange={(e) => handleToggleFeature('has_issues', e.currentTarget.checked)}
-                color="green"
+                onChange={(e) =>
+                  handleToggleFeature("has_issues", e.currentTarget.checked)
+                }
+                color="indigo"
               />
             </Group>
 
-            <Divider color="#21262d" />
+            <Divider color="#e2e8f0" />
 
-            <Group justify="space-between">
+            <Group justify="space-between" align="center">
               <Box>
-                <Text fz="sm" fw={600} c="#f0f6fc">Wikis</Text>
-                <Text fz="xs" c="#8b949e">Tài liệu dự án độc lập nằm ngay cạnh mã nguồn</Text>
-              </Box>
-              <Switch
-                checked={features.has_wiki}
-                onChange={(e) => handleToggleFeature('has_wiki', e.currentTarget.checked)}
-                color="green"
-              />
-            </Group>
-
-            <Divider color="#21262d" />
-
-            <Group justify="space-between">
-              <Box>
-                <Text fz="sm" fw={600} c="#f0f6fc">Allow merge commits</Text>
-                <Text fz="xs" c="#8b949e">Tạo merge commit giữ nguyên toàn bộ lịch sử nhánh</Text>
-              </Box>
-              <Switch
-                checked={features.allow_merge_commit}
-                onChange={(e) => handleToggleFeature('allow_merge_commit', e.currentTarget.checked)}
-                color="green"
-              />
-            </Group>
-
-            <Divider color="#21262d" />
-
-            <Group justify="space-between">
-              <Box>
-                <Text fz="sm" fw={600} c="#f0f6fc">Allow squash merging</Text>
-                <Text fz="xs" c="#8b949e">Gộp tất cả commits từ nhánh PR thành 1 commit duy nhất</Text>
+                <Text fz="sm" fw={600} c="#0f172a">
+                  Allow squash merging
+                </Text>
+                <Text fz="xs" c="#64748b">
+                  Gộp toàn bộ commit của PR thành một commit duy nhất khi merge
+                </Text>
               </Box>
               <Switch
                 checked={features.allow_squash_merge}
-                onChange={(e) => handleToggleFeature('allow_squash_merge', e.currentTarget.checked)}
-                color="green"
+                onChange={(e) =>
+                  handleToggleFeature(
+                    "allow_squash_merge",
+                    e.currentTarget.checked,
+                  )
+                }
+                color="indigo"
               />
             </Group>
 
-            <Divider color="#21262d" />
+            <Divider color="#e2e8f0" />
 
-            <Group justify="space-between">
+            <Group justify="space-between" align="center">
               <Box>
-                <Text fz="sm" fw={600} c="#f0f6fc">Automatically delete head branches</Text>
-                <Text fz="xs" c="#8b949e">Tự động xóa nhánh nguồn sau khi PR được merge</Text>
+                <Text fz="sm" fw={600} c="#0f172a">
+                  Automatically delete head branches
+                </Text>
+                <Text fz="xs" c="#64748b">
+                  Tự động xóa nhánh nguồn sau khi PR được merge thành công
+                </Text>
               </Box>
               <Switch
                 checked={features.delete_branch_on_merge}
-                onChange={(e) => handleToggleFeature('delete_branch_on_merge', e.currentTarget.checked)}
-                color="green"
+                onChange={(e) =>
+                  handleToggleFeature(
+                    "delete_branch_on_merge",
+                    e.currentTarget.checked,
+                  )
+                }
+                color="indigo"
               />
             </Group>
           </Stack>
         </Paper>
 
-        <Divider my="xl" color="#30363d" />
-
         {/* 4. DANGER ZONE */}
-        <Box mb="sm">
-          <Text fz={18} fw={700} c="#f85149">Danger Zone</Text>
-          <Text fz="xs" c="#8b949e" mt={2}>Các hành động nhạy cảm có thể ảnh hưởng vĩnh viễn đến repository</Text>
+        <Box mb="md">
+          <Text fz={18} fw={700} c="#dc2626">
+            Danger Zone
+          </Text>
+          <Text fz="xs" c="#64748b" mt={2}>
+            Các hành động có rủi ro cao hoặc không thể hoàn tác
+          </Text>
         </Box>
 
-        <Paper radius="md" bg="#0d1117" style={{ border: '1px solid #da3633', overflow: 'hidden' }}>
-          <Stack gap={0}>
-            {/* Đổi Visibility */}
-            <Group justify="space-between" p="md" style={{ borderBottom: '1px solid #21262d' }}>
+        <Paper
+          p="lg"
+          radius="md"
+          bg="#ffffff"
+          style={{
+            border: "1px solid #fecaca",
+            boxShadow: "0 1px 3px rgba(220, 38, 38, 0.05)",
+          }}
+          mb="xl"
+        >
+          <Stack gap="lg">
+            {/* Change Visibility */}
+            <Group justify="space-between" align="center" wrap="wrap" gap="sm">
               <Box>
-                <Group gap={6} mb={2}>
-                  <IconLock size={15} color="#8b949e" />
-                  <Text fz="sm" fw={600} c="#f0f6fc">Change repository visibility</Text>
-                </Group>
-                <Text fz="xs" c="#8b949e">
-                  Hiện tại repository này đang là <span style={{ color: isPrivate ? '#f85149' : '#3fb950', fontWeight: 600 }}>{isPrivate ? 'Private' : 'Public'}</span>.
+                <Text fz="sm" fw={600} c="#0f172a">
+                  Change repository visibility
+                </Text>
+                <Text fz="xs" c="#64748b">
+                  Hiện tại repository đang là{" "}
+                  <strong>{isPrivate ? "Private" : "Public"}</strong>.
                 </Text>
               </Box>
               <Button
-                variant="default"
+                variant="outline"
                 color="red"
                 size="xs"
                 onClick={() => {
-                  setConfirmInput('');
-                  setActionError(null);
+                  setConfirmInput("");
                   setVisibilityModalOpen(true);
                 }}
-                styles={{ root: { borderColor: '#da3633', color: '#f85149', '&:hover': { backgroundColor: 'rgba(218, 54, 51, 0.1)' } } }}
               >
-                Change visibility
+                Change to {isPrivate ? "Public" : "Private"}
               </Button>
             </Group>
 
-            {/* Archive Repository */}
-            <Group justify="space-between" p="md" style={{ borderBottom: '1px solid #21262d' }}>
+            <Divider color="#fee2e2" />
+
+            {/* Archive Repo */}
+            <Group justify="space-between" align="center" wrap="wrap" gap="sm">
               <Box>
-                <Group gap={6} mb={2}>
-                  <IconArchive size={15} color="#8b949e" />
-                  <Text fz="sm" fw={600} c="#f0f6fc">Archive this repository</Text>
-                </Group>
-                <Text fz="xs" c="#8b949e">
-                  {isArchived ? 'Repository này đã được lưu trữ (chế độ chỉ đọc).' : 'Đưa toàn bộ dự án về chế độ chỉ đọc (Read-only).'}
+                <Text fz="sm" fw={600} c="#0f172a">
+                  {isArchived
+                    ? "Unarchive this repository"
+                    : "Archive this repository"}
+                </Text>
+                <Text fz="xs" c="#64748b">
+                  Đánh dấu repository ở chế độ chỉ đọc (read-only) và không thể
+                  commit.
                 </Text>
               </Box>
               <Button
-                variant="default"
+                variant="outline"
                 color="red"
                 size="xs"
                 disabled={isArchived}
                 onClick={() => {
-                  setConfirmInput('');
-                  setActionError(null);
+                  setConfirmInput("");
                   setArchiveModalOpen(true);
                 }}
-                styles={{ root: { borderColor: '#da3633', color: '#f85149', '&:hover': { backgroundColor: 'rgba(218, 54, 51, 0.1)' } } }}
               >
-                {isArchived ? 'Archived' : 'Archive repository'}
+                {isArchived ? "Archived" : "Archive this repository"}
               </Button>
             </Group>
 
-            {/* Delete Repository */}
-            <Group justify="space-between" p="md">
+            <Divider color="#fee2e2" />
+
+            {/* Delete Repo */}
+            <Group justify="space-between" align="center" wrap="wrap" gap="sm">
               <Box>
-                <Group gap={6} mb={2}>
-                  <IconTrash size={15} color="#f85149" />
-                  <Text fz="sm" fw={600} c="#f85149">Delete this repository</Text>
-                </Group>
-                <Text fz="xs" c="#8b949e">
-                  Sau khi xóa, toàn bộ code, issues, PRs và commits sẽ bị xóa vĩnh viễn khỏi GitHub.
+                <Text fz="sm" fw={600} c="#dc2626">
+                  Delete this repository
+                </Text>
+                <Text fz="xs" c="#64748b">
+                  Xóa vĩnh viễn repository này cùng toàn bộ commits, branches và
+                  pull requests.
                 </Text>
               </Box>
               <Button
-                color="red"
                 variant="filled"
+                color="red"
                 size="xs"
                 onClick={() => {
-                  setConfirmInput('');
-                  setActionError(null);
+                  setConfirmInput("");
                   setDeleteModalOpen(true);
                 }}
-                styles={{ root: { backgroundColor: '#da3633', '&:hover': { backgroundColor: '#b62324' } } }}
               >
-                Delete repository
+                Delete this repository
               </Button>
             </Group>
           </Stack>
         </Paper>
-
       </Box>
 
-      {/* MODAL 1: VISIBILITY */}
-      <Modal
-        opened={visibilityModalOpen}
-        onClose={() => setVisibilityModalOpen(false)}
-        title={<Text fw={700} c="#f0f6fc">Change repository visibility</Text>}
-        centered
-        styles={{ content: { backgroundColor: '#161b22', border: '1px solid #30363d' }, header: { backgroundColor: '#161b22' } }}
-      >
-        <Stack gap="sm">
-          {actionError && <Alert color="red">{actionError}</Alert>}
-          <Text fz="xs" c="#c9d1d9">
-            Bạn đang chuẩn bị chuyển trạng thái của repo sang <b>{isPrivate ? 'Public' : 'Private'}</b>.
-          </Text>
-          <Text fz="xs" c="#8b949e">
-            Gõ đúng <b style={{ color: '#f0f6fc' }}>{repoFullName}</b> để xác nhận:
-          </Text>
-          <TextInput
-            placeholder={repoFullName}
-            value={confirmInput}
-            onChange={(e) => setConfirmInput(e.currentTarget.value)}
-            size="xs"
-            styles={{ input: { backgroundColor: '#0d1117', borderColor: '#30363d', color: '#f0f6fc', fontFamily: 'monospace' } }}
-          />
-          <Button
-            fullWidth
-            color="red"
-            size="xs"
-            disabled={confirmInput !== repoFullName}
-            loading={actionLoading}
-            onClick={handleToggleVisibility}
-            mt="xs"
-          >
-            I understand, change visibility
-          </Button>
-        </Stack>
-      </Modal>
-
-      {/* MODAL 2: ARCHIVE */}
-      <Modal
-        opened={archiveModalOpen}
-        onClose={() => setArchiveModalOpen(false)}
-        title={<Text fw={700} c="#f0f6fc">Archive repository</Text>}
-        centered
-        styles={{ content: { backgroundColor: '#161b22', border: '1px solid #30363d' }, header: { backgroundColor: '#161b22' } }}
-      >
-        <Stack gap="sm">
-          {actionError && <Alert color="red">{actionError}</Alert>}
-          <Text fz="xs" c="#c9d1d9">
-            Sau khi archive, repository sẽ chuyển sang chế độ <b>Read-only</b>.
-          </Text>
-          <Text fz="xs" c="#8b949e">
-            Gõ <b style={{ color: '#f0f6fc' }}>{repoFullName}</b> để xác nhận:
-          </Text>
-          <TextInput
-            placeholder={repoFullName}
-            value={confirmInput}
-            onChange={(e) => setConfirmInput(e.currentTarget.value)}
-            size="xs"
-            styles={{ input: { backgroundColor: '#0d1117', borderColor: '#30363d', color: '#f0f6fc', fontFamily: 'monospace' } }}
-          />
-          <Button
-            fullWidth
-            color="red"
-            size="xs"
-            disabled={confirmInput !== repoFullName}
-            loading={actionLoading}
-            onClick={handleArchiveRepo}
-            mt="xs"
-          >
-            I understand, archive repository
-          </Button>
-        </Stack>
-      </Modal>
-
-      {/* MODAL 3: DELETE */}
-      <Modal
-        opened={deleteModalOpen}
-        onClose={() => setDeleteModalOpen(false)}
-        title={<Text fw={700} c="#f85149">Delete this repository</Text>}
-        centered
-        styles={{ content: { backgroundColor: '#161b22', border: '1px solid #da3633' }, header: { backgroundColor: '#161b22' } }}
-      >
-        <Stack gap="sm">
-          {actionError && <Alert color="red">{actionError}</Alert>}
-          <Text fz="xs" c="#c9d1d9">
-            Hành động này <b>KHÔNG THỂ</b> hoàn tác. Toàn bộ code và lịch sử commit sẽ bị xóa vĩnh viễn.
-          </Text>
-          <Text fz="xs" c="#8b949e">
-            Vui lòng nhập <b style={{ color: '#f85149' }}>{repoFullName}</b> để xác nhận:
-          </Text>
-          <TextInput
-            placeholder={repoFullName}
-            value={confirmInput}
-            onChange={(e) => setConfirmInput(e.currentTarget.value)}
-            size="xs"
-            styles={{ input: { backgroundColor: '#0d1117', borderColor: '#da3633', color: '#f85149', fontFamily: 'monospace' } }}
-          />
-          <Button
-            fullWidth
-            color="red"
-            size="xs"
-            disabled={confirmInput !== repoFullName}
-            loading={actionLoading}
-            onClick={handleDeleteRepo}
-            styles={{ root: { backgroundColor: '#da3633', '&:hover': { backgroundColor: '#b62324' } } }}
-            mt="xs"
-          >
-            I understand consequences, delete this repository
-          </Button>
-        </Stack>
-      </Modal>
-
+      {/* DANGER ZONE MODALS */}
+      <DangerZoneModals
+        visibilityModalOpen={visibilityModalOpen}
+        onCloseVisibilityModal={() => setVisibilityModalOpen(false)}
+        handleChangeVisibility={handleChangeVisibility}
+        archiveModalOpen={archiveModalOpen}
+        onCloseArchiveModal={() => setArchiveModalOpen(false)}
+        handleArchiveRepo={handleArchiveRepo}
+        deleteModalOpen={deleteModalOpen}
+        onCloseDeleteModal={() => setDeleteModalOpen(false)}
+        handleDeleteRepo={handleDeleteRepo}
+        expectedConfirmText={expectedConfirmText}
+        confirmInput={confirmInput}
+        setConfirmInput={setConfirmInput}
+        actionLoading={actionLoading}
+        actionError={actionError}
+        isPrivate={isPrivate}
+      />
     </Box>
   );
 }

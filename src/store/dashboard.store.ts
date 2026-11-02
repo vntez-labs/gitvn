@@ -1,8 +1,8 @@
-import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import axios from 'axios';
-import { GitHubRepo, GitHubOrg } from '@/interfaces/github';
-import { TreeNode } from '@/components/FileTree';
+import axios from "axios";
+import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
+import type { TreeNode } from "@/components/FileTree";
+import type { GitHubOrg, GitHubRepo } from "@/interfaces/github";
 
 interface DashboardState {
   repos: GitHubRepo[];
@@ -21,7 +21,11 @@ interface DashboardState {
 
   fetchInitialData: () => Promise<void>;
   selectOrg: (org: string | null) => void;
-  selectRepo: (repo: GitHubRepo | null, targetFile?: string | null, targetBranch?: string | null) => Promise<void>;
+  selectRepo: (
+    repo: GitHubRepo | null,
+    targetFile?: string | null,
+    targetBranch?: string | null,
+  ) => Promise<void>;
   addRepo: (repo: GitHubRepo) => void;
   changeBranch: (branch: string) => Promise<void>; // <-- THÊM ACTION ĐỔI BRANCH
   selectFile: (path: string, branch?: string) => Promise<void>;
@@ -36,17 +40,17 @@ export const useDashboardStore = create<DashboardState>()(
       dataLoading: true,
       selectedOrg: null,
       selectedRepo: null,
-      currentBranch: 'main',
+      currentBranch: "main",
       tree: [],
       loadingTree: false,
       activeFile: null,
-      fileContent: '',
+      fileContent: "",
       loadingContent: false,
 
       fetchInitialData: async () => {
         set({ dataLoading: true });
         try {
-          const { data } = await axios.get('/api/user/data');
+          const { data } = await axios.get("/api/user/data");
           set({
             repos: data.repos || [],
             orgs: data.orgs || [],
@@ -61,13 +65,19 @@ export const useDashboardStore = create<DashboardState>()(
             await get().selectRepo(currentRepo, currentFile, branch);
           }
         } catch (error) {
-          console.error('Lỗi lấy dữ liệu:', error);
+          console.error("Lỗi lấy dữ liệu:", error);
           set({ dataLoading: false });
         }
       },
 
       selectOrg: (org) => {
-        set({ selectedOrg: org, selectedRepo: null, tree: [], activeFile: null, fileContent: '' });
+        set({
+          selectedOrg: org,
+          selectedRepo: null,
+          tree: [],
+          activeFile: null,
+          fileContent: "",
+        });
       },
 
       selectRepo: async (repo, targetFile = null, targetBranch = null) => {
@@ -76,7 +86,7 @@ export const useDashboardStore = create<DashboardState>()(
           return;
         }
 
-        const branch = targetBranch || (repo as any).default_branch || 'main';
+        const branch = targetBranch || (repo as any).default_branch || "main";
         set({
           selectedRepo: repo,
           currentBranch: branch,
@@ -87,7 +97,7 @@ export const useDashboardStore = create<DashboardState>()(
 
         try {
           const { data } = await axios.get(
-            `/api/github/tree?owner=${repo.owner.login}&repo=${repo.name}&branch=${encodeURIComponent(branch)}`
+            `/api/github/tree?owner=${repo.owner.login}&repo=${repo.name}&branch=${encodeURIComponent(branch)}`,
           );
           const treeData: TreeNode[] = data.tree || [];
           set({ tree: treeData, loadingTree: false });
@@ -99,15 +109,22 @@ export const useDashboardStore = create<DashboardState>()(
           }
 
           // Fallback mở file README.md
-          const readme = treeData.find((f) => f.path.toLowerCase() === 'readme.md');
+          const readme = treeData.find(
+            (f) => f.path.toLowerCase() === "readme.md",
+          );
           if (readme) {
             await get().selectFile(readme.path, branch);
           } else {
-            set({ activeFile: null, fileContent: '' });
+            set({ activeFile: null, fileContent: "" });
           }
         } catch (error) {
-          console.error('Lỗi lấy tree:', error);
-          set({ loadingTree: false, tree: [], activeFile: null, fileContent: '' });
+          console.error("Lỗi lấy tree:", error);
+          set({
+            loadingTree: false,
+            tree: [],
+            activeFile: null,
+            fileContent: "",
+          });
         }
       },
 
@@ -115,10 +132,10 @@ export const useDashboardStore = create<DashboardState>()(
         set((state) => ({
           repos: [repo, ...state.repos.filter((r) => r.id !== repo.id)],
           selectedRepo: repo,
-          currentBranch: (repo as any).default_branch || 'main',
+          currentBranch: (repo as any).default_branch || "main",
           tree: [],
           activeFile: null,
-          fileContent: '',
+          fileContent: "",
         }));
       },
 
@@ -140,12 +157,15 @@ export const useDashboardStore = create<DashboardState>()(
 
         try {
           const { data } = await axios.get(
-            `/api/github/content?owner=${repo.owner.login}&repo=${repo.name}&path=${encodeURIComponent(path)}&ref=${encodeURIComponent(branch)}`
+            `/api/github/content?owner=${repo.owner.login}&repo=${repo.name}&path=${encodeURIComponent(path)}&ref=${encodeURIComponent(branch)}`,
           );
-          set({ fileContent: data.content || '', loadingContent: false });
+          set({ fileContent: data.content || "", loadingContent: false });
         } catch (error) {
-          console.error('Lỗi lấy nội dung file:', error);
-          set({ fileContent: 'Lỗi không thể tải nội dung file.', loadingContent: false });
+          console.error("Lỗi lấy nội dung file:", error);
+          set({
+            fileContent: "Lỗi không thể tải nội dung file.",
+            loadingContent: false,
+          });
         }
       },
 
@@ -154,12 +174,12 @@ export const useDashboardStore = create<DashboardState>()(
           selectedRepo: null,
           tree: [],
           activeFile: null,
-          fileContent: '',
+          fileContent: "",
         });
       },
     }),
     {
-      name: 'gitvn-dashboard-storage',
+      name: "gitvn-dashboard-storage",
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         selectedOrg: state.selectedOrg,
@@ -167,6 +187,6 @@ export const useDashboardStore = create<DashboardState>()(
         currentBranch: state.currentBranch,
         activeFile: state.activeFile,
       }),
-    }
-  )
+    },
+  ),
 );

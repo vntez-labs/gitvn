@@ -1,38 +1,53 @@
-import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const owner = searchParams.get('owner');
-  const repo = searchParams.get('repo');
-  const pullNumber = searchParams.get('pull_number');
+  const owner = searchParams.get("owner");
+  const repo = searchParams.get("repo");
+  const pullNumber = searchParams.get("pull_number");
 
   if (!owner || !repo || !pullNumber) {
-    return NextResponse.json({ error: 'Thiếu thông tin query' }, { status: 400 });
+    return NextResponse.json(
+      { error: "Thiếu thông tin query" },
+      { status: 400 },
+    );
   }
 
   const cookieStore = await cookies();
-  const token = cookieStore.get('github_access_token')?.value;
+  const token = cookieStore.get("github_access_token")?.value;
 
   if (!token) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
     const headers = {
       Authorization: `Bearer ${token}`,
-      Accept: 'application/vnd.github+json',
+      Accept: "application/vnd.github+json",
     };
 
     // Gọi đồng thời PR detail, Files changed và Commits
     const [detailRes, filesRes, commitsRes] = await Promise.all([
-      fetch(`https://api.github.com/repos/${owner}/${repo}/pulls/${pullNumber}`, { headers, cache: 'no-store' }),
-      fetch(`https://api.github.com/repos/${owner}/${repo}/pulls/${pullNumber}/files`, { headers, cache: 'no-store' }),
-      fetch(`https://api.github.com/repos/${owner}/${repo}/pulls/${pullNumber}/commits?per_page=100`, { headers, cache: 'no-store' }),
+      fetch(
+        `https://api.github.com/repos/${owner}/${repo}/pulls/${pullNumber}`,
+        { headers, cache: "no-store" },
+      ),
+      fetch(
+        `https://api.github.com/repos/${owner}/${repo}/pulls/${pullNumber}/files`,
+        { headers, cache: "no-store" },
+      ),
+      fetch(
+        `https://api.github.com/repos/${owner}/${repo}/pulls/${pullNumber}/commits?per_page=100`,
+        { headers, cache: "no-store" },
+      ),
     ]);
 
     if (!detailRes.ok) {
-      return NextResponse.json({ error: 'Không thể tải chi tiết PR' }, { status: detailRes.status });
+      return NextResponse.json(
+        { error: "Không thể tải chi tiết PR" },
+        { status: detailRes.status },
+      );
     }
 
     const pull = await detailRes.json();
@@ -41,6 +56,9 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ pull, files, commits });
   } catch {
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 },
+    );
   }
 }

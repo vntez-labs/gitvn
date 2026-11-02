@@ -11,6 +11,7 @@ export interface GitHubOrg {
   id: number;
   avatar_url: string;
   description: string | null;
+  isUser?: boolean;
 }
 
 export interface GitHubRepo {

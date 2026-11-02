@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="vntezGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fb291a" />
+      <stop offset="100%" stop-color="#f77241" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="16" flood-color="#fb291a" flood-opacity="0.25" />
+    </filter>
+  </defs>
+
+  <!-- Background Squircle -->
+  <rect width="512" height="512" rx="128" fill="url(#vntezGrad)" filter="url(#shadow)" />
+
+  <!-- Inner Soft Accent -->
+  <rect x="24" y="24" width="464" height="464" rx="108" fill="none" stroke="#ffffff" stroke-width="4" stroke-opacity="0.15" />
+
+  <!-- Git Branching / 'V' Nodes Monogram in White -->
+  <g fill="none" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Branch Lines -->
+    <path d="M168 152 V 360" stroke-width="42" />
+    <path d="M168 256 C 220 256, 320 240, 344 196" stroke-width="38" />
+    <path d="M256 360 L 344 360" stroke-width="38" />
+
+    <!-- Commit / Branch Nodes -->
+    <circle cx="168" cy="152" r="34" fill="#ffffff" stroke="#ffffff" stroke-width="12" />
+    <circle cx="168" cy="360" r="34" fill="#ffffff" stroke="#ffffff" stroke-width="12" />
+    <circle cx="344" cy="180" r="34" fill="#ffffff" stroke="#ffffff" stroke-width="12" />
+  </g>
+</svg>

@@ -1,10 +1,19 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Box, Group, Text, Badge, Stack, Button, ActionIcon, Tooltip } from '@mantine/core';
-import { IconPlus, IconInbox } from '@tabler/icons-react';
-import { JiraTask, TaskStatus } from '@/interfaces/jira';
-import { KanbanCard } from './KanbanCard';
+import {
+  ActionIcon,
+  Badge,
+  Box,
+  Button,
+  Group,
+  Stack,
+  Text,
+  Tooltip,
+} from "@mantine/core";
+import { IconInbox, IconPlus } from "@tabler/icons-react";
+import { useState } from "react";
+import type { JiraTask, TaskStatus } from "@/interfaces/jira";
+import { KanbanCard } from "./KanbanCard";
 
 interface KanbanColumnProps {
   status: TaskStatus;
@@ -47,7 +56,7 @@ export function KanbanColumn({
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(false);
-    const taskId = e.dataTransfer.getData('text/plain');
+    const taskId = e.dataTransfer.getData("text/plain");
     if (taskId) {
       onDropTask(taskId, status);
     }
@@ -59,14 +68,14 @@ export function KanbanColumn({
         flex: 1,
         minWidth: 280,
         maxWidth: 380,
-        backgroundColor: isDragOver ? 'rgba(56, 139, 253, 0.08)' : '#0d1117',
-        border: `1px solid ${isDragOver ? '#58a6ff' : 'rgba(255, 255, 255, 0.08)'}`,
+        backgroundColor: isDragOver ? "#fff1f0" : "#f1f5f9",
+        border: `1px solid ${isDragOver ? "#fb291a" : "#e2e8f0"}`,
         borderRadius: 10,
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100%',
-        maxHeight: '100%',
-        transition: 'all 0.15s ease',
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+        maxHeight: "100%",
+        transition: "all 0.15s ease",
       }}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -78,8 +87,8 @@ export function KanbanColumn({
         px="md"
         py={12}
         style={{
-          borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
-          backgroundColor: '#161b22',
+          borderBottom: "1px solid #e2e8f0",
+          backgroundColor: "#ffffff",
           borderTopLeftRadius: 9,
           borderTopRightRadius: 9,
           flexShrink: 0,
@@ -90,52 +99,47 @@ export function KanbanColumn({
             style={{
               width: 8,
               height: 8,
-              borderRadius: '50%',
+              borderRadius: "50%",
               backgroundColor: color,
-              boxShadow: `0 0 8px ${color}88`,
+              boxShadow: `0 0 6px ${color}66`,
             }}
           />
           <Text
             fz={12.5}
             fw={700}
-            c="#f0f6fc"
-            style={{ textTransform: 'uppercase', letterSpacing: '0.04em' }}
+            c="#0f172a"
+            style={{ textTransform: "uppercase", letterSpacing: "0.04em" }}
           >
             {title}
           </Text>
 
           <Badge
             size="xs"
-            variant="filled"
+            variant="light"
+            color="gray"
             styles={{
               root: {
-                backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                color: '#c9d1d9',
                 fontWeight: 600,
                 fontSize: 10.5,
                 borderRadius: 10,
-                padding: '2px 7px',
+                padding: "2px 7px",
                 height: 18,
               },
             }}
           >
             {tasks.length}
           </Badge>
-        </Group>
 
-        <Group gap={6}>
           {totalPoints > 0 && (
-            <Tooltip label={`Tổng: ${totalPoints} Story Points`} withArrow>
+            <Tooltip label={`Tổng Story Points: ${totalPoints} SP`} withArrow>
               <Badge
                 size="xs"
                 variant="outline"
+                color="vntez"
                 styles={{
                   root: {
-                    backgroundColor: 'rgba(255, 255, 255, 0.03)',
-                    borderColor: 'rgba(255, 255, 255, 0.08)',
-                    color: '#8b949e',
-                    fontWeight: 600,
                     fontSize: 10,
+                    padding: "2px 6px",
                     height: 18,
                   },
                 }}
@@ -144,101 +148,101 @@ export function KanbanColumn({
               </Badge>
             </Tooltip>
           )}
-
-          {canEdit && (
-            <Tooltip label={`Thêm việc vào ${title}`} withArrow>
-              <ActionIcon
-                size="sm"
-                variant="subtle"
-                color="gray"
-                onClick={() => onQuickAdd(status)}
-                styles={{
-                  root: {
-                    color: '#8b949e',
-                    '&:hover': {
-                      backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                      color: '#58a6ff',
-                    },
-                  },
-                }}
-              >
-                <IconPlus size={15} />
-              </ActionIcon>
-            </Tooltip>
-          )}
         </Group>
+
+        {canEdit && (
+          <Tooltip label={`Thêm task vào cột ${title}`} withArrow>
+            <ActionIcon
+              size="xs"
+              variant="subtle"
+              color="gray"
+              onClick={() => onQuickAdd(status)}
+              aria-label={`Thêm task vào ${title}`}
+            >
+              <IconPlus size={14} />
+            </ActionIcon>
+          </Tooltip>
+        )}
       </Group>
 
-      {/* Cards list */}
+      {/* Cards Scrollable Container */}
       <Box
         className="hide-scrollbar"
-        p={10}
+        p={8}
         style={{
           flex: 1,
-          overflowY: 'auto',
-          minHeight: 120,
+          overflowY: "auto",
+          minHeight: 0,
         }}
       >
-        <Stack gap={8}>
-          {tasks.map((task) => (
-            <KanbanCard
-              key={task.id}
-              task={task}
-              onClick={onCardClick}
-              onDragStart={onDragStart}
-              canDrag={canEdit}
-            />
-          ))}
-
-          {tasks.length === 0 && (
-            <Box
-              py={36}
-              ta="center"
-              style={{
-                border: '1.5px dashed rgba(255, 255, 255, 0.1)',
-                borderRadius: 8,
-                backgroundColor: 'rgba(255, 255, 255, 0.01)',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 6,
-              }}
-            >
-              <IconInbox size={22} color="#6e7681" />
-              <Text fz={12} c="#6e7681" fw={500}>
-                Kéo thẻ công việc vào đây
-              </Text>
-            </Box>
-          )}
-        </Stack>
+        {tasks.length > 0 ? (
+          <Stack gap={8}>
+            {tasks.map((task) => (
+              <KanbanCard
+                key={task.id}
+                task={task}
+                onClick={onCardClick}
+                onDragStart={onDragStart}
+                canDrag={canEdit}
+              />
+            ))}
+          </Stack>
+        ) : (
+          <Box
+            style={{
+              height: 140,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              border: "1px dashed #cbd5e1",
+              borderRadius: 8,
+              backgroundColor: "rgba(255, 255, 255, 0.4)",
+            }}
+          >
+            <IconInbox size={24} color="#94a3b8" />
+            <Text fz={12} c="#94a3b8" mt={6}>
+              Chưa có task nào
+            </Text>
+            {canEdit && (
+              <Button
+                variant="subtle"
+                color="vntez"
+                size="compact-xs"
+                mt={4}
+                leftSection={<IconPlus size={12} />}
+                onClick={() => onQuickAdd(status)}
+              >
+                Tạo task mới
+              </Button>
+            )}
+          </Box>
+        )}
       </Box>
 
-      {/* Quick Add Button at bottom */}
-      {canEdit && (
-        <Box p={8} style={{ borderTop: '1px solid rgba(255, 255, 255, 0.06)', flexShrink: 0 }}>
+      {/* Quick Add Footer Button */}
+      {canEdit && tasks.length > 0 && (
+        <Box p={8} style={{ borderTop: "1px solid #e2e8f0", flexShrink: 0 }}>
           <Button
-            fullWidth
-            size="compact-xs"
             variant="subtle"
             color="gray"
-            leftSection={<IconPlus size={13} />}
+            size="xs"
+            fullWidth
+            leftSection={<IconPlus size={14} />}
             onClick={() => onQuickAdd(status)}
             styles={{
               root: {
-                color: '#8b949e',
-                fontWeight: 500,
+                color: "#475569",
                 fontSize: 12,
-                borderRadius: 6,
-                height: 28,
-                '&:hover': {
-                  color: '#58a6ff',
-                  backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                fontWeight: 500,
+                "&:hover": {
+                  backgroundColor: "#ffffff",
+                  color: "#0f172a",
                 },
               },
             }}
           >
-            Thêm việc mới
+            Tạo thêm task...
           </Button>
         </Box>
       )}

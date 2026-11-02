@@ -1,7 +1,9 @@
-'use client';
+"use client";
 
-import { Box, Group, Text, Badge, Avatar, Tooltip } from '@mantine/core';
-import { JiraTask, TaskPriority } from '@/interfaces/jira';
+import { Avatar, Badge, Box, Group, Text, Tooltip } from "@mantine/core";
+import { getGitHubAvatarUrl } from "@/lib/avatar";
+import { getStoryPointsForTask } from "@/lib/jira-priority";
+import type { JiraTask, TaskPriority } from "@/interfaces/jira";
 
 interface KanbanCardProps {
   task: JiraTask;
@@ -15,32 +17,37 @@ const PRIORITY_CONFIG: Record<
   { bg: string; text: string; dot: string; label: string }
 > = {
   urgent: {
-    bg: 'rgba(248, 81, 73, 0.12)',
-    text: '#ff7b72',
-    dot: '#f85149',
-    label: 'Urgent',
+    bg: "#fee2e2",
+    text: "#dc2626",
+    dot: "#ef4444",
+    label: "Urgent",
   },
   high: {
-    bg: 'rgba(210, 153, 34, 0.12)',
-    text: '#e3b341',
-    dot: '#d29922',
-    label: 'High',
+    bg: "#fef3c7",
+    text: "#d97706",
+    dot: "#f59e0b",
+    label: "High",
   },
   medium: {
-    bg: 'rgba(56, 139, 253, 0.12)',
-    text: '#79c0ff',
-    dot: '#58a6ff',
-    label: 'Medium',
+    bg: "#eff6ff",
+    text: "#2563eb",
+    dot: "#3b82f6",
+    label: "Medium",
   },
   low: {
-    bg: 'rgba(139, 148, 158, 0.12)',
-    text: '#8b949e',
-    dot: '#8b949e',
-    label: 'Low',
+    bg: "#f1f5f9",
+    text: "#475569",
+    dot: "#64748b",
+    label: "Low",
   },
 };
 
-export function KanbanCard({ task, onClick, onDragStart, canDrag }: KanbanCardProps) {
+export function KanbanCard({
+  task,
+  onClick,
+  onDragStart,
+  canDrag,
+}: KanbanCardProps) {
   const prio = PRIORITY_CONFIG[task.priority] || PRIORITY_CONFIG.medium;
   const assigneeName = task.assignee?.name || task.assignee?.login;
 
@@ -51,63 +58,62 @@ export function KanbanCard({ task, onClick, onDragStart, canDrag }: KanbanCardPr
       onClick={() => onClick(task)}
       p={12}
       style={{
-        backgroundColor: '#161b22',
-        border: '1px solid rgba(255, 255, 255, 0.08)',
+        backgroundColor: "#ffffff",
+        border: "1px solid #e2e8f0",
         borderRadius: 8,
-        cursor: canDrag ? 'grab' : 'pointer',
-        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.25)',
-        transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
-        userSelect: 'none',
+        cursor: canDrag ? "grab" : "pointer",
+        boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
+        transition: "all 0.15s cubic-bezier(0.4, 0, 0.2, 1)",
+        userSelect: "none",
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = 'rgba(88, 166, 255, 0.45)';
-        e.currentTarget.style.backgroundColor = '#1c2128';
-        e.currentTarget.style.transform = 'translateY(-2px)';
-        e.currentTarget.style.boxShadow = '0 6px 14px rgba(0, 0, 0, 0.35)';
+        e.currentTarget.style.borderColor = "#ffc5be";
+        e.currentTarget.style.transform = "translateY(-2px)";
+        e.currentTarget.style.boxShadow = "0 6px 14px rgba(251, 41, 26, 0.08)";
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
-        e.currentTarget.style.backgroundColor = '#161b22';
-        e.currentTarget.style.transform = 'none';
-        e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.25)';
+        e.currentTarget.style.borderColor = "#e2e8f0";
+        e.currentTarget.style.transform = "none";
+        e.currentTarget.style.boxShadow = "0 1px 3px rgba(0, 0, 0, 0.05)";
       }}
     >
       {/* Header: Key & Story Points */}
       <Group justify="space-between" mb={8} wrap="nowrap">
-        <Text fz={11.5} fw={600} c="#58a6ff" ff="var(--font-geist-mono), monospace">
+        <Text
+          fz={11.5}
+          fw={700}
+          c="#fb291a"
+          ff="var(--font-geist-mono), monospace"
+        >
           {task.id}
         </Text>
 
-        {typeof task.storyPoints === 'number' && (
-          <Badge
-            size="xs"
-            variant="outline"
-            styles={{
-              root: {
-                backgroundColor: 'rgba(255, 255, 255, 0.04)',
-                borderColor: 'rgba(255, 255, 255, 0.1)',
-                color: '#8b949e',
-                fontWeight: 600,
-                fontSize: 10,
-                padding: '2px 6px',
-                height: 18,
-              },
-            }}
-          >
-            {task.storyPoints} SP
-          </Badge>
-        )}
+        <Badge
+          size="xs"
+          variant="light"
+          color="gray"
+          styles={{
+            root: {
+              fontWeight: 600,
+              fontSize: 10,
+              padding: "2px 6px",
+              height: 18,
+            },
+          }}
+        >
+          {getStoryPointsForTask(task)} SP
+        </Badge>
       </Group>
 
       {/* Title */}
       <Text
         fz={13.5}
-        fw={500}
-        c="#e6edf3"
+        fw={600}
+        c="#0f172a"
         lineClamp={2}
         mb={12}
         lh={1.45}
-        style={{ letterSpacing: '-0.01em' }}
+        style={{ letterSpacing: "-0.01em" }}
       >
         {task.title}
       </Text>
@@ -128,37 +134,50 @@ export function KanbanCard({ task, onClick, onDragStart, canDrag }: KanbanCardPr
             style={{
               width: 6,
               height: 6,
-              borderRadius: '50%',
+              borderRadius: "50%",
               backgroundColor: prio.dot,
             }}
           />
-          <Text fz={10.5} fw={600} c={prio.text} style={{ textTransform: 'uppercase', letterSpacing: '0.02em' }}>
+          <Text fz={11} fw={600} c={prio.text}>
             {prio.label}
           </Text>
         </Group>
 
-        {assigneeName ? (
-          <Tooltip label={`Giao cho: @${assigneeName}`} withArrow>
+        {task.assignee ? (
+          <Tooltip label={`Người thực hiện: ${assigneeName}`} withArrow>
             <Avatar
-              src={task.assignee?.avatar_url}
-              alt={assigneeName}
+              src={getGitHubAvatarUrl(task.assignee, 48)}
               size={22}
               radius="xl"
               style={{
-                border: '1.5px solid #30363d',
-                backgroundColor: '#21262d',
-                color: '#f0f6fc',
+                border: "1px solid #e2e8f0",
                 fontSize: 10,
-                fontWeight: 600,
+                fontWeight: 700,
+                backgroundColor: "#fff1f0",
+                color: "#fb291a",
               }}
             >
-              {assigneeName.slice(0, 2).toUpperCase()}
+              {assigneeName?.slice(0, 2).toUpperCase() || "VN"}
             </Avatar>
           </Tooltip>
         ) : (
-          <Text fz={11} c="#6e7681" fs="italic">
-            Chưa giao
-          </Text>
+          <Tooltip label="Chưa có người nhận task" withArrow>
+            <Box
+              style={{
+                width: 22,
+                height: 22,
+                borderRadius: "50%",
+                border: "1px dashed #cbd5e1",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 10,
+                color: "#94a3b8",
+              }}
+            >
+              ?
+            </Box>
+          </Tooltip>
         )}
       </Group>
     </Box>

@@ -1,2 +1,29 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
+
+:root {
+  --primary-color: #fb291a;
+  --primary-gradient: linear-gradient(135deg, #fb291a 0%, #f77241 100%);
+  --mantine-primary-color: #fb291a;
+}
+
+::selection {
+  background-color: #ffc5be;
+  color: #7a0c04;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}

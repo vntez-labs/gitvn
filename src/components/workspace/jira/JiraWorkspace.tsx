@@ -1,72 +1,99 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useMemo } from 'react';
 import {
-  Box,
-  Group,
-  Text,
-  Badge,
-  Button,
-  SegmentedControl,
-  TextInput,
-  Select,
-  Loader,
   ActionIcon,
-  Tooltip,
+  Badge,
+  Box,
+  Button,
+  Group,
+  Menu,
+  Paper,
+  SegmentedControl,
+  Select,
   Switch,
-} from '@mantine/core';
+  Text,
+  TextInput,
+  Tooltip,
+} from "@mantine/core";
 import {
-  IconLayoutKanban,
-  IconListCheck,
-  IconPlus,
   IconCalendar,
-  IconShieldLock,
-  IconSearch,
-  IconRefresh,
+  IconDots,
   IconFileCode,
+  IconFilter,
+  IconFolderPlus,
+  IconPlus,
+  IconRefresh,
+  IconSearch,
+  IconShieldLock,
   IconSparkles,
-  IconCheck,
-} from '@tabler/icons-react';
-import { notifications } from '@mantine/notifications';
-import {
-  JiraBoardData,
-  JiraSprint,
-  JiraTask,
-  ProjectPermissions,
-  ProjectRole,
-  TaskStatus,
-} from '@/interfaces/jira';
-import { useAuthStore } from '@/store/auth.store';
-import { useDashboardStore } from '@/store/dashboard.store';
-import { KanbanColumn } from './KanbanColumn';
-import { BacklogView } from './BacklogView';
-import { TaskDetailModal } from './TaskDetailModal';
-import { CreateTaskModal } from './CreateTaskModal';
-import { CreateSprintModal } from './CreateSprintModal';
-import { PermissionsModal } from './PermissionsModal';
-import { TasksJsonModal } from './TasksJsonModal';
-import axios from 'axios';
+  IconUser,
+} from "@tabler/icons-react";
+import { useMemo, useState } from "react";
+import { useJiraBoard } from "@/hooks/useJiraBoard";
+import type { JiraTask, TaskPriority, TaskStatus } from "@/interfaces/jira";
+import { useAuthStore } from "@/store/auth.store";
+import { useDashboardStore } from "@/store/dashboard.store";
+import { BacklogView } from "./BacklogView";
+import { CreateSprintModal } from "./CreateSprintModal";
+import { CreateTaskModal } from "./CreateTaskModal";
+import { KanbanColumn } from "./KanbanColumn";
+import { KanbanSkeleton } from "./KanbanSkeleton";
+import { PermissionsModal } from "./PermissionsModal";
+import { TaskDetailModal } from "./TaskDetailModal";
+import { TasksJsonModal } from "./TasksJsonModal";
 
-const KANBAN_COLUMNS: { status: TaskStatus; title: string; color: string }[] = [
-  { status: 'todo', title: 'To Do', color: '#94a3b8' },
-  { status: 'in_progress', title: 'In Progress', color: '#388bfd' },
-  { status: 'review', title: 'In Review', color: '#e3b341' },
-  { status: 'done', title: 'Done', color: '#2ea043' },
+const DEFAULT_KANBAN_COLUMNS: {
+  status: TaskStatus;
+  title: string;
+  color: string;
+}[] = [
+  { status: "todo", title: "To Do", color: "#3b82f6" },
+  { status: "in_progress", title: "In Progress", color: "#eab308" },
+  { status: "review", title: "In Review", color: "#a855f7" },
+  { status: "done", title: "Done", color: "#22c55e" },
 ];
 
 export function JiraWorkspace() {
   const { user } = useAuthStore();
   const { selectedRepo } = useDashboardStore();
-
-  const [boardData, setBoardData] = useState<JiraBoardData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [syncing, setSyncing] = useState(false);
-  const [syncedToGitHub, setSyncedToGitHub] = useState(false);
-  const [view, setView] = useState<'kanban' | 'backlog'>('kanban');
-  const [selectedSprintId, setSelectedSprintId] = useState<string>('active');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterPriority, setFilterPriority] = useState<string | null>(null);
-  const [onlyMyTasks, setOnlyMyTasks] = useState(false);
+  const {
+    boardData,
+    setBoardData,
+    gitvnConfig,
+    hasGitvn,
+    initializing,
+    loading,
+    syncedToGitHub,
+    view,
+    setView,
+    selectedSprintId,
+    setSelectedSprintId,
+    searchQuery,
+    setSearchQuery,
+    filterPriority,
+    setFilterPriority,
+    onlyMyTasks,
+    setOnlyMyTasks,
+    allMembers,
+    userRole,
+    canEdit,
+    canManageSprint,
+    canCreateBacklog,
+    activeSprint,
+    filteredTasks,
+    fetchBoardData,
+    initializeGitvn,
+    createTask,
+    updateTask,
+    deleteTask,
+    dropTask,
+    createSprint,
+    updateSprintStatus,
+    moveTaskToSprint,
+    bulkMoveTasks,
+    bulkDeleteTasks,
+    savePermissions,
+  } = useJiraBoard();
 
   // Modals state
   const [selectedTask, setSelectedTask] = useState<JiraTask | null>(null);
@@ -75,650 +102,392 @@ export function JiraWorkspace() {
   const [createSprintOpen, setCreateSprintOpen] = useState(false);
   const [permissionsOpen, setPermissionsOpen] = useState(false);
   const [jsonModalOpen, setJsonModalOpen] = useState(false);
-  const [quickAddStatus, setQuickAddStatus] = useState<TaskStatus>('todo');
+  const [quickAddStatus, setQuickAddStatus] = useState<TaskStatus>("todo");
   const [targetSprintId, setTargetSprintId] = useState<string | null>(null);
 
-  const fetchBoardData = () => {
-    if (!selectedRepo) return;
-    setLoading(true);
-
-    axios
-      .get(`/api/jira?owner=${selectedRepo.owner.login}&repo=${selectedRepo.name}`)
-      .then((res) => {
-        setBoardData(res.data.data);
-        setSyncedToGitHub(Boolean(res.data.syncedToGitHub));
-      })
-      .catch((err) => {
-        console.error('Lỗi tải dữ liệu Jira/Tasks:', err);
-      })
-      .finally(() => setLoading(false));
-  };
-
-  useEffect(() => {
-    fetchBoardData();
-  }, [selectedRepo?.id]);
-
-  // Lưu dữ liệu vào file .gitvn/tasks.json và commit lên GitHub
-  const persistBoard = async (updatedData: JiraBoardData, customCommitMessage?: string) => {
-    if (!selectedRepo) return;
-    setBoardData(updatedData);
-    setSyncing(true);
-
-    try {
-      const res = await axios.post('/api/jira', {
-        owner: selectedRepo.owner.login,
-        repo: selectedRepo.name,
-        data: updatedData,
-        commitMessage: customCommitMessage,
-        forceGitHubSync: true,
-      });
-
-      const isSynced = Boolean(res.data?.syncedToGitHub);
-      setSyncedToGitHub(isSynced);
-
-      if (isSynced) {
-        notifications.show({
-          title: 'Đã lưu & đồng bộ GitHub',
-          message: 'Thay đổi đã được commit vào .gitvn/tasks.json trên GitHub',
-          color: 'green',
-        });
-      }
-    } catch (err) {
-      console.error('Lỗi lưu .gitvn/tasks.json:', err);
-      notifications.show({
-        title: 'Lưu cục bộ',
-        message: 'Đã lưu cục bộ vào .gitvn/tasks.json (chưa sync được lên GitHub)',
-        color: 'yellow',
-      });
-    } finally {
-      setSyncing(false);
-    }
-  };
-
-  // Tính toán quyền của user hiện tại
-  const currentUsername = user?.login || 'anonymous';
-  const repoOwner = selectedRepo?.owner.login || '';
-  const isOwner = currentUsername.toLowerCase() === repoOwner.toLowerCase();
-
-  const userRole: ProjectRole = useMemo(() => {
-    if (!boardData) return 'viewer';
-    if (isOwner) return 'admin';
+  const repoPrefix = useMemo(() => {
+    if (!selectedRepo) return "TASK";
     return (
-      boardData.permissions?.userRoles?.[currentUsername] ||
-      boardData.permissions?.defaultRole ||
-      'member'
+      selectedRepo.name
+        .replace(/[^a-zA-Z0-9]/g, "")
+        .slice(0, 5)
+        .toUpperCase() || "TASK"
     );
-  }, [boardData, currentUsername, isOwner]);
+  }, [selectedRepo]);
 
-  const isAdminOrPM = userRole === 'admin' || userRole === 'pm';
-  const canManageSprint =
-    isAdminOrPM || (boardData?.permissions?.canManageSprint?.includes(userRole) ?? false);
-  const canCreateBacklog =
-    isAdminOrPM || (boardData?.permissions?.canCreateBacklog?.includes(userRole) ?? false);
-  const canEdit = userRole !== 'viewer';
-
-  // Sprint hiện hành
-  const activeSprint = useMemo(() => {
-    if (!boardData || !boardData.sprints?.length) return null;
-    return boardData.sprints.find((s) => s.status === 'active') || boardData.sprints[0] || null;
-  }, [boardData]);
-
-  // Sprint hiển thị cho Kanban
-  const currentSprintForKanban = useMemo(() => {
-    if (!boardData || !boardData.sprints?.length) return null;
-    if (selectedSprintId === 'active') return activeSprint;
-    return boardData.sprints.find((s) => s.id === selectedSprintId) || activeSprint;
-  }, [boardData, selectedSprintId, activeSprint]);
-
-  // Lọc task cho Kanban
-  const kanbanTasks = useMemo(() => {
-    if (!boardData || !boardData.tasks) return [];
-    let list = boardData.tasks;
-
-    if (currentSprintForKanban) {
-      list = list.filter((t) => t.sprintId === currentSprintForKanban.id);
-    }
-
-    if (onlyMyTasks && currentUsername) {
-      list = list.filter((t) => t.assignee?.login?.toLowerCase() === currentUsername.toLowerCase());
-    }
-
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      list = list.filter(
-        (t) =>
-          t.title.toLowerCase().includes(q) ||
-          t.id.toLowerCase().includes(q) ||
-          t.assignee?.name?.toLowerCase().includes(q) ||
-          t.assignee?.login?.toLowerCase().includes(q)
-      );
-    }
-
-    if (filterPriority) {
-      list = list.filter((t) => t.priority === filterPriority);
-    }
-
-    return list;
-  }, [boardData, currentSprintForKanban, searchQuery, filterPriority, onlyMyTasks, currentUsername]);
-
-  const totalSprintStoryPoints = useMemo(() => {
-    return kanbanTasks.reduce((acc, t) => acc + (t.storyPoints || 0), 0);
-  }, [kanbanTasks]);
-
-  // Drag & drop
-  const handleDragStart = (e: React.DragEvent, taskId: string) => {
-    e.dataTransfer.setData('text/plain', taskId);
-  };
-
-  const handleDropTask = (taskId: string, targetStatus: TaskStatus) => {
-    if (!boardData || !canEdit) return;
-
-    const updatedTasks = boardData.tasks.map((task) => {
-      if (task.id === taskId) {
-        return {
-          ...task,
-          status: targetStatus,
-          updatedAt: new Date().toISOString(),
-        };
-      }
-      return task;
-    });
-
-    persistBoard({
-      ...boardData,
-      tasks: updatedTasks,
-    });
-  };
-
-  // Actions Task
-  const handleCreateTask = (newTask: JiraTask) => {
-    if (!boardData) return;
-    const updated = {
-      ...boardData,
-      taskSeq: (boardData.taskSeq || 0) + 1,
-      tasks: [newTask, ...boardData.tasks],
-    };
-    persistBoard(updated);
-  };
-
-  const handleUpdateTask = (updatedTask: JiraTask) => {
-    if (!boardData) return;
-    const updated = {
-      ...boardData,
-      tasks: boardData.tasks.map((t) => (t.id === updatedTask.id ? updatedTask : t)),
-    };
-    persistBoard(updated);
-  };
-
-  const handleDeleteTask = (taskId: string) => {
-    if (!boardData) return;
-    const updated = {
-      ...boardData,
-      tasks: boardData.tasks.filter((t) => t.id !== taskId),
-    };
-    persistBoard(updated);
-  };
-
-  // Actions Sprint
-  const handleCreateSprint = (newSprint: JiraSprint) => {
-    if (!boardData) return;
-    const updated = {
-      ...boardData,
-      sprints: [...boardData.sprints, newSprint],
-    };
-    persistBoard(updated);
-  };
-
-  const handleStartSprint = (sprintId: string) => {
-    if (!boardData) return;
-    const updated = {
-      ...boardData,
-      sprints: boardData.sprints.map((s) => ({
-        ...s,
-        status: (s.id === sprintId ? 'active' : s.status === 'active' ? 'completed' : s.status) as any,
+  const sprintOptions = useMemo(() => {
+    if (!boardData) return [];
+    return [
+      {
+        value: "active",
+        label: activeSprint
+          ? `Đang chạy: ${activeSprint.name}`
+          : "Chưa có Sprint kích hoạt",
+      },
+      { value: "all", label: "Tất cả công việc" },
+      ...boardData.sprints.map((s) => ({
+        value: s.id,
+        label: `${s.name} (${s.status.toUpperCase()})`,
       })),
-    };
-    persistBoard(updated);
+    ];
+  }, [boardData, activeSprint]);
+
+  const handleDragStart = (e: React.DragEvent, taskId: string) => {
+    e.dataTransfer.setData("text/plain", taskId);
   };
 
-  const handleCompleteSprint = (sprintId: string) => {
-    if (!boardData) return;
-    const updated = {
-      ...boardData,
-      sprints: boardData.sprints.map((s) =>
-        s.id === sprintId ? { ...s, status: 'completed' as const } : s
-      ),
-    };
-    persistBoard(updated);
+  const handleQuickAdd = (colStatus: TaskStatus) => {
+    setQuickAddStatus(colStatus);
+    setTargetSprintId(activeSprint?.id || null);
+    setCreateTaskOpen(true);
   };
 
-  const handleDeleteSprint = (sprintId: string) => {
-    if (!boardData) return;
-    const updated = {
-      ...boardData,
-      sprints: boardData.sprints.filter((s) => s.id !== sprintId),
-      tasks: boardData.tasks.map((t) => (t.sprintId === sprintId ? { ...t, sprintId: null } : t)),
-    };
-    persistBoard(updated);
-  };
-
-  const handleMoveTaskToSprint = (taskId: string, sprintId: string | null) => {
-    if (!boardData) return;
-    const updated = {
-      ...boardData,
-      tasks: boardData.tasks.map((t) =>
-        t.id === taskId
-          ? {
-              ...t,
-              sprintId,
-              status: sprintId === null ? ('backlog' as const) : t.status === 'backlog' ? 'todo' : t.status,
-              updatedAt: new Date().toISOString(),
-            }
-          : t
-      ),
-    };
-    persistBoard(updated);
-  };
-
-  const handleSavePermissions = (updatedPermissions: ProjectPermissions) => {
-    if (!boardData) return;
-    persistBoard({
-      ...boardData,
-      permissions: updatedPermissions,
-    });
-  };
-
-  if (!selectedRepo) return null;
-
-  const repoPrefix = selectedRepo.name.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5) || 'TASK';
+  if (!hasGitvn && !loading) {
+    return (
+      <Box
+        p="xl"
+        style={{
+          flex: 1,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: "#ffffff",
+        }}
+      >
+        <Paper
+          p={40}
+          radius="md"
+          ta="center"
+          maw={560}
+          bg="#ffffff"
+          style={{
+            border: "1px solid #e2e8f0",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
+          }}
+        >
+          <Box
+            w={64}
+            h={64}
+            mx="auto"
+            mb="md"
+            style={{
+              borderRadius: 16,
+              backgroundColor: "#fff1f0",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#fb291a",
+            }}
+          >
+            <IconFolderPlus size={32} />
+          </Box>
+          <Text fz={18} fw={700} c="#0f172a" mb="xs">
+            Chưa phát hiện cấu hình .gitvn trong repository
+          </Text>
+          <Text fz="sm" c="#64748b" mb="xl" lh={1.6}>
+            GitVN quản lý Agile Sprint, Kanban board và tài liệu chuẩn hoá thông
+            qua thư mục <code>.gitvn/</code> lưu trực tiếp trong mã nguồn của
+            bạn.
+          </Text>
+          <Button
+            size="md"
+            variant="filled"
+            color="vntez"
+            loading={initializing}
+            leftSection={<IconSparkles size={18} />}
+            onClick={initializeGitvn}
+            style={{ fontWeight: 600 }}
+          >
+            Khởi tạo .gitvn và Bảng Kanban
+          </Button>
+        </Paper>
+      </Box>
+    );
+  }
 
   return (
     <Box
       style={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100%',
+        flex: 1,
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
         minHeight: 0,
-        backgroundColor: '#090d16',
-        color: '#f0f6fc',
+        backgroundColor: "#ffffff",
       }}
     >
-      {/* Top Header Bar */}
+      {/* HEADER TOOLBAR */}
       <Box
-        px="lg"
-        py={10}
+        px="md"
+        py={8}
+        bg="#ffffff"
         style={{
-          borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-          backgroundColor: '#0d1117',
+          borderBottom: "1px solid #e2e8f0",
           flexShrink: 0,
         }}
       >
-        <Group justify="space-between" align="center" wrap="wrap" gap="sm">
-          {/* Left: View Switcher & Sprint Selector */}
-          <Group gap="sm" wrap="wrap">
+        <Group justify="space-between" wrap="nowrap" align="center">
+          <Group gap="sm" wrap="nowrap" align="center">
             <SegmentedControl
-              value={view}
-              onChange={(val) => setView(val as 'kanban' | 'backlog')}
               size="xs"
+              value={view}
+              onChange={(val) => setView(val as "kanban" | "backlog")}
               data={[
-                {
-                  value: 'kanban',
-                  label: (
-                    <Group gap={6}>
-                      <IconLayoutKanban size={14} color={view === 'kanban' ? '#58a6ff' : '#8b949e'} />
-                      <span style={{ fontWeight: 600 }}>Bảng Kanban</span>
-                    </Group>
-                  ),
-                },
-                {
-                  value: 'backlog',
-                  label: (
-                    <Group gap={6}>
-                      <IconListCheck size={14} color={view === 'backlog' ? '#58a6ff' : '#8b949e'} />
-                      <span style={{ fontWeight: 600 }}>Backlog & Sprints</span>
-                    </Group>
-                  ),
-                },
+                { value: "kanban", label: "Bảng Kanban" },
+                { value: "backlog", label: "Backlog & Sprints" },
               ]}
               styles={{
-                root: {
-                  backgroundColor: '#161b22',
-                  border: '1px solid rgba(255, 255, 255, 0.08)',
-                  padding: 3,
-                  borderRadius: 8,
-                },
+                root: { backgroundColor: "#f1f5f9" },
                 indicator: {
-                  backgroundColor: '#21262d',
-                  borderRadius: 6,
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.4)',
+                  backgroundColor: "#ffffff",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
                 },
                 label: {
-                  color: '#c9d1d9',
                   fontSize: 12,
-                  padding: '4px 10px',
+                  fontWeight: 600,
+                  padding: "4px 10px",
+                  "&[data-active]": { color: "#fb291a" },
                 },
               }}
             />
 
-            {view === 'kanban' && boardData && boardData.sprints?.length > 0 && (
+            {view === "kanban" && (
               <Select
                 size="xs"
+                data={sprintOptions}
                 value={selectedSprintId}
-                onChange={(val) => setSelectedSprintId(val || 'active')}
-                leftSection={<IconCalendar size={13} color="#8b949e" />}
-                data={[
-                  {
-                    value: 'active',
-                    label: activeSprint ? `Đang chạy: ${activeSprint.name}` : 'Sprint hiện tại',
-                  },
-                  ...boardData.sprints.map((s) => ({
-                    value: s.id,
-                    label: `${s.name} (${s.status.toUpperCase()})`,
-                  })),
-                ]}
+                onChange={(val) => setSelectedSprintId(val || "active")}
+                allowDeselect={false}
+                leftSection={<IconCalendar size={13} color="#64748b" />}
                 styles={{
                   input: {
-                    backgroundColor: '#161b22',
-                    borderColor: 'rgba(255, 255, 255, 0.1)',
-                    color: '#f0f6fc',
                     fontWeight: 600,
-                    width: 230,
-                    borderRadius: 8,
-                  },
-                  dropdown: {
-                    backgroundColor: '#161b22',
-                    borderColor: '#30363d',
+                    fontSize: 12,
+                    minWidth: 210,
+                    backgroundColor: "#f8fafc",
+                    borderColor: "#e2e8f0",
+                    color: "#0f172a",
                   },
                 }}
               />
             )}
           </Group>
 
-          {/* Right Toolbar: Tasks.json File, Role, and Action Buttons */}
-          <Group gap="xs" wrap="nowrap">
-            {/* .gitvn/tasks.json Editor Button */}
-            <Tooltip label="Xem, chỉnh sửa và đồng bộ trực tiếp file .gitvn/tasks.json" withArrow>
-              <Button
-                size="xs"
-                variant="default"
-                leftSection={<IconFileCode size={14} color="#58a6ff" />}
-                onClick={() => setJsonModalOpen(true)}
-                styles={{
-                  root: {
-                    backgroundColor: '#161b22',
-                    borderColor: 'rgba(255, 255, 255, 0.1)',
-                    color: '#e6edf3',
-                    fontFamily: 'var(--font-geist-mono), monospace',
-                    fontSize: 12,
-                    fontWeight: 600,
-                    borderRadius: 8,
-                    '&:hover': {
-                      backgroundColor: '#21262d',
-                      borderColor: '#58a6ff',
-                    },
-                  },
-                }}
-              >
-                <Group gap={6}>
-                  <span>.gitvn/tasks.json</span>
-                  <Box
-                    style={{
-                      width: 7,
-                      height: 7,
-                      borderRadius: '50%',
-                      backgroundColor: syncedToGitHub ? '#2ea043' : '#388bfd',
-                    }}
-                  />
-                </Group>
-              </Button>
-            </Tooltip>
-
-            {/* Role Badge with Click to Manage Permissions */}
-            <Tooltip label="Nhấn để quản lý vai trò thành viên & phân quyền" withArrow>
+          <Group gap="xs" wrap="nowrap" align="center">
+            {/* Sync Status Badge */}
+            <Tooltip
+              label={
+                syncedToGitHub
+                  ? "Đã đồng bộ với .gitvn/tasks.json trên GitHub"
+                  : "Đang lưu cục bộ trong hệ thống"
+              }
+              withArrow
+            >
               <Badge
-                size="md"
+                size="sm"
                 variant="light"
-                styles={{
-                  root: {
-                    backgroundColor: 'rgba(56, 139, 253, 0.1)',
-                    border: '1px solid rgba(56, 139, 253, 0.25)',
-                    color: '#79c0ff',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    textTransform: 'uppercase',
-                    fontSize: 11,
-                    height: 28,
-                    borderRadius: 6,
-                    padding: '0 8px',
-                  },
-                }}
-                leftSection={<IconShieldLock size={13} />}
-                onClick={() => setPermissionsOpen(true)}
+                color={syncedToGitHub ? "teal" : "yellow"}
+                style={{ cursor: "pointer" }}
+                onClick={fetchBoardData}
               >
-                {userRole}
+                ● {syncedToGitHub ? "GITHUB SYNCED" : "LOCAL CACHED"}
               </Badge>
             </Tooltip>
 
-            {/* Button Tạo Sprint */}
-            {canManageSprint && (
-              <Button
-                size="xs"
-                variant="default"
-                leftSection={<IconPlus size={14} />}
-                onClick={() => setCreateSprintOpen(true)}
-                styles={{
-                  root: {
-                    backgroundColor: '#161b22',
-                    borderColor: 'rgba(255, 255, 255, 0.12)',
-                    color: '#c9d1d9',
-                    fontWeight: 500,
-                    borderRadius: 8,
-                    '&:hover': {
-                      backgroundColor: '#21262d',
-                      color: '#ffffff',
-                    },
-                  },
-                }}
-              >
-                Tạo Sprint
-              </Button>
-            )}
+            {/* Menu options */}
+            <Menu
+              position="bottom-end"
+              shadow="md"
+              width={220}
+              radius="md"
+              withArrow
+            >
+              <Menu.Target>
+                <ActionIcon
+                  variant="default"
+                  size="sm"
+                  radius="md"
+                  aria-label="Tùy chọn"
+                >
+                  <IconDots size={15} color="#475569" />
+                </ActionIcon>
+              </Menu.Target>
+              <Menu.Dropdown>
+                <Menu.Label>Quản trị & Thành viên</Menu.Label>
+                <Menu.Item
+                  leftSection={<IconShieldLock size={14} color="#64748b" />}
+                  rightSection={
+                    <Badge size="xs" variant="light" color="vntez">
+                      {userRole.toUpperCase()}
+                    </Badge>
+                  }
+                  onClick={() => setPermissionsOpen(true)}
+                >
+                  Phân quyền dự án
+                </Menu.Item>
+                {canManageSprint && (
+                  <Menu.Item
+                    leftSection={<IconCalendar size={14} color="#64748b" />}
+                    onClick={() => setCreateSprintOpen(true)}
+                  >
+                    Tạo Sprint mới
+                  </Menu.Item>
+                )}
+                <Menu.Divider />
+                <Menu.Label>Cấu hình & Dữ liệu</Menu.Label>
+                <Menu.Item
+                  leftSection={<IconFileCode size={14} color="#fb291a" />}
+                  onClick={() => setJsonModalOpen(true)}
+                >
+                  Xem .gitvn/tasks.json
+                </Menu.Item>
+                <Menu.Item
+                  leftSection={<IconRefresh size={14} color="#64748b" />}
+                  onClick={fetchBoardData}
+                >
+                  Làm mới dữ liệu
+                </Menu.Item>
+              </Menu.Dropdown>
+            </Menu>
 
-            {/* Button Tạo Task (Linear / GitHub Style) */}
             {canEdit && (
               <Button
                 size="xs"
                 variant="filled"
+                color="vntez"
+                radius="md"
                 leftSection={<IconPlus size={14} />}
                 onClick={() => {
-                  setTargetSprintId(currentSprintForKanban?.id || null);
-                  setQuickAddStatus('todo');
+                  setTargetSprintId(activeSprint?.id || null);
+                  setQuickAddStatus("todo");
                   setCreateTaskOpen(true);
                 }}
-                styles={{
-                  root: {
-                    backgroundColor: '#238636',
-                    color: '#ffffff',
-                    fontWeight: 600,
-                    borderRadius: 8,
-                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.3)',
-                    '&:hover': {
-                      backgroundColor: '#2ea043',
-                    },
-                  },
-                }}
+                style={{ fontWeight: 600 }}
               >
-                Tạo công việc
+                Tạo việc
               </Button>
             )}
-
-            {/* Refresh / Sync Button */}
-            <Tooltip label={syncing ? 'Đang lưu...' : 'Làm mới bảng từ file'} withArrow>
-              <ActionIcon
-                size="md"
-                variant="default"
-                loading={syncing}
-                onClick={fetchBoardData}
-                styles={{
-                  root: {
-                    backgroundColor: '#161b22',
-                    borderColor: 'rgba(255, 255, 255, 0.1)',
-                    borderRadius: 8,
-                    '&:hover': { backgroundColor: '#21262d' },
-                  },
-                }}
-              >
-                <IconRefresh size={14} color="#8b949e" />
-              </ActionIcon>
-            </Tooltip>
           </Group>
         </Group>
       </Box>
 
-      {/* Loading state */}
+      {/* VIEW CONTENT */}
       {loading ? (
-        <Box ta="center" py={100} style={{ flex: 1 }}>
-          <Loader size="md" color="blue" />
-          <Text fz={13} c="#8b949e" mt="md">
-            Đang tải dữ liệu từ <code style={{ color: '#58a6ff' }}>.gitvn/tasks.json</code>...
-          </Text>
-        </Box>
+        <KanbanSkeleton />
       ) : !boardData ? (
-        <Box ta="center" py={100} style={{ flex: 1 }}>
-          <Text fz={14} c="#8b949e" mb="md">
-            Không tìm thấy file cấu hình công việc.
+        <Box p="xl" ta="center">
+          <Text c="#64748b" fz="sm">
+            Không có dữ liệu công việc.
           </Text>
-          <Button
-            size="xs"
-            variant="filled"
-            onClick={fetchBoardData}
-            leftSection={<IconRefresh size={14} />}
-          >
-            Thử tải lại
-          </Button>
         </Box>
-      ) : view === 'kanban' ? (
-        /* KANBAN BOARD VIEW */
+      ) : view === "kanban" ? (
         <Box
           style={{
             flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden',
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
             minHeight: 0,
+            backgroundColor: "#f8fafc",
           }}
         >
-          {/* Filter Sub-bar */}
-          <Group
-            px="lg"
+          {/* Filters Bar */}
+          <Box
+            px="md"
             py={8}
-            justify="space-between"
+            bg="#ffffff"
             style={{
-              borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
-              backgroundColor: '#161b22',
+              borderBottom: "1px solid #e2e8f0",
               flexShrink: 0,
             }}
           >
-            <Group gap="xs">
-              <TextInput
-                size="xs"
-                placeholder={`Tìm kiếm (${repoPrefix}-1, tiêu đề, người nhận)...`}
-                leftSection={<IconSearch size={13} color="#6e7681" />}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.currentTarget.value)}
-                styles={{
-                  input: {
-                    backgroundColor: '#0d1117',
-                    borderColor: 'rgba(255, 255, 255, 0.1)',
-                    color: '#f0f6fc',
-                    width: 290,
-                    borderRadius: 6,
-                  },
-                }}
-              />
-
-              <Select
-                size="xs"
-                placeholder="Độ ưu tiên"
-                clearable
-                value={filterPriority}
-                onChange={setFilterPriority}
-                data={[
-                  { value: 'urgent', label: '🔴 Urgent' },
-                  { value: 'high', label: '🟠 High' },
-                  { value: 'medium', label: '🔵 Medium' },
-                  { value: 'low', label: '⚪ Low' },
-                ]}
-                styles={{
-                  input: {
-                    backgroundColor: '#0d1117',
-                    borderColor: 'rgba(255, 255, 255, 0.1)',
-                    color: '#f0f6fc',
-                    width: 130,
-                    borderRadius: 6,
-                  },
-                  dropdown: {
-                    backgroundColor: '#161b22',
-                    borderColor: '#30363d',
-                  },
-                }}
-              />
-
-              <Switch
-                size="xs"
-                label="Việc của tôi"
-                checked={onlyMyTasks}
-                onChange={(e) => setOnlyMyTasks(e.currentTarget.checked)}
-                styles={{
-                  label: {
-                    color: '#c9d1d9',
-                    fontSize: 12,
-                    fontWeight: 500,
-                  },
-                }}
-              />
-            </Group>
-
-            {currentSprintForKanban && (
-              <Group gap="xs">
-                <Text fz={12} c="#8b949e">
-                  Sprint: <span style={{ color: '#58a6ff', fontWeight: 600 }}>{currentSprintForKanban.name}</span>
-                </Text>
-                <Badge
+            <Group justify="space-between" wrap="nowrap" align="center">
+              <Group gap="sm" wrap="nowrap" align="center" style={{ flex: 1 }}>
+                <TextInput
+                  placeholder={`Tìm kiếm (${repoPrefix}-1, tiêu đề, người nhận)...`}
                   size="xs"
-                  variant="outline"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.currentTarget.value)}
+                  leftSection={<IconSearch size={13} color="#94a3b8" />}
+                  style={{ width: 260 }}
                   styles={{
-                    root: {
-                      backgroundColor: 'rgba(255, 255, 255, 0.03)',
-                      borderColor: 'rgba(255, 255, 255, 0.1)',
-                      color: '#8b949e',
-                      fontWeight: 600,
+                    input: {
+                      backgroundColor: "#f8fafc",
+                      borderColor: "#e2e8f0",
+                      fontSize: 12,
                     },
                   }}
-                >
-                  {kanbanTasks.length} việc • {totalSprintStoryPoints} SP
+                />
+
+                <Select
+                  placeholder="Độ ưu tiên"
+                  size="xs"
+                  clearable
+                  value={filterPriority}
+                  onChange={setFilterPriority}
+                  leftSection={<IconFilter size={13} color="#94a3b8" />}
+                  data={[
+                    { value: "urgent", label: "🔴 Khẩn cấp" },
+                    { value: "high", label: "🟠 Cao" },
+                    { value: "medium", label: "🔵 Trung bình" },
+                    { value: "low", label: "⚪ Thấp" },
+                  ]}
+                  style={{ width: 140 }}
+                  styles={{
+                    input: {
+                      backgroundColor: "#f8fafc",
+                      borderColor: "#e2e8f0",
+                      fontSize: 12,
+                    },
+                  }}
+                />
+
+                <Switch
+                  size="xs"
+                  checked={onlyMyTasks}
+                  onChange={(e) => setOnlyMyTasks(e.currentTarget.checked)}
+                  label={
+                    <Group gap={4}>
+                      <IconUser size={13} />
+                      <Text fz={12} c="#475569" fw={500}>
+                        Việc của tôi
+                      </Text>
+                    </Group>
+                  }
+                  color="vntez"
+                />
+              </Group>
+
+              <Group gap="xs" style={{ flexShrink: 0 }}>
+                <Text fz={12} c="#64748b" fw={500}>
+                  Sprint:{" "}
+                  <strong style={{ color: "#fb291a" }}>
+                    {activeSprint?.name || "Chưa có Sprint"}
+                  </strong>
+                </Text>
+                <Badge size="sm" variant="light" color="vntez">
+                  {filteredTasks.length} việc
                 </Badge>
               </Group>
-            )}
-          </Group>
+            </Group>
+          </Box>
 
-          {/* Kanban Columns Canvas */}
+          {/* Kanban Columns Board */}
           <Box
-            className="hide-scrollbar"
             p="md"
             style={{
               flex: 1,
-              display: 'flex',
+              display: "flex",
               gap: 16,
-              overflowX: 'auto',
-              overflowY: 'hidden',
+              overflowX: "auto",
               minHeight: 0,
-              backgroundColor: '#090d16',
             }}
+            className="hide-scrollbar"
           >
-            {KANBAN_COLUMNS.map((col) => {
-              const colTasks = kanbanTasks.filter((t) => t.status === col.status);
-
+            {DEFAULT_KANBAN_COLUMNS.map((col) => {
+              const colTasks = filteredTasks.filter(
+                (t) => t.status === col.status,
+              );
               return (
                 <KanbanColumn
                   key={col.status}
@@ -726,17 +495,13 @@ export function JiraWorkspace() {
                   title={col.title}
                   color={col.color}
                   tasks={colTasks}
-                  onDropTask={handleDropTask}
+                  onDropTask={dropTask}
                   onCardClick={(task) => {
                     setSelectedTask(task);
                     setTaskDetailOpen(true);
                   }}
                   onDragStart={handleDragStart}
-                  onQuickAdd={(st) => {
-                    setTargetSprintId(currentSprintForKanban?.id || null);
-                    setQuickAddStatus(st);
-                    setCreateTaskOpen(true);
-                  }}
+                  onQuickAdd={handleQuickAdd}
                   canEdit={canEdit}
                 />
               );
@@ -744,83 +509,86 @@ export function JiraWorkspace() {
           </Box>
         </Box>
       ) : (
-        /* BACKLOG & SPRINTS VIEW */
         <BacklogView
-          sprints={boardData.sprints || []}
-          tasks={boardData.tasks || []}
-          canManageSprint={canManageSprint}
-          canCreateBacklog={canCreateBacklog}
-          onOpenCreateTask={(sprintId) => {
-            setTargetSprintId(sprintId);
-            setQuickAddStatus(sprintId ? 'todo' : 'backlog');
-            setCreateTaskOpen(true);
-          }}
-          onOpenCreateSprint={() => setCreateSprintOpen(true)}
+          sprints={boardData.sprints}
+          tasks={boardData.tasks}
           onSelectTask={(task) => {
             setSelectedTask(task);
             setTaskDetailOpen(true);
           }}
-          onMoveTaskToSprint={handleMoveTaskToSprint}
-          onStartSprint={handleStartSprint}
-          onCompleteSprint={handleCompleteSprint}
-          onDeleteSprint={handleDeleteSprint}
+          onOpenCreateTask={(sprintId) => {
+            setTargetSprintId(sprintId || null);
+            setQuickAddStatus(sprintId ? "todo" : "backlog");
+            setCreateTaskOpen(true);
+          }}
+          onOpenCreateSprint={() => setCreateSprintOpen(true)}
+          onUpdateSprintStatus={updateSprintStatus}
+          onMoveTaskToSprint={moveTaskToSprint}
+          onBulkMoveTasks={bulkMoveTasks}
+          onBulkDeleteTasks={bulkDeleteTasks}
+          canManageSprint={canManageSprint}
+          canCreateBacklog={canCreateBacklog}
         />
       )}
 
-      {/* Modals */}
-      {boardData && (
-        <TaskDetailModal
-          opened={taskDetailOpen}
-          onClose={() => setTaskDetailOpen(false)}
-          task={selectedTask}
-          sprints={boardData.sprints || []}
-          onUpdateTask={handleUpdateTask}
-          onDeleteTask={handleDeleteTask}
-          canEdit={canEdit}
-        />
-      )}
+      {/* MODALS */}
+      <TaskDetailModal
+        opened={taskDetailOpen}
+        onClose={() => setTaskDetailOpen(false)}
+        task={selectedTask}
+        sprints={boardData?.sprints || []}
+        onUpdateTask={updateTask}
+        onDeleteTask={deleteTask}
+        canEdit={canEdit}
+        members={allMembers}
+      />
 
-      {boardData && (
-        <CreateTaskModal
-          opened={createTaskOpen}
-          onClose={() => setCreateTaskOpen(false)}
-          sprints={boardData.sprints || []}
-          defaultSprintId={targetSprintId}
-          defaultStatus={quickAddStatus}
-          nextSeq={(boardData.taskSeq || 0) + 1}
-          repoPrefix={repoPrefix}
-          onCreateTask={handleCreateTask}
-        />
-      )}
+      <CreateTaskModal
+        opened={createTaskOpen}
+        onClose={() => setCreateTaskOpen(false)}
+        sprints={boardData?.sprints || []}
+        defaultStatus={quickAddStatus}
+        defaultSprintId={targetSprintId}
+        taskSeq={(boardData?.taskSeq || 0) + 1}
+        repoPrefix={repoPrefix}
+        onCreateTask={createTask}
+        members={allMembers}
+      />
 
-      {boardData && (
-        <CreateSprintModal
-          opened={createSprintOpen}
-          onClose={() => setCreateSprintOpen(false)}
-          nextSprintNumber={(boardData.sprints?.length || 0) + 1}
-          onCreateSprint={handleCreateSprint}
-        />
-      )}
+      <CreateSprintModal
+        opened={createSprintOpen}
+        onClose={() => setCreateSprintOpen(false)}
+        sprintCount={boardData?.sprints?.length || 0}
+        onCreateSprint={createSprint}
+      />
 
-      {boardData && (
-        <PermissionsModal
-          opened={permissionsOpen}
-          onClose={() => setPermissionsOpen(false)}
-          permissions={boardData.permissions}
-          currentUsername={currentUsername}
-          isAdminOrPM={isAdminOrPM}
-          onSavePermissions={handleSavePermissions}
-        />
-      )}
+      <PermissionsModal
+        opened={permissionsOpen}
+        onClose={() => setPermissionsOpen(false)}
+        permissions={
+          boardData?.permissions ||
+          gitvnConfig?.permissions || {
+            userRoles: {},
+            defaultRole: "member",
+            canManageSprint: ["admin", "pm"],
+            canCreateBacklog: ["admin", "pm", "member"],
+          }
+        }
+        currentUserLogin={user?.login || ""}
+        repoOwner={selectedRepo?.owner.login || ""}
+        onSavePermissions={savePermissions}
+        canEdit={userRole === "admin"}
+      />
 
-      {/* .gitvn/tasks.json Direct Raw Editor Modal */}
       <TasksJsonModal
         opened={jsonModalOpen}
         onClose={() => setJsonModalOpen(false)}
+        owner={selectedRepo?.owner.login || ""}
+        repo={selectedRepo?.name || ""}
         boardData={boardData}
-        syncedToGitHub={syncedToGitHub}
-        onSaveData={persistBoard}
-        repoPrefix={repoPrefix}
+        onSavedSuccess={(updatedData) => {
+          setBoardData(updatedData);
+        }}
       />
     </Box>
   );

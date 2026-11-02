@@ -1,47 +1,47 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
 import {
-  Modal,
-  Group,
-  Text,
   Button,
-  Stack,
-  TextInput,
-  Textarea,
+  Group,
+  Modal,
   Select,
-} from '@mantine/core';
-import { IconCalendar, IconPlus } from '@tabler/icons-react';
-import { JiraSprint, SprintStatus } from '@/interfaces/jira';
+  Stack,
+  Text,
+  Textarea,
+  TextInput,
+} from "@mantine/core";
+import { IconCalendar, IconPlus } from "@tabler/icons-react";
+import { useState } from "react";
+import type { JiraSprint, SprintStatus } from "@/interfaces/jira";
 
 interface CreateSprintModalProps {
   opened: boolean;
   onClose: () => void;
-  nextSprintNumber: number;
+  sprintCount: number;
   onCreateSprint: (newSprint: JiraSprint) => void;
 }
 
 export function CreateSprintModal({
   opened,
   onClose,
-  nextSprintNumber,
+  sprintCount,
   onCreateSprint,
 }: CreateSprintModalProps) {
-  const [name, setName] = useState(`Sprint ${nextSprintNumber}`);
-  const [goal, setGoal] = useState('');
-  const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10));
-  const [endDate, setEndDate] = useState(
-    new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
-  );
-  const [status, setStatus] = useState<SprintStatus>('planned');
-  const [nameError, setNameError] = useState<string | null>(null);
+  const nextNum = sprintCount + 1;
+  const today = new Date().toISOString().slice(0, 10);
+  const twoWeeksLater = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 10);
+
+  const [name, setName] = useState(`Sprint ${nextNum}`);
+  const [goal, setGoal] = useState("");
+  const [startDate, setStartDate] = useState(today);
+  const [endDate, setEndDate] = useState(twoWeeksLater);
+  const [status, setStatus] = useState<SprintStatus>("planned");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) {
-      setNameError('Vui lòng nhập tên Sprint');
-      return;
-    }
+    if (!name.trim()) return;
 
     const newSprint: JiraSprint = {
       id: `sprint-${Date.now()}`,
@@ -54,6 +54,8 @@ export function CreateSprintModal({
     };
 
     onCreateSprint(newSprint);
+    setName(`Sprint ${nextNum + 1}`);
+    setGoal("");
     onClose();
   };
 
@@ -63,66 +65,68 @@ export function CreateSprintModal({
       onClose={onClose}
       title={
         <Group gap="xs">
-          <IconCalendar size={18} color="#58a6ff" />
-          <Text fw={700} fz={15} c="#f0f6fc">
-            Tạo Sprint mới (Chu kỳ phát triển)
+          <IconCalendar size={18} color="#fb291a" />
+          <Text fw={700} fz={15} c="#0f172a">
+            Tạo Sprint Mới
           </Text>
         </Group>
       }
+      centered
+      radius="md"
       styles={{
         content: {
-          backgroundColor: '#161b22',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-          color: '#f0f6fc',
+          backgroundColor: "#ffffff",
+          border: "1px solid #e2e8f0",
+          color: "#0f172a",
           borderRadius: 12,
         },
         header: {
-          backgroundColor: '#1c2128',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-          padding: '14px 20px',
-        },
-        body: {
-          padding: 20,
+          backgroundColor: "#f8fafc",
+          borderBottom: "1px solid #e2e8f0",
+          padding: "14px 20px",
         },
       }}
     >
       <form onSubmit={handleSubmit}>
-        <Stack gap="md">
+        <Stack gap="md" mt="xs">
           <TextInput
             label="Tên Sprint"
-            placeholder="Ví dụ: Sprint 2 - Tính năng thanh toán"
             required
             value={name}
-            onChange={(e) => {
-              setName(e.currentTarget.value);
-              if (nameError) setNameError(null);
-            }}
-            error={nameError}
+            onChange={(e) => setName(e.currentTarget.value)}
             styles={{
               input: {
-                backgroundColor: '#0d1117',
-                borderColor: 'rgba(255, 255, 255, 0.1)',
-                color: '#f0f6fc',
-                borderRadius: 8,
+                backgroundColor: "#ffffff",
+                borderColor: "#cbd5e1",
+                color: "#0f172a",
               },
-              label: { color: '#c9d1d9', fontWeight: 600, fontSize: 12, marginBottom: 4 },
+              label: {
+                color: "#334155",
+                fontWeight: 600,
+                fontSize: 12,
+                marginBottom: 4,
+              },
             }}
           />
 
           <Textarea
             label="Mục tiêu Sprint (Sprint Goal)"
-            placeholder="Mục tiêu cốt lõi mà team cần đạt được trong sprint này..."
-            rows={2}
+            placeholder="Mục tiêu cốt lõi cần đạt được trong chu kỳ này..."
+            rows={3}
             value={goal}
             onChange={(e) => setGoal(e.currentTarget.value)}
             styles={{
               input: {
-                backgroundColor: '#0d1117',
-                borderColor: 'rgba(255, 255, 255, 0.1)',
-                color: '#f0f6fc',
-                borderRadius: 8,
+                backgroundColor: "#ffffff",
+                borderColor: "#cbd5e1",
+                color: "#0f172a",
               },
-              label: { color: '#c9d1d9', fontWeight: 600, fontSize: 12, marginBottom: 4 },
+              label: {
+                color: "#334155",
+                fontWeight: 600,
+                fontSize: 12,
+                marginBottom: 4,
+              },
             }}
           />
 
@@ -134,28 +138,36 @@ export function CreateSprintModal({
               onChange={(e) => setStartDate(e.currentTarget.value)}
               styles={{
                 input: {
-                  backgroundColor: '#0d1117',
-                  borderColor: 'rgba(255, 255, 255, 0.1)',
-                  color: '#f0f6fc',
-                  borderRadius: 8,
+                  backgroundColor: "#ffffff",
+                  borderColor: "#cbd5e1",
+                  color: "#0f172a",
                 },
-                label: { color: '#c9d1d9', fontWeight: 600, fontSize: 12, marginBottom: 4 },
+                label: {
+                  color: "#334155",
+                  fontWeight: 600,
+                  fontSize: 12,
+                  marginBottom: 4,
+                },
               }}
             />
 
             <TextInput
-              label="Ngày kết thúc (Dự kiến)"
+              label="Ngày kết thúc"
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.currentTarget.value)}
               styles={{
                 input: {
-                  backgroundColor: '#0d1117',
-                  borderColor: 'rgba(255, 255, 255, 0.1)',
-                  color: '#f0f6fc',
-                  borderRadius: 8,
+                  backgroundColor: "#ffffff",
+                  borderColor: "#cbd5e1",
+                  color: "#0f172a",
                 },
-                label: { color: '#c9d1d9', fontWeight: 600, fontSize: 12, marginBottom: 4 },
+                label: {
+                  color: "#334155",
+                  fontWeight: 600,
+                  fontSize: 12,
+                  marginBottom: 4,
+                },
               }}
             />
           </Group>
@@ -163,53 +175,34 @@ export function CreateSprintModal({
           <Select
             label="Trạng thái ban đầu"
             data={[
-              { value: 'planned', label: 'Lên kế hoạch (Planned)' },
-              { value: 'active', label: 'Bắt đầu ngay (Active)' },
+              { value: "planned", label: "📅 Lên kế hoạch (Planned)" },
+              { value: "active", label: "🚀 Đang chạy (Active)" },
             ]}
             value={status}
-            onChange={(val) => setStatus(val as SprintStatus)}
+            onChange={(val) => setStatus((val as SprintStatus) || "planned")}
             styles={{
               input: {
-                backgroundColor: '#0d1117',
-                borderColor: 'rgba(255, 255, 255, 0.1)',
-                color: '#f0f6fc',
-                borderRadius: 8,
+                backgroundColor: "#ffffff",
+                borderColor: "#cbd5e1",
+                color: "#0f172a",
               },
-              label: { color: '#c9d1d9', fontWeight: 600, fontSize: 12, marginBottom: 4 },
-              dropdown: { backgroundColor: '#161b22', borderColor: '#30363d' },
+              label: {
+                color: "#334155",
+                fontWeight: 600,
+                fontSize: 12,
+                marginBottom: 4,
+              },
             }}
           />
 
-          <Group justify="flex-end" mt="sm">
-            <Button
-              variant="default"
-              size="xs"
-              onClick={onClose}
-              styles={{
-                root: {
-                  backgroundColor: '#21262d',
-                  borderColor: 'rgba(255, 255, 255, 0.12)',
-                  color: '#c9d1d9',
-                  borderRadius: 8,
-                },
-              }}
-            >
+          <Group justify="flex-end" mt="md">
+            <Button variant="default" onClick={onClose}>
               Hủy
             </Button>
             <Button
               type="submit"
-              variant="filled"
-              size="xs"
+              color="vntez"
               leftSection={<IconPlus size={14} />}
-              styles={{
-                root: {
-                  backgroundColor: '#1f6feb',
-                  color: '#ffffff',
-                  fontWeight: 600,
-                  borderRadius: 8,
-                  '&:hover': { backgroundColor: '#388bfd' },
-                },
-              }}
             >
               Tạo Sprint
             </Button>
