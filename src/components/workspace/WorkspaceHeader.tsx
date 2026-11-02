@@ -15,10 +15,13 @@ import {
   IconLayoutKanban,
   IconSettings,
   IconSparkles,
+  IconUserPlus,
 } from "@tabler/icons-react";
+import { useState } from "react";
 import { useDashboardStore } from "@/store/dashboard.store";
 import { BranchSelector } from "./BranchSelector";
 import { ClonePopover } from "./ClonePopover";
+import { InviteMemberModal } from "./members/InviteMemberModal";
 
 export type WorkspaceTab =
   | "code"
@@ -52,6 +55,7 @@ export function WorkspaceHeader({
   initializingGitvn = false,
 }: WorkspaceHeaderProps) {
   const { selectedRepo, currentBranch } = useDashboardStore();
+  const [inviteModalOpen, setInviteModalOpen] = useState(false);
   if (!selectedRepo) return null;
 
   const defaultBranch = (selectedRepo as any).default_branch || "main";
@@ -162,6 +166,23 @@ export function WorkspaceHeader({
             </Button>
           )}
 
+          <Button
+            size="compact-sm"
+            variant="default"
+            leftSection={<IconUserPlus size={14} color="#fb291a" />}
+            onClick={() => setInviteModalOpen(true)}
+            styles={{
+              root: {
+                backgroundColor: "#ffffff",
+                borderColor: "#e5e1da",
+                color: "#1f1c19",
+                fontWeight: 500,
+              },
+            }}
+          >
+            Mời thành viên
+          </Button>
+
           <ClonePopover />
           <Button
             size="compact-sm"
@@ -183,6 +204,14 @@ export function WorkspaceHeader({
           </Button>
         </Group>
       </Group>
+
+      {/* Modal Mời & Tra cứu thành viên */}
+      <InviteMemberModal
+        opened={inviteModalOpen}
+        onClose={() => setInviteModalOpen(false)}
+        owner={selectedRepo.owner.login}
+        repo={selectedRepo.name}
+      />
 
       {/* Tabs */}
       <Group

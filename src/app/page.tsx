@@ -24,6 +24,8 @@ import {
   IconStar,
 } from "@tabler/icons-react";
 import { GitVNLogo } from "@/components/brand/GitVNLogo";
+import axios from "axios";
+import { useEffect, useState } from "react";
 
 // ==========================================
 // SVG ILLUSTRATIONS (Light theme with VNTEZ fiery accents)
@@ -129,6 +131,17 @@ const TaskIllustration = () => (
 );
 
 export default function GitVNLanding() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    axios
+      .get("/api/user")
+      .then((res) => {
+        if (res.data?.user) setIsLoggedIn(true);
+      })
+      .catch(() => {});
+  }, []);
+
   return (
     <Box
       bg="#ffffff"
@@ -182,7 +195,7 @@ export default function GitVNLanding() {
               <Group gap="xs" ml="md">
                 <Button
                   component="a"
-                  href="/api/integrations/github"
+                  href={isLoggedIn ? "/dashboard" : "/api/integrations/github"}
                   size="sm"
                   radius="md"
                   color="vntez"
@@ -191,7 +204,7 @@ export default function GitVNLanding() {
                     boxShadow: "0 2px 8px rgba(251, 41, 26, 0.25)",
                   }}
                 >
-                  Connect GitHub
+                  {isLoggedIn ? "Vào Workspace →" : "Connect GitHub"}
                 </Button>
               </Group>
             </Group>
@@ -244,7 +257,7 @@ export default function GitVNLanding() {
           <Group mt="md" gap="md">
             <Button
               component="a"
-              href="/api/integrations/github"
+              href={isLoggedIn ? "/dashboard" : "/api/integrations/github"}
               size="lg"
               radius="md"
               color="vntez"
@@ -254,7 +267,7 @@ export default function GitVNLanding() {
                 boxShadow: "0 6px 20px rgba(251, 41, 26, 0.28)",
               }}
             >
-              Start Building Free
+              {isLoggedIn ? "Vào Workspace ngay" : "Start Building Free"}
             </Button>
             <Button
               component="a"

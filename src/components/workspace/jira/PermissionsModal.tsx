@@ -1,8 +1,6 @@
 "use client";
 
 import {
-  ActionIcon,
-  Badge,
   Box,
   Button,
   Group,
@@ -10,20 +8,13 @@ import {
   Paper,
   Select,
   Stack,
-  Table,
   Text,
-  TextInput,
-  Tooltip,
 } from "@mantine/core";
-import {
-  IconAlertCircle,
-  IconCheck,
-  IconShieldLock,
-  IconTrash,
-  IconUserPlus,
-} from "@tabler/icons-react";
+import { IconCheck, IconShieldLock } from "@tabler/icons-react";
 import { useState } from "react";
 import type { ProjectPermissions, ProjectRole } from "@/interfaces/jira";
+import { AssignRoleSearch } from "./permissions/AssignRoleSearch";
+import { UserRolesTable } from "./permissions/UserRolesTable";
 
 interface PermissionsModalProps {
   opened: boolean;
@@ -83,23 +74,15 @@ export function PermissionsModal({
   const [defaultRole, setDefaultRole] = useState<ProjectRole>(
     permissions.defaultRole || "member",
   );
-  const [newUsername, setNewUsername] = useState("");
-  const [newRole, setNewRole] = useState<ProjectRole>("member");
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const handleAddUser = () => {
-    const cleanUser = newUsername.trim().toLowerCase();
-    if (!cleanUser) {
-      setErrorMsg("Vui lòng nhập GitHub username");
-      return;
-    }
+  const handleAddUser = (targetUser: string, role: ProjectRole) => {
+    const cleanUser = targetUser.trim().replace(/^@/, "").toLowerCase();
+    if (!cleanUser) return;
 
     setUserRoles((prev) => ({
       ...prev,
-      [cleanUser]: newRole,
+      [cleanUser]: role,
     }));
-    setNewUsername("");
-    setErrorMsg(null);
   };
 
   const handleRemoveUser = (username: string) => {
@@ -107,7 +90,6 @@ export function PermissionsModal({
       alert("Không thể xóa quyền của Repo Owner!");
       return;
     }
-
     setUserRoles((prev) => {
       const copy = { ...prev };
       delete copy[username];
@@ -142,7 +124,7 @@ export function PermissionsModal({
       title={
         <Group gap="xs">
           <IconShieldLock size={18} color="#fb291a" />
-          <Text fw={700} fz={15} c="#0f172a">
+          <Text fw={700} fz={15} c="#1f1c19">
             Phân Quyền Dự Án & Vai Trò (Roles)
           </Text>
         </Group>
@@ -152,81 +134,37 @@ export function PermissionsModal({
       styles={{
         content: {
           backgroundColor: "#ffffff",
-          border: "1px solid #e2e8f0",
-          color: "#0f172a",
+          border: "1px solid #e8e5de",
+          color: "#1f1c19",
           borderRadius: 12,
         },
         header: {
-          backgroundColor: "#f8fafc",
-          borderBottom: "1px solid #e2e8f0",
+          backgroundColor: "#f5f3ee",
+          borderBottom: "1px solid #e8e5de",
           padding: "14px 20px",
         },
       }}
     >
       <Stack gap="md">
-        {/* Giới thiệu các vai trò */}
         <Paper
           p="sm"
-          bg="#f8fafc"
+          bg="#f5f3ee"
           radius="md"
-          style={{ border: "1px solid #e2e8f0" }}
+          style={{ border: "1px solid #e8e5de" }}
         >
-          <Text fz={12} c="#475569" lh={1.5}>
-            Phân quyền xác định ai có thể <strong>kéo thả task</strong>,{" "}
+          <Text fz={12} c="#6e675f" lh={1.5}>
+            Phân quyền xác định ai có quyền <strong>kéo thả task</strong>,{" "}
             <strong>quản lý Sprint</strong>, hoặc{" "}
             <strong>cấu hình file .gitvn/tasks.json</strong>.
           </Text>
         </Paper>
 
-        {/* Thêm thành viên mới */}
+        {/* Tra cứu & Gán vai trò cho thành viên mới */}
         {canEdit && (
-          <Box>
-            <Text fz={12} fw={600} c="#334155" mb={6}>
-              Gán vai trò cho thành viên mới
-            </Text>
-            <Group gap="xs" align="flex-start">
-              <TextInput
-                placeholder="GitHub username (vd: octocat)"
-                size="xs"
-                value={newUsername}
-                onChange={(e) => {
-                  setNewUsername(e.currentTarget.value);
-                  if (errorMsg) setErrorMsg(null);
-                }}
-                error={errorMsg}
-                style={{ flex: 1 }}
-                styles={{
-                  input: {
-                    backgroundColor: "#ffffff",
-                    borderColor: "#cbd5e1",
-                    color: "#0f172a",
-                  },
-                }}
-              />
-              <Select
-                size="xs"
-                data={ROLE_OPTIONS}
-                value={newRole}
-                onChange={(val) => setNewRole((val as ProjectRole) || "member")}
-                style={{ width: 180 }}
-                styles={{
-                  input: {
-                    backgroundColor: "#ffffff",
-                    borderColor: "#cbd5e1",
-                    color: "#0f172a",
-                  },
-                }}
-              />
-              <Button
-                size="xs"
-                color="indigo"
-                leftSection={<IconUserPlus size={14} />}
-                onClick={handleAddUser}
-              >
-                Gán quyền
-              </Button>
-            </Group>
-          </Box>
+          <AssignRoleSearch
+            onAddUser={handleAddUser}
+            roleOptions={ROLE_OPTIONS}
+          />
         )}
 
         {/* Danh sách thành viên hiện tại */}
@@ -235,110 +173,16 @@ export function PermissionsModal({
             Danh sách thành viên & vai trò ({usersList.length})
           </Text>
 
-          <Paper
-            p={0}
-            bg="#ffffff"
-            radius="md"
-            style={{ border: "1px solid #e2e8f0", overflow: "hidden" }}
-          >
-            <Table horizontalSpacing="md" verticalSpacing="xs">
-              <Table.Thead
-                style={{
-                  backgroundColor: "#f8fafc",
-                  borderBottom: "1px solid #e2e8f0",
-                }}
-              >
-                <Table.Tr>
-                  <Table.Th style={{ color: "#64748b", fontSize: 11 }}>
-                    USERNAME
-                  </Table.Th>
-                  <Table.Th style={{ color: "#64748b", fontSize: 11 }}>
-                    VAI TRÒ
-                  </Table.Th>
-                  <Table.Th style={{ width: 50 }} />
-                </Table.Tr>
-              </Table.Thead>
-              <Table.Tbody>
-                {usersList.map(([username, role]) => {
-                  const isOwner =
-                    username.toLowerCase() === repoOwner.toLowerCase();
-                  const isCurrent =
-                    username.toLowerCase() === currentUserLogin.toLowerCase();
-                  const meta = ROLE_LABELS[role] || ROLE_LABELS.member;
-
-                  return (
-                    <Table.Tr
-                      key={username}
-                      style={{ borderBottom: "1px solid #e2e8f0" }}
-                    >
-                      <Table.Td>
-                        <Group gap={6}>
-                          <Text
-                            fz={13}
-                            fw={600}
-                            c="#0f172a"
-                            ff="var(--font-geist-mono), monospace"
-                          >
-                            {username}
-                          </Text>
-                          {isOwner && (
-                            <Badge size="xs" color="teal" variant="light">
-                              Owner
-                            </Badge>
-                          )}
-                          {isCurrent && (
-                            <Badge size="xs" color="vntez" variant="outline">
-                              Bạn
-                            </Badge>
-                          )}
-                        </Group>
-                      </Table.Td>
-
-                      <Table.Td>
-                        {canEdit && !isOwner ? (
-                          <Select
-                            size="xs"
-                            data={ROLE_OPTIONS}
-                            value={role}
-                            onChange={(val) =>
-                              handleRoleChange(username, val as ProjectRole)
-                            }
-                            style={{ width: 170 }}
-                            styles={{
-                              input: {
-                                backgroundColor: "#ffffff",
-                                borderColor: "#cbd5e1",
-                                color: "#0f172a",
-                              },
-                            }}
-                          />
-                        ) : (
-                          <Badge size="sm" color={meta.color} variant="light">
-                            {meta.label}
-                          </Badge>
-                        )}
-                      </Table.Td>
-
-                      <Table.Td>
-                        {canEdit && !isOwner && (
-                          <Tooltip label="Gỡ quyền thành viên" withArrow>
-                            <ActionIcon
-                              size="sm"
-                              variant="subtle"
-                              color="red"
-                              onClick={() => handleRemoveUser(username)}
-                            >
-                              <IconTrash size={14} />
-                            </ActionIcon>
-                          </Tooltip>
-                        )}
-                      </Table.Td>
-                    </Table.Tr>
-                  );
-                })}
-              </Table.Tbody>
-            </Table>
-          </Paper>
+          <UserRolesTable
+            usersList={usersList}
+            repoOwner={repoOwner}
+            currentUserLogin={currentUserLogin}
+            canEdit={canEdit}
+            roleOptions={ROLE_OPTIONS}
+            roleLabels={ROLE_LABELS}
+            onRoleChange={handleRoleChange}
+            onRemoveUser={handleRemoveUser}
+          />
         </Box>
 
         {/* Vai trò mặc định cho người ngoài */}
@@ -347,7 +191,7 @@ export function PermissionsModal({
             <Text fz={12} fw={600} c="#334155">
               Vai trò mặc định cho thành viên khác:
             </Text>
-            <Text fz={11} c="#64748b">
+            <Text fz={11} c="#6e675f">
               Áp dụng khi người dùng mở repo mà chưa được cấu hình vai trò riêng
             </Text>
           </Box>
@@ -361,8 +205,8 @@ export function PermissionsModal({
             styles={{
               input: {
                 backgroundColor: "#ffffff",
-                borderColor: "#cbd5e1",
-                color: "#0f172a",
+                borderColor: "#e5e1da",
+                color: "#1f1c19",
               },
             }}
           />
@@ -370,12 +214,13 @@ export function PermissionsModal({
 
         {/* Nút Footer */}
         <Group justify="flex-end" mt="md">
-          <Button variant="default" onClick={onClose}>
+          <Button variant="default" size="xs" onClick={onClose}>
             Hủy
           </Button>
           {canEdit && (
             <Button
               color="vntez"
+              size="xs"
               leftSection={<IconCheck size={14} />}
               onClick={handleSave}
             >
