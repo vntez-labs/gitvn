@@ -31,6 +31,8 @@ export async function POST(request: NextRequest) {
           Authorization: `Bearer ${token}`,
           Accept: "application/vnd.github+json",
           "Content-Type": "application/json",
+          "User-Agent": "GitVN-App",
+          "X-GitHub-Api-Version": "2022-11-28",
         },
         body: JSON.stringify({
           permission: permission || "push",
@@ -59,12 +61,19 @@ export async function POST(request: NextRequest) {
     }
 
     const errData = await res.json().catch(() => ({}));
+    console.error("[GitHub Invite Error]", {
+      owner,
+      repo,
+      username: cleanUsername,
+      status: res.status,
+      errData,
+    });
+
     let errorMessage =
       errData.message ||
       "Không thể gửi lời mời. Hãy kiểm tra bạn có quyền Admin trên repository này.";
     if (errData.message === "Resource not accessible by integration") {
-      errorMessage =
-        "GitHub App chưa được cấp quyền 'Administration (Read and write)'. Vui lòng cấu hình trong GitHub Developer Settings (Permissions & events -> Repository permissions: Administration chọn 'Read and write'), sau đó Reconnect/Đăng nhập lại để áp dụng.";
+      errorMessage = `GitHub App chưa được cài đặt (Install) trên tài khoản '${owner}'. Hãy vào GitHub App Settings -> Install App -> bấm Install vào '${owner}'. (Hoặc dùng OAuth App để tự động hỗ trợ mọi repo).`;
     }
     return NextResponse.json(
       { error: errorMessage },
