@@ -60,12 +60,7 @@ export function DocsImportExportModal({
         },
       }}
     >
-      <Tabs
-        value={activeTab}
-        onChange={setActiveTab}
-        color="vntez"
-        radius="sm"
-      >
+      <Tabs value={activeTab} onChange={setActiveTab} color="vntez" radius="sm">
         <Tabs.List mb="xs">
           <Tabs.Tab value="export" leftSection={<IconDownload size={14} />}>
             Export Docs JSON (Xuất tài liệu)

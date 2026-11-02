@@ -5,6 +5,7 @@ import {
   Badge,
   Box,
   Button,
+  CopyButton,
   FileInput,
   Group,
   Paper,
@@ -24,6 +25,7 @@ import {
 import axios from "axios";
 import { useMemo, useState } from "react";
 import type { JiraBoardData, JiraSprint, JiraTask } from "@/interfaces/jira";
+import { AI_TASKS_PROMPT_TEMPLATE } from "@/lib/gitvn-templates";
 
 interface TasksImportTabProps {
   currentBoardData: JiraBoardData | null;
@@ -117,14 +119,14 @@ export function TasksImportTab({
             : currentBoardData?.sprints || [];
       } else {
         // Merge: giữ task cũ, thêm task mới nếu chưa có id
-        const taskMap = new Map<string, JiraTask>();
-        (currentBoardData?.tasks || []).forEach((t) => taskMap.set(t.id, t));
+        const taskMap = new Map(
+          (currentBoardData?.tasks || []).map((t) => [t.id, t]),
+        );
         incomingTasks.forEach((t) => taskMap.set(t.id, t));
         finalTasks = Array.from(taskMap.values());
 
-        const sprintMap = new Map<string, JiraSprint>();
-        (currentBoardData?.sprints || []).forEach((s) =>
-          sprintMap.set(s.id, s),
+        const sprintMap = new Map(
+          (currentBoardData?.sprints || []).map((s) => [s.id, s]),
         );
         incomingSprints.forEach((s) => sprintMap.set(s.id, s));
         finalSprints = Array.from(sprintMap.values());
@@ -232,6 +234,27 @@ export function TasksImportTab({
             <Text fz={12}>{parsedPreview.error}</Text>
           </Alert>
         ))}
+
+      <Group justify="space-between" align="center">
+        <Text fz={12} fw={600} c="#475569">
+          Nội dung JSON công việc:
+        </Text>
+        <CopyButton value={AI_TASKS_PROMPT_TEMPLATE} timeout={2000}>
+          {({ copied, copy }) => (
+            <Button
+              variant="subtle"
+              color={copied ? "teal" : "indigo"}
+              size="compact-xs"
+              leftSection={
+                copied ? <IconCheck size={13} /> : <IconSparkles size={13} />
+              }
+              onClick={copy}
+            >
+              {copied ? "Đã sao chép prompt AI!" : "Mẫu Prompt cho AI"}
+            </Button>
+          )}
+        </CopyButton>
+      </Group>
 
       <Textarea
         placeholder="Hoặc dán nội dung JSON vào đây (vd: { tasks: [...], sprints: [...] })..."

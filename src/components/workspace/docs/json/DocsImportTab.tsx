@@ -3,6 +3,7 @@
 import {
   Alert,
   Button,
+  CopyButton,
   FileInput,
   Group,
   Stack,
@@ -14,9 +15,11 @@ import {
   IconAlertCircle,
   IconCheck,
   IconFileImport,
+  IconSparkles,
   IconUpload,
 } from "@tabler/icons-react";
 import { useMemo, useState } from "react";
+import { AI_DOCS_PROMPT_TEMPLATE } from "@/lib/gitvn-templates";
 import { docsService } from "@/services/docs.service";
 
 interface DocsImportTabProps {
@@ -136,6 +139,27 @@ export function DocsImportTab({
             <Text fz={12}>{parsedImportPreview.error}</Text>
           </Alert>
         ))}
+
+      <Group justify="space-between" align="center">
+        <Text fz={12} fw={600} c="#475569">
+          Nội dung JSON tài liệu:
+        </Text>
+        <CopyButton value={AI_DOCS_PROMPT_TEMPLATE} timeout={2000}>
+          {({ copied, copy }) => (
+            <Button
+              variant="subtle"
+              color={copied ? "teal" : "indigo"}
+              size="compact-xs"
+              leftSection={
+                copied ? <IconCheck size={13} /> : <IconSparkles size={13} />
+              }
+              onClick={copy}
+            >
+              {copied ? "Đã sao chép prompt AI!" : "Mẫu Prompt cho AI"}
+            </Button>
+          )}
+        </CopyButton>
+      </Group>
 
       <Textarea
         placeholder="Hoặc dán JSON chứa danh sách tài liệu (vd: { docs: [{ filename: 'api.mdx', content: '...' }] })..."

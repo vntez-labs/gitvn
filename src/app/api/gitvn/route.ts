@@ -8,6 +8,13 @@ import type {
   GitvnRepoStatus,
 } from "@/interfaces/gitvn";
 import type { JiraBoardData, JiraSprint, JiraTask } from "@/interfaces/jira";
+import {
+  createDefaultConfig,
+  createDefaultDocArchitecture,
+  createDefaultDocIndex,
+  createDefaultReadme,
+  createDefaultTasks,
+} from "@/lib/gitvn-templates";
 
 const LOCAL_GITVN_DIR = path.join(process.cwd(), ".gitvn");
 
@@ -33,148 +40,6 @@ async function getAuthUser(): Promise<{
   } catch {
     return null;
   }
-}
-
-// Hàm chuẩn tạo cấu hình config.json mặc định
-function createDefaultConfig(repo: string): GitvnConfig {
-  return {
-    version: "1.0.0",
-    name: repo,
-    description: `Cấu hình chuẩn GitVN Workspace cho ${repo}`,
-    modules: {
-      kanban: true,
-      docs: true,
-    },
-    kanban: {
-      columns: [
-        { id: "todo", title: "To Do", color: "#3b82f6" },
-        { id: "in_progress", title: "In Progress", color: "#eab308" },
-        { id: "review", title: "In Review", color: "#a855f7" },
-        { id: "done", title: "Done", color: "#22c55e" },
-      ],
-    },
-    docs: {
-      entry: "docs/index.mdx",
-      files: ["index.mdx", "architecture.mdx"],
-    },
-  };
-}
-
-// Hàm chuẩn tạo tasks.json khởi tạo
-function createDefaultTasks(
-  owner: string,
-  repo: string,
-  currentUserLogin: string,
-): JiraBoardData {
-  const now = new Date().toISOString();
-  const prefix =
-    repo
-      .toUpperCase()
-      .replace(/[^A-Z0-9]/g, "")
-      .slice(0, 5) || "TASK";
-
-  const defaultSprint: JiraSprint = {
-    id: "sprint-1",
-    name: "Sprint 1 - Bắt đầu dự án",
-    goal: `Kế hoạch phát triển cho ${repo}`,
-    startDate: now.slice(0, 10),
-    endDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)
-      .toISOString()
-      .slice(0, 10),
-    status: "active",
-    createdAt: now,
-  };
-
-  const tasks: JiraTask[] = [
-    {
-      id: `${prefix}-1`,
-      title: `Khởi tạo dự án ${repo} & thiết lập môi trường`,
-      description: `### Mục tiêu\n\n- Khởi tạo repo và thiết lập thư mục \`.gitvn\`\n- Cấu hình các cột Kanban và tài liệu dự án\n- Kiểm tra khả năng đồng bộ với GitHub`,
-      status: "in_progress",
-      priority: "high",
-      assignee: { login: currentUserLogin, name: currentUserLogin },
-      reporter: { login: currentUserLogin, name: currentUserLogin },
-      sprintId: "sprint-1",
-      storyPoints: 3,
-      createdAt: now,
-      updatedAt: now,
-    },
-    {
-      id: `${prefix}-2`,
-      title: "Soạn thảo tài liệu kiến trúc & hướng dẫn trong docs/index.mdx",
-      description: `### Yêu cầu\n\n- Bổ sung hướng dẫn cài đặt và sử dụng\n- Mô tả luồng hoạt động chính\n- Sử dụng cú pháp callout alert và bảng biểu MDX`,
-      status: "todo",
-      priority: "medium",
-      assignee: { login: currentUserLogin, name: currentUserLogin },
-      reporter: { login: currentUserLogin, name: currentUserLogin },
-      sprintId: "sprint-1",
-      storyPoints: 2,
-      createdAt: now,
-      updatedAt: now,
-    },
-  ];
-
-  return {
-    owner,
-    repo,
-    taskSeq: 2,
-    tasks,
-    sprints: [defaultSprint],
-    permissions: {
-      userRoles: {
-        [currentUserLogin]: "admin",
-        [owner]: "admin",
-      },
-      defaultRole: "member",
-      canManageSprint: ["admin", "pm"],
-      canCreateBacklog: ["admin", "pm", "member"],
-    },
-  };
-}
-
-// Mẫu tài liệu docs/index.mdx mặc định
-function createDefaultDocIndex(repo: string): string {
-  return `# Tài liệu Dự án ${repo}
-
-Chào mừng bạn đến với tài liệu hướng dẫn được quản lý bởi **GitVN** trực tiếp trong thư mục \`.gitvn/docs\`.
-
-> [!NOTE]
-> Tài liệu này được đồng bộ trực tiếp với GitHub và được cập nhật theo thời gian thực.
-
-## 🚀 Các tính năng chính
-
-- **Kanban Board tích hợp**: Quản lý task theo quy chuẩn: \`Backlog\`, \`To Do\`, \`In Progress\`, \`In Review\`, \`Done\`.
-- **Live MDX Docs**: Hỗ trợ Markdown nâng cao, Callouts, Bảng biểu và Code syntax highlighting.
-- **Git Native**: Mọi thay đổi đều được lưu thành các commit chuẩn trong repository.
-
-## 📦 Cấu trúc quy chuẩn
-
-\`\`\`bash
-.gitvn/
-├── config.json         # Cấu hình tính năng & danh sách các cột Kanban
-├── tasks.json          # Danh sách task, sprint và phân quyền
-└── docs/               # Tài liệu dự án
-    ├── index.mdx       # Tài liệu tổng quan
-    └── architecture.mdx# Kiến trúc kỹ thuật
-\`\`\`
-`;
-}
-
-// Mẫu tài liệu docs/architecture.mdx mặc định
-function createDefaultDocArchitecture(repo: string): string {
-  return `# Kiến trúc Kỹ thuật - ${repo}
-
-Tài liệu mô tả chi tiết kiến trúc và luồng xử lý dữ liệu của dự án.
-
-> [!TIP]
-> Bạn có thể chỉnh sửa file này trực tiếp từ tab **Docs (MDX)** và nhấn nút **Lưu & Đồng bộ lên GitHub**.
-
-## 1. Luồng Hoạt Động
-
-1. Người dùng thao tác trên bảng Kanban hoặc trình soạn thảo MDX.
-2. Ứng dụng cập nhật dữ liệu cục bộ và tạo commit lên nhánh hiện tại của GitHub.
-3. Khi thành viên khác clone hoặc pull repo, mọi tài liệu và trạng thái task đều đồng bộ.
-`;
 }
 
 // Commit 1 file lên GitHub
@@ -460,11 +325,17 @@ export async function POST(request: Request) {
       const defaultTasks = createDefaultTasks(owner, repo, currentUserLogin);
       const defaultIndexDoc = createDefaultDocIndex(repo);
       const defaultArchDoc = createDefaultDocArchitecture(repo);
+      const defaultReadme = createDefaultReadme();
 
       // 1. Lưu vào thư mục local .gitvn
       await fs.mkdir(LOCAL_GITVN_DIR, { recursive: true });
       await fs.mkdir(path.join(LOCAL_GITVN_DIR, "docs"), { recursive: true });
 
+      await fs.writeFile(
+        path.join(LOCAL_GITVN_DIR, "README.md"),
+        defaultReadme,
+        "utf-8",
+      );
       await fs.writeFile(
         path.join(LOCAL_GITVN_DIR, "config.json"),
         JSON.stringify(defaultConfig, null, 2),
@@ -492,6 +363,15 @@ export async function POST(request: Request) {
 
       if (token) {
         const commitMsg = `chore(gitvn): initialize canonical .gitvn workspace`;
+        const resReadme = await commitFileToGitHub(
+          owner,
+          repo,
+          ".gitvn/README.md",
+          defaultReadme,
+          token,
+          `${commitMsg} AI conventions README`,
+          branch,
+        );
         const resConfig = await commitFileToGitHub(
           owner,
           repo,
@@ -530,8 +410,13 @@ export async function POST(request: Request) {
         );
 
         syncedToGitHub =
-          resConfig.ok && resTasks.ok && resIndex.ok && resArch.ok;
+          resReadme.ok &&
+          resConfig.ok &&
+          resTasks.ok &&
+          resIndex.ok &&
+          resArch.ok;
         if (!syncedToGitHub) {
+          if (!resReadme.ok) errors.push(`readme: ${resReadme.error}`);
           if (!resConfig.ok) errors.push(`config: ${resConfig.error}`);
           if (!resTasks.ok) errors.push(`tasks: ${resTasks.error}`);
         }
