@@ -119,3 +119,63 @@ export async function GET(request: Request) {
     );
   }
 }
+
+export async function POST(request: Request) {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("github_access_token")?.value;
+
+  if (!token) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const body = await request.json();
+    const { owner, repo, title, head, base, body: prBody, draft } = body;
+
+    if (!owner || !repo || !title || !head || !base) {
+      return NextResponse.json(
+        { error: "Thiếu thông tin bắt buộc (owner, repo, title, head, base)" },
+        { status: 400 },
+      );
+    }
+
+    const res = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/pulls`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/vnd.github+json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title,
+          head,
+          base,
+          body: prBody || "",
+          draft: Boolean(draft),
+        }),
+      },
+    );
+
+    const data = await res.json();
+    if (!res.ok) {
+      return NextResponse.json(
+        {
+          error:
+            data.message ||
+            data.errors?.[0]?.message ||
+            "Lỗi tạo Pull Request trên GitHub",
+        },
+        { status: res.status },
+      );
+    }
+
+    return NextResponse.json({ success: true, pull: data });
+  } catch (error: any) {
+    return NextResponse.json(
+      { error: error.message || "Internal Server Error" },
+      { status: 500 },
+    );
+  }
+}

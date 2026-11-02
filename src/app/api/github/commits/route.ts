@@ -8,7 +8,8 @@ export async function GET(request: Request) {
   const branch = searchParams.get("branch") || "main";
   const path = searchParams.get("path");
   const page = searchParams.get("page") || "1";
-  const perPage = searchParams.get("per_page") || "30";
+  const perPage = searchParams.get("per_page") || "100";
+  const author = searchParams.get("author");
 
   if (!owner || !repo) {
     return NextResponse.json(
@@ -26,6 +27,9 @@ export async function GET(request: Request) {
 
   try {
     let url = `https://api.github.com/repos/${owner}/${repo}/commits?sha=${encodeURIComponent(branch)}&page=${page}&per_page=${perPage}`;
+    if (author && author !== "all") {
+      url += `&author=${encodeURIComponent(author)}`;
+    }
     if (path) {
       url += `&path=${encodeURIComponent(path)}`;
     }

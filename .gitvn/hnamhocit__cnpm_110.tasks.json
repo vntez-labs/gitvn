@@ -39,14 +39,7 @@
       "hnamhocit": "admin"
     },
     "defaultRole": "member",
-    "canManageSprint": [
-      "admin",
-      "pm"
-    ],
-    "canCreateBacklog": [
-      "admin",
-      "pm",
-      "member"
-    ]
+    "canManageSprint": ["admin", "pm"],
+    "canCreateBacklog": ["admin", "pm", "member"]
   }
 }

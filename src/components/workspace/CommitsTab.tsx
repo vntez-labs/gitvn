@@ -6,6 +6,7 @@ import {
   Box,
   Button,
   Group,
+  Select,
   Skeleton,
   Stack,
   Text,
@@ -17,6 +18,7 @@ import {
   IconGitCommit,
   IconRefresh,
   IconSearch,
+  IconUsers,
 } from "@tabler/icons-react";
 import axios from "axios";
 import { useEffect, useMemo, useState } from "react";
@@ -35,6 +37,7 @@ export function CommitsTab({ onCommitsLoaded }: CommitsTabProps) {
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSha, setSelectedSha] = useState<string | null>(null);
+  const [authorFilter, setAuthorFilter] = useState<string>("all");
   const [modalOpen, setModalOpen] = useState(false);
 
   const fetchCommits = () => {
@@ -45,7 +48,7 @@ export function CommitsTab({ onCommitsLoaded }: CommitsTabProps) {
       .get(
         `/api/github/commits?owner=${selectedRepo.owner.login}&repo=${selectedRepo.name}&branch=${encodeURIComponent(
           currentBranch,
-        )}`,
+        )}&per_page=100`,
       )
       .then((res) => {
         const data = res.data.commits || [];
@@ -62,18 +65,45 @@ export function CommitsTab({ onCommitsLoaded }: CommitsTabProps) {
     fetchCommits();
   }, [selectedRepo?.id, currentBranch]);
 
-  // Bộ lọc tìm kiếm commit
+  // Danh sách các tác giả đã commit trong repo
+  const authorOptions = useMemo(() => {
+    const map = new Map<string, { label: string; value: string }>();
+    commits.forEach((c) => {
+      const name = c.commit?.author?.name || c.author?.login;
+      const val = c.author?.login || c.commit?.author?.name;
+      if (val && !map.has(val.toLowerCase())) {
+        map.set(val.toLowerCase(), {
+          label: name || val,
+          value: val,
+        });
+      }
+    });
+    return [
+      { label: "Tất cả tác giả (All contributors)", value: "all" },
+      ...Array.from(map.values()),
+    ];
+  }, [commits]);
+
+  // Bộ lọc tìm kiếm commit & lọc tác giả
   const filteredCommits = useMemo(() => {
-    if (!searchQuery.trim()) return commits;
-    const q = searchQuery.toLowerCase();
-    return commits.filter(
-      (c) =>
+    return commits.filter((c) => {
+      if (authorFilter !== "all") {
+        const authorMatch =
+          c.author?.login?.toLowerCase() === authorFilter.toLowerCase() ||
+          c.commit?.author?.name?.toLowerCase() === authorFilter.toLowerCase();
+        if (!authorMatch) return false;
+      }
+
+      if (!searchQuery.trim()) return true;
+      const q = searchQuery.toLowerCase();
+      return (
         c.commit?.message?.toLowerCase().includes(q) ||
         c.commit?.author?.name?.toLowerCase().includes(q) ||
         c.author?.login?.toLowerCase().includes(q) ||
-        c.sha?.toLowerCase().startsWith(q),
-    );
-  }, [commits, searchQuery]);
+        c.sha?.toLowerCase().startsWith(q)
+      );
+    });
+  }, [commits, authorFilter, searchQuery]);
 
   // Tính toán layout biểu đồ multi-lane chuẩn GitLens
   const graphLayout = useMemo(() => {
@@ -104,6 +134,23 @@ export function CommitsTab({ onCommitsLoaded }: CommitsTabProps) {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.currentTarget.value)}
               style={{ width: 340 }}
+              styles={{
+                input: {
+                  backgroundColor: "#ffffff",
+                  borderColor: "#e5e1da",
+                  color: "#1f1c19",
+                },
+              }}
+            />
+
+            <Select
+              size="xs"
+              data={authorOptions}
+              value={authorFilter}
+              onChange={(val) => setAuthorFilter(val || "all")}
+              placeholder="Lọc tác giả..."
+              style={{ width: 220 }}
+              leftSection={<IconUsers size={14} color="#6e675f" />}
               styles={{
                 input: {
                   backgroundColor: "#ffffff",

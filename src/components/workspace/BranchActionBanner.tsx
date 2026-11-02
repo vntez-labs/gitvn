@@ -9,15 +9,11 @@ import {
   Text,
   Tooltip,
 } from "@mantine/core";
-import {
-  IconExternalLink,
-  IconGitMerge,
-  IconGitPullRequest,
-  IconX,
-} from "@tabler/icons-react";
+import { IconGitMerge, IconGitPullRequest, IconX } from "@tabler/icons-react";
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { useDashboardStore } from "@/store/dashboard.store";
+import { CreatePullModal } from "./pulls/CreatePullModal";
 import type { WorkspaceTab } from "./WorkspaceHeader";
 
 interface BranchActionBannerProps {
@@ -37,6 +33,7 @@ export function BranchActionBanner({ onTabChange }: BranchActionBannerProps) {
   } | null>(null);
   const [loading, setLoading] = useState(false);
   const [dismissed, setDismissed] = useState(false);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
 
   // Reset dismissed khi đổi branch hoặc đổi repo
   useEffect(() => {
@@ -202,11 +199,8 @@ export function BranchActionBanner({ onTabChange }: BranchActionBannerProps) {
           <Button
             size="xs"
             variant="filled"
-            component="a"
-            href={compareUrl}
-            target="_blank"
-            leftSection={<IconGitMerge size={14} />}
-            rightSection={<IconExternalLink size={12} />}
+            onClick={() => setCreateModalOpen(true)}
+            leftSection={<IconGitPullRequest size={14} />}
             styles={{
               root: {
                 backgroundColor: "#16a34a",
@@ -229,6 +223,18 @@ export function BranchActionBanner({ onTabChange }: BranchActionBannerProps) {
             <IconX size={14} />
           </ActionIcon>
         </Group>
+
+        <CreatePullModal
+          opened={createModalOpen}
+          onClose={() => setCreateModalOpen(false)}
+          owner={selectedRepo.owner.login}
+          repo={selectedRepo.name}
+          defaultBase={baseBranch}
+          defaultHead={targetBranch}
+          onSuccess={() => {
+            if (onTabChange) onTabChange("pulls");
+          }}
+        />
       </Box>
     );
   }

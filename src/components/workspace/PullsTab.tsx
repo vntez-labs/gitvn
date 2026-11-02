@@ -2,6 +2,7 @@
 
 import {
   Box,
+  Button,
   Group,
   Pagination,
   SegmentedControl,
@@ -10,16 +11,13 @@ import {
   Text,
   TextInput,
 } from "@mantine/core";
-import {
-  IconGitMerge,
-  IconGitPullRequest,
-  IconMessageCircle,
-  IconSearch,
-} from "@tabler/icons-react";
+import { IconGitPullRequest, IconPlus, IconSearch } from "@tabler/icons-react";
 import axios from "axios";
 import { useEffect, useMemo, useState } from "react";
 import { useDashboardStore } from "@/store/dashboard.store";
+import { CreatePullModal } from "./pulls/CreatePullModal";
 import { PullDetailView } from "./pulls/PullDetailView";
+import { PullListItem } from "./pulls/PullListItem";
 
 interface PullsTabProps {
   onPullsLoaded?: (count: number) => void;
@@ -40,6 +38,7 @@ export function PullsTab({ onPullsLoaded }: PullsTabProps) {
   const [selectedPullNumber, setSelectedPullNumber] = useState<number | null>(
     null,
   );
+  const [createModalOpen, setCreateModalOpen] = useState(false);
 
   const fetchPulls = () => {
     if (!selectedRepo) return;
@@ -100,7 +99,7 @@ export function PullsTab({ onPullsLoaded }: PullsTabProps) {
         overflowY: "auto",
         padding: "24px 20px",
         minHeight: 0,
-        backgroundColor: "#ffffff",
+        backgroundColor: "#faf8f6",
       }}
     >
       <Box style={{ maxWidth: 960, margin: "0 auto" }}>
@@ -117,8 +116,8 @@ export function PullsTab({ onPullsLoaded }: PullsTabProps) {
               styles={{
                 input: {
                   backgroundColor: "#ffffff",
-                  borderColor: "#cbd5e1",
-                  color: "#0f172a",
+                  borderColor: "#e5e1da",
+                  color: "#1f1c19",
                 },
               }}
             />
@@ -136,21 +135,32 @@ export function PullsTab({ onPullsLoaded }: PullsTabProps) {
                 { label: "All", value: "all" },
               ]}
               styles={{
-                root: { backgroundColor: "#f1f5f9" },
+                root: { backgroundColor: "#f5f3ee" },
                 indicator: {
                   backgroundColor: "#ffffff",
-                  boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+                  boxShadow: "0 1px 3px rgba(31, 28, 25, 0.1)",
                 },
-                label: { color: "#334155", fontWeight: 600, fontSize: 11 },
+                label: { color: "#1f1c19", fontWeight: 600, fontSize: 11 },
               }}
             />
           </Group>
 
-          <Text fz="xs" c="#64748b">
-            {searchQuery.trim()
-              ? `Tìm thấy ${filteredPulls.length} PRs (trong ${totalCount} PRs)`
-              : `Trang ${page} / ${totalPages} (${totalCount} PRs)`}
-          </Text>
+          <Group gap="sm" align="center">
+            <Text fz="xs" c="#6e675f">
+              {searchQuery.trim()
+                ? `Tìm thấy ${filteredPulls.length} PRs (trong ${totalCount} PRs)`
+                : `Trang ${page} / ${totalPages} (${totalCount} PRs)`}
+            </Text>
+
+            <Button
+              size="xs"
+              color="vntez"
+              leftSection={<IconPlus size={14} />}
+              onClick={() => setCreateModalOpen(true)}
+            >
+              Tạo Pull Request
+            </Button>
+          </Group>
         </Group>
 
         {/* Danh sách Pulls */}
@@ -158,7 +168,7 @@ export function PullsTab({ onPullsLoaded }: PullsTabProps) {
           <Stack
             gap={1}
             style={{
-              border: "1px solid #e2e8f0",
+              border: "1px solid #e8e5de",
               borderRadius: 8,
               overflow: "hidden",
             }}
@@ -172,7 +182,7 @@ export function PullsTab({ onPullsLoaded }: PullsTabProps) {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
-                  borderBottom: "1px solid #f1f5f9",
+                  borderBottom: "1px solid #f5f3ee",
                 }}
               >
                 <Group gap="sm" style={{ flex: 1 }}>
@@ -190,69 +200,18 @@ export function PullsTab({ onPullsLoaded }: PullsTabProps) {
           <Stack
             gap={1}
             style={{
-              border: "1px solid #e2e8f0",
+              border: "1px solid #e8e5de",
               borderRadius: 8,
               overflow: "hidden",
             }}
           >
-            {filteredPulls.map((pr) => {
-              const isMerged = !!pr.merged_at;
-              const isOpen = pr.state === "open";
-
-              return (
-                <Box
-                  key={pr.id}
-                  p="sm"
-                  onClick={() => setSelectedPullNumber(pr.number)}
-                  style={{
-                    backgroundColor: "#ffffff",
-                    borderBottom: "1px solid #e2e8f0",
-                    display: "flex",
-                    alignItems: "flex-start",
-                    gap: 12,
-                    cursor: "pointer",
-                    transition: "background-color 0.12s ease",
-                  }}
-                  onMouseEnter={(e) =>
-                    (e.currentTarget.style.backgroundColor = "#f8fafc")
-                  }
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.backgroundColor = "#ffffff")
-                  }
-                >
-                  <Box mt={2}>
-                    {isMerged ? (
-                      <IconGitMerge size={16} color="#7c3aed" />
-                    ) : isOpen ? (
-                      <IconGitPullRequest size={16} color="#16a34a" />
-                    ) : (
-                      <IconGitPullRequest size={16} color="#dc2626" />
-                    )}
-                  </Box>
-
-                  <Box style={{ flex: 1, minWidth: 0 }}>
-                    <Text fz="sm" fw={600} c="#0f172a">
-                      {pr.title}
-                    </Text>
-
-                    <Text fz={11} c="#64748b" mt={4}>
-                      #{pr.number} mở bởi{" "}
-                      <span style={{ color: "#334155", fontWeight: 500 }}>
-                        {pr.user?.login}
-                      </span>{" "}
-                      • {new Date(pr.created_at).toLocaleDateString()}
-                    </Text>
-                  </Box>
-
-                  {pr.comments > 0 && (
-                    <Group gap={4} c="#64748b">
-                      <IconMessageCircle size={14} />
-                      <Text fz={11}>{pr.comments}</Text>
-                    </Group>
-                  )}
-                </Box>
-              );
-            })}
+            {filteredPulls.map((pr) => (
+              <PullListItem
+                key={pr.id}
+                pr={pr}
+                onClick={() => setSelectedPullNumber(pr.number)}
+              />
+            ))}
           </Stack>
         ) : (
           <Box ta="center" mt={60} px="md">
@@ -261,10 +220,10 @@ export function PullsTab({ onPullsLoaded }: PullsTabProps) {
               color="#94a3b8"
               style={{ margin: "0 auto 10px" }}
             />
-            <Text fz="sm" fw={500} c="#0f172a">
+            <Text fz="sm" fw={500} c="#1f1c19">
               Không có Pull Request nào
             </Text>
-            <Text fz="xs" c="#64748b" mt={4}>
+            <Text fz="xs" c="#6e675f" mt={4}>
               Tất cả các thay đổi đã được xử lý hoặc chưa có PR nào được tạo.
             </Text>
           </Box>
@@ -283,6 +242,20 @@ export function PullsTab({ onPullsLoaded }: PullsTabProps) {
           </Group>
         )}
       </Box>
+
+      {selectedRepo && (
+        <CreatePullModal
+          opened={createModalOpen}
+          onClose={() => setCreateModalOpen(false)}
+          owner={selectedRepo.owner.login}
+          repo={selectedRepo.name}
+          defaultBase={(selectedRepo as any).default_branch || "main"}
+          onSuccess={(newNum) => {
+            fetchPulls();
+            setSelectedPullNumber(newNum);
+          }}
+        />
+      )}
     </Box>
   );
 }
