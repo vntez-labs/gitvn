@@ -5,6 +5,11 @@
   --primary-color: #fb291a;
   --primary-gradient: linear-gradient(135deg, #fb291a 0%, #f77241 100%);
   --mantine-primary-color: #fb291a;
+  --bg-canvas: #faf8f6;
+  --bg-secondary: #f5f3ee;
+  --border-subtle: #e8e5de;
+  --text-primary: #1f1c19;
+  --text-secondary: #6e675f;
 }
 
 ::selection {
@@ -21,9 +26,9 @@
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #d8d3c9;
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #b8b2a5;
 }

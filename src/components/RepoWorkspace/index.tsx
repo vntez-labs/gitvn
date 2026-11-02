@@ -120,7 +120,7 @@ export function RepoWorkspace() {
         flexDirection: "column",
         height: "100%",
         minHeight: 0,
-        backgroundColor: "#ffffff",
+        backgroundColor: "#faf8f6",
       }}
     >
       <WorkspaceHeader

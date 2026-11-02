@@ -33,14 +33,14 @@ export function DashboardOverview() {
         overflowY: "auto",
         padding: "40px",
         minHeight: 0,
-        backgroundColor: "#f8fafc",
+        backgroundColor: "#faf8f6",
       }}
     >
       <Box style={{ maxWidth: 1000, margin: "0 auto", width: "100%" }}>
-        <Title order={2} c="#0f172a" mb="xs" ff="monospace">
+        <Title order={2} c="#1f1c19" mb="xs" ff="monospace">
           Tổng quan Workspace
         </Title>
-        <Text c="#64748b" mb="xl">
+        <Text c="#6e675f" mb="xl">
           Chào mừng bạn trở lại. Hãy chọn một repository ở thanh bên trái để xem
           chi tiết.
         </Text>
@@ -51,19 +51,19 @@ export function DashboardOverview() {
             bg="#ffffff"
             radius="md"
             style={{
-              border: "1px solid #e2e8f0",
-              boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+              border: "1px solid #e8e5de",
+              boxShadow: "0 1px 3px rgba(31, 28, 25, 0.04)",
             }}
           >
             <Group justify="space-between" mb="xs">
-              <Text fz="sm" c="#64748b" fw={500}>
+              <Text fz="sm" c="#6e675f" fw={500}>
                 Repositories
               </Text>
               <ThemeIcon color="indigo" variant="light" size="md" radius="md">
                 <IconBookmark size={18} />
               </ThemeIcon>
             </Group>
-            <Title order={2} c="#0f172a">
+            <Title order={2} c="#1f1c19">
               {repos.length}
             </Title>
           </Paper>
@@ -72,19 +72,19 @@ export function DashboardOverview() {
             bg="#ffffff"
             radius="md"
             style={{
-              border: "1px solid #e2e8f0",
-              boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+              border: "1px solid #e8e5de",
+              boxShadow: "0 1px 3px rgba(31, 28, 25, 0.04)",
             }}
           >
             <Group justify="space-between" mb="xs">
-              <Text fz="sm" c="#64748b" fw={500}>
+              <Text fz="sm" c="#6e675f" fw={500}>
                 Organizations
               </Text>
               <ThemeIcon color="teal" variant="light" size="md" radius="md">
                 <IconUsers size={18} />
               </ThemeIcon>
             </Group>
-            <Title order={2} c="#0f172a">
+            <Title order={2} c="#1f1c19">
               {orgs.length}
             </Title>
           </Paper>
@@ -93,25 +93,25 @@ export function DashboardOverview() {
             bg="#ffffff"
             radius="md"
             style={{
-              border: "1px solid #e2e8f0",
-              boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+              border: "1px solid #e8e5de",
+              boxShadow: "0 1px 3px rgba(31, 28, 25, 0.04)",
             }}
           >
             <Group justify="space-between" mb="xs">
-              <Text fz="sm" c="#64748b" fw={500}>
+              <Text fz="sm" c="#6e675f" fw={500}>
                 Username
               </Text>
               <ThemeIcon color="blue" variant="light" size="md" radius="md">
                 <IconBrandGithub size={18} />
               </ThemeIcon>
             </Group>
-            <Title order={3} c="#0f172a" mt={10} ff="monospace">
+            <Title order={3} c="#1f1c19" mt={10} ff="monospace">
               @{user.login}
             </Title>
           </Paper>
         </SimpleGrid>
 
-        <Divider my="xl" color="#e2e8f0" />
+        <Divider my="xl" color="#e8e5de" />
         <Box ta="center" mt={60}>
           <ThemeIcon
             size={80}

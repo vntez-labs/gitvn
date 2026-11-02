@@ -16,35 +16,34 @@ import {
   IconGitCommit,
   IconGitMerge,
 } from "@tabler/icons-react";
+import type { GitGraphLayoutItem } from "@/lib/git-graph-layout";
 import { formatRelativeTime } from "@/lib/time";
 
 interface CommitGraphRowProps {
   item: any;
-  index: number;
-  total: number;
+  layout: GitGraphLayoutItem;
   currentBranch: string;
   onSelect: (sha: string) => void;
 }
 
 export function CommitGraphRow({
   item,
-  index,
-  total,
+  layout,
   currentBranch,
   onSelect,
 }: CommitGraphRowProps) {
   const commit = item.commit;
   const author = item.author;
-  const isHead = index === 0;
-  const isLast = index === total - 1;
-  const isMerge = (item.parents?.length || 0) >= 2;
   const title = commit?.message?.split("\n")[0] || "Commit không có tiêu đề";
   const shaShort = item.sha?.slice(0, 7);
 
-  // SVG lane dimensions
-  const laneWidth = 36;
-  const cx = 18;
-  const cy = 24;
+  // SVG lane dimensions (GitLens / GitKraken style)
+  const laneWidth = 52;
+  const x0 = 16; // Trunk Lane (Main)
+  const x1 = 36; // Branch Lane (Feature / PR)
+  const cy = 24; // Center Y of node in row
+
+  const nodeCx = layout.lane === 0 ? x0 : x1;
 
   return (
     <Box
@@ -53,12 +52,12 @@ export function CommitGraphRow({
         display: "flex",
         alignItems: "stretch",
         backgroundColor: "#ffffff",
-        borderBottom: "1px solid #f1f5f9",
+        borderBottom: "1px solid #f1ede6",
         cursor: "pointer",
         transition: "background-color 0.12s ease",
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.backgroundColor = "#f8fafc";
+        e.currentTarget.style.backgroundColor = "#f5f3ee";
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.backgroundColor = "#ffffff";
@@ -79,48 +78,82 @@ export function CommitGraphRow({
           height="100%"
           style={{ position: "absolute", left: 0, top: 0, overflow: "visible" }}
         >
-          {/* Vertical trunk line from top to node */}
-          {!isHead && (
+          {/* Trunk line (Lane 0) */}
+          {layout.trunkIn && (
             <line
-              x1={cx}
+              x1={x0}
               y1={0}
-              x2={cx}
-              y2={cy}
+              x2={x0}
+              y2={layout.lane === 0 ? cy : "100%"}
               stroke="#cbd5e1"
               strokeWidth={2}
             />
           )}
-
-          {/* Vertical trunk line from node to bottom */}
-          {!isLast && (
+          {layout.trunkOut && (
             <line
-              x1={cx}
-              y1={cy}
-              x2={cx}
+              x1={x0}
+              y1={layout.lane === 0 ? cy : 0}
+              x2={x0}
               y2="100%"
               stroke="#cbd5e1"
               strokeWidth={2}
             />
           )}
 
-          {/* Branch curve for merge commits */}
-          {isMerge && (
-            <path
-              d={`M ${cx + 10} 0 Q ${cx + 8} ${cy - 4} ${cx} ${cy}`}
-              fill="none"
-              stroke="#6366f1"
+          {/* Branch line (Lane 1) */}
+          {layout.branchIn && (
+            <line
+              x1={x1}
+              y1={0}
+              x2={x1}
+              y2={layout.lane === 1 ? cy : "100%"}
+              stroke="#8b5cf6"
               strokeWidth={2}
-              strokeDasharray="3,2"
+            />
+          )}
+          {layout.branchOut && (
+            <line
+              x1={x1}
+              y1={cy}
+              x2={x1}
+              y2="100%"
+              stroke="#8b5cf6"
+              strokeWidth={2}
+            />
+          )}
+
+          {/* Smooth Merge Curve: từ Lane 1 phía dưới nhập vào node ở Lane 0 */}
+          {layout.mergeFromBranch && (
+            <path
+              d={`M ${x1} 64 C ${x1} ${cy + 10}, ${x0 + 8} ${cy}, ${x0} ${cy}`}
+              fill="none"
+              stroke="#8b5cf6"
+              strokeWidth={2}
+            />
+          )}
+
+          {/* Smooth Fork Curve: từ node ở Lane 1 tẽ về Trunk Lane 0 phía dưới */}
+          {layout.forkToBranch && (
+            <path
+              d={`M ${x1} ${cy} C ${x1} ${cy + 12}, ${x0 + 8} 64, ${x0} 64`}
+              fill="none"
+              stroke="#8b5cf6"
+              strokeWidth={2}
             />
           )}
 
           {/* Node Circle */}
-          {isHead ? (
+          {layout.isHead ? (
             <g>
               {/* Glowing halo for HEAD */}
-              <circle cx={cx} cy={cy} r={8.5} fill="rgba(251, 41, 26, 0.16)" />
               <circle
-                cx={cx}
+                cx={nodeCx}
+                cy={cy}
+                r={8.5}
+                fill="rgba(251, 41, 26, 0.16)"
+              />
+              <circle
+                cx={nodeCx}
                 cy={cy}
                 r={5}
                 fill="#fb291a"
@@ -128,18 +161,27 @@ export function CommitGraphRow({
                 strokeWidth={2}
               />
             </g>
-          ) : isMerge ? (
+          ) : layout.isMerge ? (
             <circle
-              cx={cx}
+              cx={nodeCx}
               cy={cy}
               r={5}
               fill="#6366f1"
               stroke="#ffffff"
               strokeWidth={2}
             />
+          ) : layout.lane === 1 ? (
+            <circle
+              cx={nodeCx}
+              cy={cy}
+              r={4.5}
+              fill="#8b5cf6"
+              stroke="#ffffff"
+              strokeWidth={2}
+            />
           ) : (
             <circle
-              cx={cx}
+              cx={nodeCx}
               cy={cy}
               r={4}
               fill="#ffffff"
@@ -164,17 +206,17 @@ export function CommitGraphRow({
       >
         <Box style={{ flex: 1, minWidth: 0 }}>
           <Group gap={8} wrap="nowrap" align="center">
-            {isHead && (
+            {layout.isHead && (
               <Badge size="xs" color="vntez" variant="filled">
                 HEAD
               </Badge>
             )}
-            {isHead && (
+            {layout.isHead && (
               <Badge size="xs" color="vntez" variant="outline">
                 {currentBranch}
               </Badge>
             )}
-            {isMerge && (
+            {layout.isMerge && (
               <Badge
                 size="xs"
                 color="indigo"
@@ -184,7 +226,7 @@ export function CommitGraphRow({
                 Merge
               </Badge>
             )}
-            <Text fz={13.5} fw={600} c="#0f172a" truncate>
+            <Text fz={13.5} fw={600} c="#1f1c19" truncate>
               {title}
             </Text>
           </Group>
@@ -195,10 +237,10 @@ export function CommitGraphRow({
               alt={commit?.author?.name}
               size={18}
               radius="xl"
-              style={{ border: "1px solid #e2e8f0", flexShrink: 0 }}
+              style={{ border: "1px solid #e8e5de", flexShrink: 0 }}
             />
-            <Text fz={11} c="#64748b">
-              <span style={{ color: "#334155", fontWeight: 500 }}>
+            <Text fz={11} c="#6e675f">
+              <span style={{ color: "#1f1c19", fontWeight: 500 }}>
                 {commit?.author?.name || author?.login || "Vô danh"}
               </span>
               {" committed "}

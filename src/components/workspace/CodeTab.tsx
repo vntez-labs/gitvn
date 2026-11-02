@@ -159,8 +159,8 @@ export function CodeTab({ onNavigateTab }: CodeTabProps) {
       {/* File Explorer */}
       <Box
         style={{
-          borderRight: "1px solid #e2e8f0",
-          backgroundColor: "#f8fafc",
+          borderRight: "1px solid #e8e5de",
+          backgroundColor: "#f5f3ee",
           display: "flex",
           flexDirection: "column",
           minHeight: 0,
@@ -170,17 +170,17 @@ export function CodeTab({ onNavigateTab }: CodeTabProps) {
           justify="space-between"
           px="md"
           py={8}
-          style={{ borderBottom: "1px solid #e2e8f0", flexShrink: 0 }}
+          style={{ borderBottom: "1px solid #e8e5de", flexShrink: 0 }}
         >
           <Text
             fz={10}
             fw={700}
-            c="#64748b"
+            c="#78716c"
             style={{ letterSpacing: "0.08em" }}
           >
             FILES
           </Text>
-          <Badge size="xs" variant="transparent" c="#64748b" p={0}>
+          <Badge size="xs" variant="transparent" c="#78716c" p={0}>
             {tree.filter((t) => t.type === "blob").length} files
           </Badge>
         </Group>

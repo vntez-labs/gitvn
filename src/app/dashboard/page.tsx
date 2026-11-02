@@ -49,7 +49,7 @@ export default function DashboardPage() {
       <style>{`
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .user-profile-btn:hover { background-color: #f1f5f9; }
+        .user-profile-btn:hover { background-color: #f5f3ee; }
       `}</style>
 
       {/* HEADER */}
@@ -58,7 +58,7 @@ export default function DashboardPage() {
         py="xs"
         px="lg"
         style={{
-          borderBottom: "1px solid #e2e8f0",
+          borderBottom: "1px solid #e8e5de",
           backgroundColor: "#ffffff",
           flexShrink: 0,
         }}

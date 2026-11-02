@@ -86,7 +86,7 @@ export function WorkspaceHeader({
       pt="sm"
       pb={0}
       style={{
-        borderBottom: "1px solid #e2e8f0",
+        borderBottom: "1px solid #e8e5de",
         backgroundColor: "#ffffff",
         flexShrink: 0,
       }}

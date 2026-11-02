@@ -11,7 +11,7 @@ import {
   Text,
   Tooltip,
 } from "@mantine/core";
-import { IconArrowDown, IconCheck, IconCopy } from "@tabler/icons-react";
+import { IconCheck, IconCopy } from "@tabler/icons-react";
 import { getGitHubAvatarUrl } from "@/lib/avatar";
 import { formatRelativeTime } from "@/lib/time";
 import { ICON_BASE_URL } from "../constants";
@@ -44,8 +44,8 @@ export function FileEditorHeader({
         px="md"
         py={6}
         style={{
-          borderBottom: "1px solid #e2e8f0",
-          backgroundColor: "#f8fafc",
+          borderBottom: "1px solid #e8e5de",
+          backgroundColor: "#ffffff",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
@@ -96,8 +96,8 @@ export function FileEditorHeader({
           px="md"
           py={4}
           style={{
-            borderBottom: "1px solid #e2e8f0",
-            backgroundColor: "#f1f5f9",
+            borderBottom: "1px solid #e8e5de",
+            backgroundColor: "#f5f3ee",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
@@ -153,53 +153,6 @@ export function FileEditorHeader({
           </Button>
         </Box>
       )}
-
-      {/* Git Sync / Pull Reminder cho người mới */}
-      <Box
-        px="md"
-        py={4}
-        style={{
-          borderBottom: "1px solid #e2e8f0",
-          backgroundColor: "#fff1f0",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          flexShrink: 0,
-        }}
-      >
-        <Group gap={6} wrap="nowrap">
-          <IconArrowDown size={12} color="#fb291a" />
-          <Text fz={11} c="#475569">
-            Cần lấy code mới nhất về máy tính? Chạy{" "}
-            <span
-              style={{
-                fontFamily: "monospace",
-                color: "#db1b0e",
-                fontWeight: 600,
-              }}
-            >
-              git pull origin {currentBranch}
-            </span>
-          </Text>
-        </Group>
-
-        <CopyButton value={`git pull origin ${currentBranch}`}>
-          {({ copied, copy }) => (
-            <Button
-              size="compact-xs"
-              variant="transparent"
-              color={copied ? "teal" : "vntez"}
-              onClick={copy}
-              leftSection={
-                copied ? <IconCheck size={11} /> : <IconCopy size={11} />
-              }
-              style={{ fontSize: 11 }}
-            >
-              {copied ? "Đã sao chép" : "Copy lệnh pull"}
-            </Button>
-          )}
-        </CopyButton>
-      </Box>
     </>
   );
 }

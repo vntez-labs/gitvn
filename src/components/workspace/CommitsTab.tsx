@@ -20,6 +20,7 @@ import {
 } from "@tabler/icons-react";
 import axios from "axios";
 import { useEffect, useMemo, useState } from "react";
+import { computeGitGraphLayout } from "@/lib/git-graph-layout";
 import { useDashboardStore } from "@/store/dashboard.store";
 import { CommitDetailModal } from "./CommitDetailModal";
 import { CommitGraphRow } from "./commits/CommitGraphRow";
@@ -74,6 +75,11 @@ export function CommitsTab({ onCommitsLoaded }: CommitsTabProps) {
     );
   }, [commits, searchQuery]);
 
+  // Tính toán layout biểu đồ multi-lane chuẩn GitLens
+  const graphLayout = useMemo(() => {
+    return computeGitGraphLayout(filteredCommits);
+  }, [filteredCommits]);
+
   if (!selectedRepo) return null;
 
   return (
@@ -84,7 +90,7 @@ export function CommitsTab({ onCommitsLoaded }: CommitsTabProps) {
         overflowY: "auto",
         padding: "20px 24px",
         minHeight: 0,
-        backgroundColor: "#ffffff",
+        backgroundColor: "#faf8f6",
       }}
     >
       <Box style={{ maxWidth: 1040, margin: "0 auto" }}>
@@ -101,8 +107,8 @@ export function CommitsTab({ onCommitsLoaded }: CommitsTabProps) {
               styles={{
                 input: {
                   backgroundColor: "#ffffff",
-                  borderColor: "#cbd5e1",
-                  color: "#0f172a",
+                  borderColor: "#e5e1da",
+                  color: "#1f1c19",
                 },
               }}
             />
@@ -114,6 +120,11 @@ export function CommitsTab({ onCommitsLoaded }: CommitsTabProps) {
                 onClick={fetchCommits}
                 loading={loading}
                 aria-label="Làm mới"
+                style={{
+                  backgroundColor: "#ffffff",
+                  borderColor: "#e5e1da",
+                  color: "#1f1c19",
+                }}
               >
                 <IconRefresh size={14} />
               </ActionIcon>
@@ -122,8 +133,8 @@ export function CommitsTab({ onCommitsLoaded }: CommitsTabProps) {
 
           <Group gap="xs">
             <Group gap={6} align="center">
-              <IconGitBranch size={14} color="#64748b" />
-              <Text fz="xs" c="#64748b">
+              <IconGitBranch size={14} color="#6e675f" />
+              <Text fz="xs" c="#6e675f">
                 Nhánh:{" "}
                 <span
                   style={{
@@ -137,7 +148,12 @@ export function CommitsTab({ onCommitsLoaded }: CommitsTabProps) {
               </Text>
             </Group>
 
-            <Badge size="sm" variant="light" color="gray">
+            <Badge
+              size="sm"
+              variant="outline"
+              color="gray"
+              style={{ borderColor: "#e5e1da", color: "#6e675f" }}
+            >
               {filteredCommits.length} commits
             </Badge>
           </Group>
@@ -148,7 +164,8 @@ export function CommitsTab({ onCommitsLoaded }: CommitsTabProps) {
           <Stack
             gap={1}
             style={{
-              border: "1px solid #e2e8f0",
+              backgroundColor: "#ffffff",
+              border: "1px solid #e8e5de",
               borderRadius: 8,
               overflow: "hidden",
             }}
@@ -162,7 +179,7 @@ export function CommitsTab({ onCommitsLoaded }: CommitsTabProps) {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
-                  borderBottom: "1px solid #f1f5f9",
+                  borderBottom: "1px solid #f1ede6",
                 }}
               >
                 <Group gap="sm" style={{ flex: 1 }}>
@@ -179,18 +196,18 @@ export function CommitsTab({ onCommitsLoaded }: CommitsTabProps) {
         ) : filteredCommits.length > 0 ? (
           <Box
             style={{
-              border: "1px solid #e2e8f0",
+              backgroundColor: "#ffffff",
+              border: "1px solid #e8e5de",
               borderRadius: 8,
               overflow: "hidden",
-              boxShadow: "0 1px 3px rgba(15, 23, 42, 0.04)",
+              boxShadow: "0 1px 3px rgba(31, 28, 25, 0.04)",
             }}
           >
             {filteredCommits.map((item, index) => (
               <CommitGraphRow
                 key={item.sha}
                 item={item}
-                index={index}
-                total={filteredCommits.length}
+                layout={graphLayout[index]}
                 currentBranch={currentBranch}
                 onSelect={(sha) => {
                   setSelectedSha(sha);
@@ -206,10 +223,10 @@ export function CommitsTab({ onCommitsLoaded }: CommitsTabProps) {
               color="#94a3b8"
               style={{ margin: "0 auto 10px" }}
             />
-            <Text fz="sm" fw={500} c="#0f172a">
+            <Text fz="sm" fw={500} c="#1f1c19">
               Không tìm thấy commit nào phù hợp
             </Text>
-            <Text fz="xs" c="#64748b" mt={4}>
+            <Text fz="xs" c="#6e675f" mt={4}>
               Hãy thử kiểm tra lại từ khóa tìm kiếm hoặc đổi sang nhánh khác.
             </Text>
           </Box>

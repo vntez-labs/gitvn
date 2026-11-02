@@ -20,12 +20,12 @@ export function OrgListItem({ org, isSelected, onSelect }: OrgListItemProps) {
         padding: "6px 10px 6px 12px",
         borderRadius: 6,
         backgroundColor: isSelected ? "#ffffff" : "transparent",
-        border: isSelected ? "1px solid #e2e8f0" : "1px solid transparent",
-        boxShadow: isSelected ? "0 1px 2px rgba(15, 23, 42, 0.05)" : "none",
+        border: isSelected ? "1px solid #e8e5de" : "1px solid transparent",
+        boxShadow: isSelected ? "0 1px 2px rgba(31, 28, 25, 0.05)" : "none",
         transition: "all 0.15s ease",
       }}
       onMouseEnter={(e) => {
-        if (!isSelected) e.currentTarget.style.backgroundColor = "#f1f5f9";
+        if (!isSelected) e.currentTarget.style.backgroundColor = "#eae5dc";
       }}
       onMouseLeave={(e) => {
         if (!isSelected) e.currentTarget.style.backgroundColor = "transparent";

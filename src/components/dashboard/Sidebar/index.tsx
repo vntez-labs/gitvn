@@ -43,8 +43,8 @@ export function DashboardSidebar() {
     <Box
       w={270}
       style={{
-        borderRight: "1px solid #e2e8f0",
-        backgroundColor: "#f8fafc",
+        borderRight: "1px solid #e8e5de",
+        backgroundColor: "#f5f3ee",
         display: "flex",
         flexDirection: "column",
         minHeight: 0,
@@ -63,7 +63,7 @@ export function DashboardSidebar() {
         <Text
           fz={11}
           fw={700}
-          c="#475569"
+          c="#78716c"
           mb={8}
           px="xs"
           style={{ letterSpacing: "0.08em", fontFamily: "monospace" }}
@@ -115,7 +115,7 @@ export function DashboardSidebar() {
           <Text
             fz={11}
             fw={700}
-            c="#475569"
+            c="#78716c"
             style={{ letterSpacing: "0.08em", fontFamily: "monospace" }}
           >
             {selectedOrg
