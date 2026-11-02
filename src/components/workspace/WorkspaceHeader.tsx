@@ -9,7 +9,6 @@ import {
   IconExternalLink,
   IconFileText,
   IconGitCommit,
-  IconGitMerge,
   IconGitPullRequest,
   IconInfoCircle,
   IconLayoutKanban,
@@ -57,11 +56,6 @@ export function WorkspaceHeader({
   const { selectedRepo, currentBranch } = useDashboardStore();
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
   if (!selectedRepo) return null;
-
-  const defaultBranch = (selectedRepo as any).default_branch || "main";
-  const isFeatureBranch =
-    currentBranch.toLowerCase() !== defaultBranch.toLowerCase();
-  const compareUrl = `https://github.com/${selectedRepo.owner.login}/${selectedRepo.name}/compare/${currentBranch}?expand=1`;
 
   const tabs = [
     { id: "code", label: "Code", icon: IconCode },
@@ -144,28 +138,6 @@ export function WorkspaceHeader({
         </Group>
 
         <Group gap="xs" wrap="nowrap">
-          {isFeatureBranch && (
-            <Button
-              size="compact-sm"
-              variant="filled"
-              component="a"
-              href={compareUrl}
-              target="_blank"
-              leftSection={<IconGitMerge size={14} />}
-              rightSection={<IconExternalLink size={12} />}
-              styles={{
-                root: {
-                  backgroundColor: "#16a34a",
-                  color: "#ffffff",
-                  fontWeight: 600,
-                  "&:hover": { backgroundColor: "#15803d" },
-                },
-              }}
-            >
-              Merge / PR
-            </Button>
-          )}
-
           <Button
             size="compact-sm"
             variant="default"
