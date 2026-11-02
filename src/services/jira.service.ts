@@ -18,11 +18,20 @@ export const jiraService = {
     repo: string,
     branch: string,
   ): Promise<BoardFetchResult> {
+    const branchParam = encodeURIComponent(branch || "");
     const [jiraRes, gitvnRes, collabRes, pullsRes] = await Promise.all([
-      axios.get(`/api/jira?owner=${owner}&repo=${repo}`),
-      axios.get(
-        `/api/gitvn?owner=${owner}&repo=${repo}&branch=${encodeURIComponent(branch)}`,
-      ),
+      axios
+        .get(`/api/jira?owner=${owner}&repo=${repo}&branch=${branchParam}`)
+        .catch((err) => {
+          console.error("[Jira Service] /api/jira fetch error:", err);
+          return { data: { data: null, syncedToGitHub: false } };
+        }),
+      axios
+        .get(`/api/gitvn?owner=${owner}&repo=${repo}&branch=${branchParam}`)
+        .catch((err) => {
+          console.error("[Jira Service] /api/gitvn fetch error:", err);
+          return { data: { hasGitvn: false, config: null } };
+        }),
       axios
         .get(`/api/github/collaborators?owner=${owner}&repo=${repo}`)
         .catch(() => ({ data: { members: [] } })),

@@ -327,35 +327,39 @@ export async function POST(request: Request) {
       const defaultArchDoc = createDefaultDocArchitecture(repo);
       const defaultReadme = createDefaultReadme();
 
-      // 1. Lưu vào thư mục local .gitvn
-      await fs.mkdir(LOCAL_GITVN_DIR, { recursive: true });
-      await fs.mkdir(path.join(LOCAL_GITVN_DIR, "docs"), { recursive: true });
+      // 1. Lưu vào thư mục local .gitvn (nếu môi trường cho phép ghi, Vercel sẽ tự bỏ qua)
+      try {
+        await fs.mkdir(LOCAL_GITVN_DIR, { recursive: true });
+        await fs.mkdir(path.join(LOCAL_GITVN_DIR, "docs"), { recursive: true });
 
-      await fs.writeFile(
-        path.join(LOCAL_GITVN_DIR, "README.md"),
-        defaultReadme,
-        "utf-8",
-      );
-      await fs.writeFile(
-        path.join(LOCAL_GITVN_DIR, "config.json"),
-        JSON.stringify(defaultConfig, null, 2),
-        "utf-8",
-      );
-      await fs.writeFile(
-        path.join(LOCAL_GITVN_DIR, "tasks.json"),
-        JSON.stringify(defaultTasks, null, 2),
-        "utf-8",
-      );
-      await fs.writeFile(
-        path.join(LOCAL_GITVN_DIR, "docs", "index.mdx"),
-        defaultIndexDoc,
-        "utf-8",
-      );
-      await fs.writeFile(
-        path.join(LOCAL_GITVN_DIR, "docs", "architecture.mdx"),
-        defaultArchDoc,
-        "utf-8",
-      );
+        await fs.writeFile(
+          path.join(LOCAL_GITVN_DIR, "README.md"),
+          defaultReadme,
+          "utf-8",
+        );
+        await fs.writeFile(
+          path.join(LOCAL_GITVN_DIR, "config.json"),
+          JSON.stringify(defaultConfig, null, 2),
+          "utf-8",
+        );
+        await fs.writeFile(
+          path.join(LOCAL_GITVN_DIR, "tasks.json"),
+          JSON.stringify(defaultTasks, null, 2),
+          "utf-8",
+        );
+        await fs.writeFile(
+          path.join(LOCAL_GITVN_DIR, "docs", "index.mdx"),
+          defaultIndexDoc,
+          "utf-8",
+        );
+        await fs.writeFile(
+          path.join(LOCAL_GITVN_DIR, "docs", "architecture.mdx"),
+          defaultArchDoc,
+          "utf-8",
+        );
+      } catch {
+        // Bỏ qua lỗi EROFS trên môi trường serverless (Vercel)
+      }
 
       // 2. Commit lên GitHub nếu có token
       let syncedToGitHub = false;
@@ -449,13 +453,17 @@ export async function POST(request: Request) {
         targetDocName.endsWith(".mdx") || targetDocName.endsWith(".md")
           ? targetDocName
           : `${targetDocName}.mdx`;
-      const docsDir = path.join(LOCAL_GITVN_DIR, "docs");
-      await fs.mkdir(docsDir, { recursive: true });
-      await fs.writeFile(
-        path.join(docsDir, safeDocName),
-        targetDocContent,
-        "utf-8",
-      );
+      try {
+        const docsDir = path.join(LOCAL_GITVN_DIR, "docs");
+        await fs.mkdir(docsDir, { recursive: true });
+        await fs.writeFile(
+          path.join(docsDir, safeDocName),
+          targetDocContent,
+          "utf-8",
+        );
+      } catch {
+        // Bỏ qua lỗi EROFS trên môi trường serverless (Vercel)
+      }
 
       let syncedToGitHub = false;
       let error: string | undefined;
@@ -492,12 +500,16 @@ export async function POST(request: Request) {
       }
 
       const configStr = JSON.stringify(config, null, 2);
-      await fs.mkdir(LOCAL_GITVN_DIR, { recursive: true });
-      await fs.writeFile(
-        path.join(LOCAL_GITVN_DIR, "config.json"),
-        configStr,
-        "utf-8",
-      );
+      try {
+        await fs.mkdir(LOCAL_GITVN_DIR, { recursive: true });
+        await fs.writeFile(
+          path.join(LOCAL_GITVN_DIR, "config.json"),
+          configStr,
+          "utf-8",
+        );
+      } catch {
+        // Bỏ qua lỗi EROFS trên môi trường serverless (Vercel)
+      }
 
       let syncedToGitHub = false;
       let error: string | undefined;

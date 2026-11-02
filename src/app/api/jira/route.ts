@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 import path from "path";
 import type { JiraBoardData, JiraSprint, JiraTask } from "@/interfaces/jira";
 
-// Lưu trữ chính tại thư mục .gitvn trong repo
+// Lưu trữ chính tại thư mục .gitvn trong repo (hoặc local cache)
 const GITVN_DIR = path.join(process.cwd(), ".gitvn");
 
 function getPrimaryTasksFilePath(): string {
@@ -34,6 +34,31 @@ function getDataJiraRepoFilePath(owner: string, repo: string): string {
   );
 }
 
+// Hàm ghi file an toàn, không bao giờ làm crash request trên Vercel/Serverless read-only filesystem
+async function safeWriteFile(
+  filePath: string,
+  content: string,
+): Promise<boolean> {
+  try {
+    const dir = path.dirname(filePath);
+    await fs.mkdir(dir, { recursive: true });
+    await fs.writeFile(filePath, content, "utf-8");
+    return true;
+  } catch {
+    // Trên Vercel (AWS Lambda), filesystem ngoài /tmp là read-only (EROFS) -> bỏ qua an toàn
+    return false;
+  }
+}
+
+// Hàm đọc file an toàn
+async function safeReadFile(filePath: string): Promise<string | null> {
+  try {
+    return await fs.readFile(filePath, "utf-8");
+  } catch {
+    return null;
+  }
+}
+
 async function getAuthToken(): Promise<string | undefined> {
   const cookieStore = await cookies();
   return cookieStore.get("github_access_token")?.value;
@@ -49,7 +74,11 @@ async function getAuthUser(): Promise<{
 
   try {
     const res = await fetch("https://api.github.com/user", {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "User-Agent": "GitVN-App",
+        Accept: "application/vnd.github+json",
+      },
     });
     if (!res.ok) return null;
     return await res.json();
@@ -62,36 +91,92 @@ async function getAuthUser(): Promise<{
 async function fetchFromGitHub(
   owner: string,
   repo: string,
-  token: string,
+  token?: string,
+  branch?: string | null,
 ): Promise<JiraBoardData | null> {
   const filesToTry = [".gitvn/tasks.json", ".gitvn/jira.json"];
+  const refQuery = branch ? `?ref=${encodeURIComponent(branch)}` : "";
 
   for (const filePath of filesToTry) {
     try {
-      const res = await fetch(
-        `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`,
+      const headers: Record<string, string> = {
+        "User-Agent": "GitVN-App",
+        "X-GitHub-Api-Version": "2022-11-28",
+      };
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
+      // 1. Thử lấy raw JSON trực tiếp (nhanh, chuẩn xác, không bị giới hạn 1MB Base64)
+      const rawRes = await fetch(
+        `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}${refQuery}`,
         {
           headers: {
-            Authorization: `Bearer ${token}`,
+            ...headers,
+            Accept:
+              "application/vnd.github.raw+json, application/vnd.github.raw",
+          },
+          cache: "no-store",
+        },
+      );
+
+      if (rawRes.ok) {
+        const rawText = await rawRes.text();
+        const parsed = JSON.parse(rawText);
+        if (
+          parsed &&
+          typeof parsed === "object" &&
+          (parsed.tasks || parsed.sprints)
+        ) {
+          return parsed;
+        }
+      }
+
+      // 2. Fallback: Lấy standard JSON object (base64 hoặc download_url)
+      const jsonRes = await fetch(
+        `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}${refQuery}`,
+        {
+          headers: {
+            ...headers,
             Accept: "application/vnd.github+json",
           },
           cache: "no-store",
         },
       );
 
-      if (!res.ok) continue;
-      const fileData = await res.json();
-      if (fileData.content) {
-        const decoded = Buffer.from(fileData.content, "base64").toString(
-          "utf-8",
-        );
-        const parsed = JSON.parse(decoded);
-        if (parsed && typeof parsed === "object") {
-          return parsed;
+      if (jsonRes.ok) {
+        const fileData = await jsonRes.json();
+        if (fileData.content) {
+          const decoded = Buffer.from(fileData.content, "base64").toString(
+            "utf-8",
+          );
+          const parsed = JSON.parse(decoded);
+          if (
+            parsed &&
+            typeof parsed === "object" &&
+            (parsed.tasks || parsed.sprints)
+          ) {
+            return parsed;
+          }
+        } else if (fileData.download_url) {
+          const dlRes = await fetch(fileData.download_url, {
+            headers,
+            cache: "no-store",
+          });
+          if (dlRes.ok) {
+            const dlParsed = await dlRes.json();
+            if (
+              dlParsed &&
+              typeof dlParsed === "object" &&
+              (dlParsed.tasks || dlParsed.sprints)
+            ) {
+              return dlParsed;
+            }
+          }
         }
       }
-    } catch {
-      // Tiếp tục thử file kế tiếp
+    } catch (err) {
+      console.warn(`[fetchFromGitHub error for ${filePath}]:`, err);
     }
   }
 
@@ -104,18 +189,25 @@ async function syncToGitHub(
   repo: string,
   data: JiraBoardData,
   token: string,
+  branch?: string | null,
 ): Promise<{ ok: boolean; error?: string; sha?: string }> {
   const targetFile = ".gitvn/tasks.json";
+  const refQuery = branch ? `?ref=${encodeURIComponent(branch)}` : "";
+
   try {
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${token}`,
+      Accept: "application/vnd.github+json",
+      "User-Agent": "GitVN-App",
+      "X-GitHub-Api-Version": "2022-11-28",
+    };
+
     // 1. Lấy SHA hiện tại nếu file đã tồn tại trên repo
     let sha: string | undefined;
     const getRes = await fetch(
-      `https://api.github.com/repos/${owner}/${repo}/contents/${targetFile}`,
+      `https://api.github.com/repos/${owner}/${repo}/contents/${targetFile}${refQuery}`,
       {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: "application/vnd.github+json",
-        },
+        headers,
         cache: "no-store",
       },
     );
@@ -131,8 +223,7 @@ async function syncToGitHub(
       {
         method: "PUT",
         headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: "application/vnd.github+json",
+          ...headers,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -141,6 +232,7 @@ async function syncToGitHub(
             "base64",
           ),
           sha,
+          branch: branch || undefined,
         }),
       },
     );
@@ -218,46 +310,40 @@ function createCleanDefaultBoard(
 }
 
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const owner = searchParams.get("owner");
-  const repo = searchParams.get("repo");
+  try {
+    const { searchParams } = new URL(request.url);
+    const owner = searchParams.get("owner");
+    const repo = searchParams.get("repo");
+    const branch = searchParams.get("branch");
 
-  if (!owner || !repo) {
-    return NextResponse.json(
-      { error: "Thiếu owner hoặc repo" },
-      { status: 400 },
-    );
-  }
+    if (!owner || !repo) {
+      return NextResponse.json(
+        { error: "Thiếu owner hoặc repo" },
+        { status: 400 },
+      );
+    }
 
-  const token = await getAuthToken();
-  const user = await getAuthUser();
-  const currentUserLogin = user?.login || "anonymous";
+    const token = await getAuthToken();
+    const user = await getAuthUser();
+    const currentUserLogin = user?.login || "anonymous";
 
-  await fs.mkdir(GITVN_DIR, { recursive: true });
+    const primaryTasksPath = getPrimaryTasksFilePath();
+    const repoTasksPath = getRepoTasksFilePath(owner, repo);
+    const legacyRepoPath = getLegacyRepoFilePath(owner, repo);
+    const dataJiraPath = getDataJiraRepoFilePath(owner, repo);
 
-  const primaryTasksPath = getPrimaryTasksFilePath();
-  const repoTasksPath = getRepoTasksFilePath(owner, repo);
-  const legacyRepoPath = getLegacyRepoFilePath(owner, repo);
-  const dataJiraPath = getDataJiraRepoFilePath(owner, repo);
-
-  // 1. Thử đọc từ GitHub nếu có token
-  if (token) {
-    const remoteData = await fetchFromGitHub(owner, repo, token);
+    // 1. Thử đọc từ GitHub (có token hoặc không có token nếu public)
+    const remoteData = await fetchFromGitHub(owner, repo, token, branch);
     if (remoteData) {
       remoteData.owner = owner;
       remoteData.repo = repo;
 
-      // Lưu lại local bản mới nhất
-      await fs.writeFile(
-        repoTasksPath,
-        JSON.stringify(remoteData, null, 2),
-        "utf-8",
-      );
+      // Lưu lại local cache an toàn (không crash trên Vercel)
+      await safeWriteFile(repoTasksPath, JSON.stringify(remoteData, null, 2));
       if (repo.toLowerCase() === "gitvn") {
-        await fs.writeFile(
+        await safeWriteFile(
           primaryTasksPath,
           JSON.stringify(remoteData, null, 2),
-          "utf-8",
         );
       }
 
@@ -268,105 +354,108 @@ export async function GET(request: Request) {
         file: ".gitvn/tasks.json",
       });
     }
-  }
 
-  // 2. Thử đọc từ file local theo thứ tự ưu tiên chính xác cho ĐÚNG repo
-  const localCandidates = [
-    repoTasksPath,
-    primaryTasksPath,
-    dataJiraPath,
-    legacyRepoPath,
-  ];
-
-  for (const candidatePath of localCandidates) {
-    try {
-      const content = await fs.readFile(
-        /*turbopackIgnore: true*/ candidatePath,
-        "utf-8",
-      );
-      const data: JiraBoardData = JSON.parse(content);
-
-      // QUAN TRỌNG: Chỉ chấp nhận nếu file thực sự thuộc repo này
-      // (hoặc nếu là primaryTasksPath khi repo là gitvn)
-      const matchesRepo =
-        (data.owner?.toLowerCase() === owner.toLowerCase() &&
-          data.repo?.toLowerCase() === repo.toLowerCase()) ||
-        (candidatePath === primaryTasksPath && repo.toLowerCase() === "gitvn");
-
-      if (matchesRepo && data.tasks && data.sprints) {
-        data.owner = owner;
-        data.repo = repo;
-
-        if (
-          user &&
-          data.permissions?.userRoles &&
-          !data.permissions.userRoles[user.login]
-        ) {
-          data.permissions.userRoles[user.login] =
-            user.login.toLowerCase() === owner.toLowerCase()
-              ? "admin"
-              : data.permissions.defaultRole || "member";
-        }
-
-        // Migrate/Cập nhật chuẩn vào file tasks.json
-        await fs.writeFile(
-          repoTasksPath,
-          JSON.stringify(data, null, 2),
-          "utf-8",
-        );
-        if (repo.toLowerCase() === "gitvn") {
-          await fs.writeFile(
-            primaryTasksPath,
-            JSON.stringify(data, null, 2),
-            "utf-8",
-          );
-        }
-
-        return NextResponse.json({
-          data,
-          source: "local",
-          file: ".gitvn/tasks.json",
-          syncedToGitHub: false,
-        });
-      }
-    } catch {
-      // File không tồn tại hoặc parse lỗi, tiếp tục ứng viên kế tiếp
-    }
-  }
-
-  // 3. Nếu chưa có bất kỳ dữ liệu nào cho repo này -> Tạo bảng mới sạch sẽ
-  const defaultData = createCleanDefaultBoard(owner, repo, currentUserLogin);
-  await fs.writeFile(
-    repoTasksPath,
-    JSON.stringify(defaultData, null, 2),
-    "utf-8",
-  );
-  if (repo.toLowerCase() === "gitvn") {
-    await fs.writeFile(
+    // 2. Thử đọc từ file local cache theo thứ tự ưu tiên
+    const localCandidates = [
+      repoTasksPath,
       primaryTasksPath,
-      JSON.stringify(defaultData, null, 2),
-      "utf-8",
+      dataJiraPath,
+      legacyRepoPath,
+    ];
+
+    for (const candidatePath of localCandidates) {
+      const content = await safeReadFile(candidatePath);
+      if (!content) continue;
+
+      try {
+        const data: JiraBoardData = JSON.parse(content);
+        const matchesRepo =
+          (data.owner?.toLowerCase() === owner.toLowerCase() &&
+            data.repo?.toLowerCase() === repo.toLowerCase()) ||
+          (candidatePath === primaryTasksPath &&
+            repo.toLowerCase() === "gitvn");
+
+        if (matchesRepo && data.tasks && data.sprints) {
+          data.owner = owner;
+          data.repo = repo;
+
+          if (
+            user &&
+            data.permissions?.userRoles &&
+            !data.permissions.userRoles[user.login]
+          ) {
+            data.permissions.userRoles[user.login] =
+              user.login.toLowerCase() === owner.toLowerCase()
+                ? "admin"
+                : data.permissions.defaultRole || "member";
+          }
+
+          await safeWriteFile(repoTasksPath, JSON.stringify(data, null, 2));
+          if (repo.toLowerCase() === "gitvn") {
+            await safeWriteFile(
+              primaryTasksPath,
+              JSON.stringify(data, null, 2),
+            );
+          }
+
+          return NextResponse.json({
+            data,
+            source: "local",
+            file: ".gitvn/tasks.json",
+            syncedToGitHub: false,
+          });
+        }
+      } catch {
+        // file parse lỗi, tiếp tục
+      }
+    }
+
+    // 3. Nếu chưa có bất kỳ dữ liệu nào cho repo này -> Tạo bảng mới sạch sẽ
+    const defaultData = createCleanDefaultBoard(owner, repo, currentUserLogin);
+    await safeWriteFile(repoTasksPath, JSON.stringify(defaultData, null, 2));
+    if (repo.toLowerCase() === "gitvn") {
+      await safeWriteFile(
+        primaryTasksPath,
+        JSON.stringify(defaultData, null, 2),
+      );
+    }
+
+    let synced = false;
+    if (token) {
+      const syncRes = await syncToGitHub(
+        owner,
+        repo,
+        defaultData,
+        token,
+        branch,
+      );
+      synced = syncRes.ok;
+    }
+
+    return NextResponse.json({
+      data: defaultData,
+      source: "initialized",
+      file: ".gitvn/tasks.json",
+      syncedToGitHub: synced,
+    });
+  } catch (err: any) {
+    console.error("Error in GET /api/jira:", err);
+    return NextResponse.json(
+      { error: err?.message || "Internal Server Error" },
+      { status: 500 },
     );
   }
-
-  // Thử sync luôn lên GitHub nếu có token
-  let synced = false;
-  if (token) {
-    const syncRes = await syncToGitHub(owner, repo, defaultData, token);
-    synced = syncRes.ok;
-  }
-
-  return NextResponse.json({
-    data: defaultData,
-    source: "initialized",
-    file: ".gitvn/tasks.json",
-    syncedToGitHub: synced,
-  });
 }
 
 export async function POST(request: Request) {
   try {
-    const { owner, repo, data, forceGitHubSync = true } = await request.json();
+    const {
+      owner,
+      repo,
+      branch,
+      data,
+      forceGitHubSync = true,
+    } = await request.json();
 
     if (!owner || !repo || !data) {
       return NextResponse.json(
@@ -375,36 +464,27 @@ export async function POST(request: Request) {
       );
     }
 
-    // Bảo đảm owner và repo đúng
     data.owner = owner;
     data.repo = repo;
 
-    await fs.mkdir(GITVN_DIR, { recursive: true });
     const primaryTasksPath = getPrimaryTasksFilePath();
     const repoTasksPath = getRepoTasksFilePath(owner, repo);
     const legacyPath = path.join(GITVN_DIR, "jira.json");
 
-    // 1. Lưu local vào file .gitvn/tasks.json
-    await fs.writeFile(repoTasksPath, JSON.stringify(data, null, 2), "utf-8");
-
-    // Nếu repo đang thao tác là gitvn (workspace hiện tại), cập nhật trực tiếp .gitvn/tasks.json
+    // 1. Lưu local cache an toàn (không crash trên Vercel)
+    await safeWriteFile(repoTasksPath, JSON.stringify(data, null, 2));
     if (repo.toLowerCase() === "gitvn" || !process.env.VERCEL) {
-      await fs.writeFile(
-        primaryTasksPath,
-        JSON.stringify(data, null, 2),
-        "utf-8",
-      );
-      // Cũng lưu vào jira.json cho backward-compat
-      await fs.writeFile(legacyPath, JSON.stringify(data, null, 2), "utf-8");
+      await safeWriteFile(primaryTasksPath, JSON.stringify(data, null, 2));
+      await safeWriteFile(legacyPath, JSON.stringify(data, null, 2));
     }
 
-    // 2. Cố gắng đồng bộ lên GitHub repo nếu có token
+    // 2. Đồng bộ lên GitHub repo nếu có token
     let syncedToGitHub = false;
     let githubError: string | undefined;
 
     const token = await getAuthToken();
     if (token && forceGitHubSync) {
-      const syncResult = await syncToGitHub(owner, repo, data, token);
+      const syncResult = await syncToGitHub(owner, repo, data, token, branch);
       syncedToGitHub = syncResult.ok;
       githubError = syncResult.error;
     }
