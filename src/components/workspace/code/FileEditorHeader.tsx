@@ -2,18 +2,14 @@
 
 import {
   ActionIcon,
-  Avatar,
   Badge,
   Box,
-  Button,
   CopyButton,
   Group,
   Text,
   Tooltip,
 } from "@mantine/core";
 import { IconCheck, IconCopy } from "@tabler/icons-react";
-import { getGitHubAvatarUrl } from "@/lib/avatar";
-import { formatRelativeTime } from "@/lib/time";
 import { ICON_BASE_URL } from "../constants";
 
 interface FileEditorHeaderProps {
@@ -22,9 +18,6 @@ interface FileEditorHeaderProps {
   lineCount: number;
   isMarkdown?: boolean;
   fileContent: string;
-  lastFileCommit: any;
-  currentBranch: string;
-  onViewCommit: (sha: string) => void;
 }
 
 export function FileEditorHeader({
@@ -33,26 +26,35 @@ export function FileEditorHeader({
   lineCount,
   isMarkdown = false,
   fileContent,
-  lastFileCommit,
-  currentBranch,
-  onViewCommit,
 }: FileEditorHeaderProps) {
   return (
-    <>
-      {/* Header file chính */}
-      <Box
-        px="md"
-        py={6}
-        style={{
-          borderBottom: "1px solid #e8e5de",
-          backgroundColor: "#ffffff",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          flexShrink: 0,
-        }}
-      >
-        <Group gap="xs">
+    <Box
+      px="md"
+      py={6}
+      style={{
+        borderBottom: "1px solid #e8e5de",
+        backgroundColor: "#faf8f6",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        flexShrink: 0,
+        minHeight: 38,
+      }}
+    >
+      {/* File Tab Chip */}
+      <Group gap="xs" align="center">
+        <Box
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            backgroundColor: "#ffffff",
+            padding: "4px 10px",
+            borderRadius: 6,
+            border: "1px solid #e8e5de",
+            boxShadow: "0 1px 2px rgba(31, 28, 25, 0.04)",
+          }}
+        >
           <img
             src={`${ICON_BASE_URL}/${activeFileIcon}`}
             alt=""
@@ -64,95 +66,50 @@ export function FileEditorHeader({
                 `${ICON_BASE_URL}/default_file.svg`;
             }}
           />
-          <Text fz={12} c="#0f172a" fw={500} ff="monospace">
+          <Text fz={12} c="#1f1c19" fw={600} ff="monospace">
             {activeFile}
           </Text>
-          {lineCount > 0 && !isMarkdown && (
-            <Badge size="xs" variant="subtle" color="gray">
-              {lineCount} lines
-            </Badge>
-          )}
-        </Group>
-
-        <CopyButton value={fileContent}>
-          {({ copied, copy }) => (
-            <Tooltip label={copied ? "Đã sao chép" : "Sao chép mã"} withArrow>
-              <ActionIcon
-                size="sm"
-                variant="subtle"
-                color={copied ? "teal" : "gray"}
-                onClick={copy}
-              >
-                {copied ? <IconCheck size={14} /> : <IconCopy size={14} />}
-              </ActionIcon>
-            </Tooltip>
-          )}
-        </CopyButton>
-      </Box>
-
-      {/* GitLens Blame Bar (Commit gần nhất của file) */}
-      {lastFileCommit && (
-        <Box
-          px="md"
-          py={4}
-          style={{
-            borderBottom: "1px solid #e8e5de",
-            backgroundColor: "#f5f3ee",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            flexShrink: 0,
-            fontSize: 11,
-          }}
-        >
-          <Group gap={6} wrap="nowrap" style={{ overflow: "hidden", flex: 1 }}>
-            <Avatar
-              src={getGitHubAvatarUrl(
-                lastFileCommit.author || {
-                  login: lastFileCommit.commit?.author?.name,
-                },
-                32,
-              )}
-              alt={lastFileCommit.commit?.author?.name}
-              size={16}
-              radius="xl"
-            />
-            <Text fz={11} c="#64748b" truncate>
-              <span style={{ color: "#0f172a", fontWeight: 600 }}>
-                {lastFileCommit.commit?.author?.name || "Ai đó"}
-              </span>
-              {" • "}
-              {formatRelativeTime(lastFileCommit.commit?.author?.date)}
-              {': "'}
-              <span style={{ color: "#334155" }}>
-                {lastFileCommit.commit?.message?.split("\n")[0]}
-              </span>
-              {'"'}
-            </Text>
-            <Badge
-              size="xs"
-              variant="outline"
-              color="vntez"
-              ff="monospace"
-              style={{ flexShrink: 0 }}
-            >
-              {lastFileCommit.sha?.slice(0, 7)}
-            </Badge>
-          </Group>
-
-          <Button
-            size="compact-xs"
-            variant="subtle"
-            color="vntez"
-            onClick={() => {
-              if (lastFileCommit.sha) onViewCommit(lastFileCommit.sha);
-            }}
-            style={{ flexShrink: 0, fontSize: 11 }}
-          >
-            Xem commit
-          </Button>
         </Box>
-      )}
-    </>
+
+        {lineCount > 0 && !isMarkdown && (
+          <Badge
+            size="xs"
+            variant="outline"
+            color="gray"
+            style={{
+              borderColor: "#e8e5de",
+              color: "#6e675f",
+              backgroundColor: "#ffffff",
+            }}
+          >
+            {lineCount.toLocaleString()} dòng
+          </Badge>
+        )}
+      </Group>
+
+      {/* Hành động sao chép mã */}
+      <CopyButton value={fileContent}>
+        {({ copied, copy }) => (
+          <Tooltip
+            label={copied ? "Đã sao chép mã!" : "Sao chép mã nguồn"}
+            withArrow
+          >
+            <ActionIcon
+              size="sm"
+              variant="default"
+              color={copied ? "teal" : "gray"}
+              onClick={copy}
+              style={{
+                backgroundColor: "#ffffff",
+                borderColor: "#e8e5de",
+                color: copied ? "#0d9488" : "#6e675f",
+              }}
+            >
+              {copied ? <IconCheck size={14} /> : <IconCopy size={14} />}
+            </ActionIcon>
+          </Tooltip>
+        )}
+      </CopyButton>
+    </Box>
   );
 }

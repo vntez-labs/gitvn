@@ -37,14 +37,16 @@ export function ClonePopover() {
     <Popover width={340} position="bottom-end" withArrow shadow="md">
       <Popover.Target>
         <Button
-          size="compact-xs"
-          variant="filled"
-          leftSection={<IconTerminal2 size={13} />}
+          size="compact-sm"
+          variant="default"
+          leftSection={<IconTerminal2 size={13} color="#fb291a" />}
           rightSection={<IconChevronDown size={11} />}
           styles={{
             root: {
-              backgroundColor: "#16a34a",
-              "&:hover": { backgroundColor: "#15803d" },
+              backgroundColor: "#ffffff",
+              borderColor: "#e5e1da",
+              color: "#1f1c19",
+              fontWeight: 500,
             },
           }}
         >
