@@ -11,7 +11,7 @@ import {
   Text,
   Tooltip,
 } from "@mantine/core";
-import { IconArrowDown, IconCheck, IconCopy } from "@tabler/icons-react";
+import { IconCheck, IconCopy } from "@tabler/icons-react";
 import { getGitHubAvatarUrl } from "@/lib/avatar";
 import { formatRelativeTime } from "@/lib/time";
 import { ICON_BASE_URL } from "../constants";
@@ -153,53 +153,6 @@ export function FileEditorHeader({
           </Button>
         </Box>
       )}
-
-      {/* Git Sync / Pull Reminder cho người mới */}
-      <Box
-        px="md"
-        py={5}
-        style={{
-          borderBottom: "1px solid #e8e5de",
-          backgroundColor: "#f5f3ee",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          flexShrink: 0,
-        }}
-      >
-        <Group gap={6} wrap="nowrap">
-          <IconArrowDown size={13} color="#fb291a" />
-          <Text fz={11.5} c="#6e675f">
-            Cần lấy code mới nhất về máy tính? Chạy{" "}
-            <span
-              style={{
-                fontFamily: "monospace",
-                color: "#db1b0e",
-                fontWeight: 600,
-              }}
-            >
-              git pull origin {currentBranch}
-            </span>
-          </Text>
-        </Group>
-
-        <CopyButton value={`git pull origin ${currentBranch}`}>
-          {({ copied, copy }) => (
-            <Button
-              size="compact-xs"
-              variant="subtle"
-              color={copied ? "teal" : "vntez"}
-              onClick={copy}
-              leftSection={
-                copied ? <IconCheck size={12} /> : <IconCopy size={12} />
-              }
-              style={{ fontSize: 11, fontWeight: 600 }}
-            >
-              {copied ? "Đã sao chép" : "Copy lệnh pull"}
-            </Button>
-          )}
-        </CopyButton>
-      </Box>
     </>
   );
 }
