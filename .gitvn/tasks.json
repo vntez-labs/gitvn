@@ -7,7 +7,7 @@
       "id": "GITVN-1",
       "title": "Thiết kế kiến trúc hệ thống và luồng dữ liệu",
       "description": "### Mục tiêu\n\n- Xác định các entity chính\n- Xây dựng sơ đồ luồng dữ liệu (Data flow)\n- Chuẩn bị API endpoints\n\n> [!NOTE]\n> Cần tham khảo tài liệu kỹ thuật trước khi chốt spec.",
-      "status": "todo",
+      "status": "in_progress",
       "priority": "high",
       "assignee": {
         "login": "hnamhocit",
@@ -20,7 +20,7 @@
       "sprintId": "sprint-1",
       "storyPoints": 5,
       "createdAt": "2026-10-26T13:02:50.857Z",
-      "updatedAt": "2026-11-02T09:16:18.153Z"
+      "updatedAt": "2026-11-02T10:26:32.467Z"
     },
     {
       "id": "GITVN-4",
