@@ -40,6 +40,14 @@
   ],
   "sprints": [
     {
+      "id": "sprint-1793603323174",
+      "name": "Sprint 2",
+      "startDate": "2026-11-02",
+      "endDate": "2026-11-16",
+      "status": "planned",
+      "createdAt": "2026-11-02T07:08:43.174Z"
+    },
+    {
       "id": "sprint-1",
       "name": "Sprint 1 - Khởi động dự án",
       "goal": "Thiết lập cấu trúc cơ bản và hoàn thiện các tính năng cốt lõi",
