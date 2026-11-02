@@ -40,6 +40,7 @@ export function InviteMemberModal({
 }: InviteMemberModalProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [searching, setSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const [searchResults, setSearchResults] = useState<SearchUser[]>([]);
   const [selectedUser, setSelectedUser] = useState<SearchUser | null>(null);
 
@@ -56,6 +57,7 @@ export function InviteMemberModal({
     if (!opened) {
       setSearchQuery("");
       setSearchResults([]);
+      setSearchError(null);
       setSelectedUser(null);
       setStatusMessage(null);
       return;
@@ -63,11 +65,13 @@ export function InviteMemberModal({
 
     if (!searchQuery.trim() || searchQuery.trim().length < 2) {
       setSearchResults([]);
+      setSearchError(null);
       return;
     }
 
     const timer = setTimeout(() => {
       setSearching(true);
+      setSearchError(null);
       axios
         .get(
           `/api/github/users/search?q=${encodeURIComponent(
@@ -77,7 +81,12 @@ export function InviteMemberModal({
         .then((res) => {
           setSearchResults(res.data.users || []);
         })
-        .catch(() => setSearchResults([]))
+        .catch((err) => {
+          setSearchResults([]);
+          setSearchError(
+            err.response?.data?.error || "Lỗi khi tra cứu tài khoản GitHub",
+          );
+        })
         .finally(() => setSearching(false));
     }, 300);
 
@@ -86,6 +95,20 @@ export function InviteMemberModal({
 
   const handleSelectUser = (user: SearchUser) => {
     setSelectedUser(user);
+    setSearchQuery("");
+    setSearchResults([]);
+    setStatusMessage(null);
+  };
+
+  const handleSelectManualUsername = (manualName: string) => {
+    const clean = manualName.replace(/^@/, "").trim();
+    if (!clean) return;
+    setSelectedUser({
+      id: 0,
+      login: clean,
+      avatar_url: `https://github.com/${clean}.png`,
+      html_url: `https://github.com/${clean}`,
+    });
     setSearchQuery("");
     setSearchResults([]);
     setStatusMessage(null);
@@ -160,10 +183,10 @@ export function InviteMemberModal({
         {/* Hộp tìm kiếm và tra cứu GitHub user */}
         <Box style={{ position: "relative" }}>
           <Text fz={12} fw={600} c="#334155" mb={6}>
-            Tra cứu tài khoản GitHub
+            Tra cứu tài khoản GitHub (Username hoặc Email)
           </Text>
           <TextInput
-            placeholder="Nhập username hoặc tên để tra cứu (vd: octocat)..."
+            placeholder="Nhập email hoặc username (vd: khanhhly8530lk@gmail.com, octocat)..."
             size="xs"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.currentTarget.value)}
@@ -182,6 +205,10 @@ export function InviteMemberModal({
           <UserSearchResults
             results={searchResults}
             onSelect={handleSelectUser}
+            searching={searching}
+            query={searchQuery}
+            error={searchError}
+            onSelectManualUsername={handleSelectManualUsername}
           />
         </Box>
 
