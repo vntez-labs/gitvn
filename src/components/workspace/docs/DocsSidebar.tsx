@@ -1,7 +1,12 @@
 "use client";
 
 import { ActionIcon, Box, Group, Stack, Text, Tooltip } from "@mantine/core";
-import { IconBook, IconFileText, IconPlus } from "@tabler/icons-react";
+import {
+  IconBook,
+  IconFileCode,
+  IconFileText,
+  IconPlus,
+} from "@tabler/icons-react";
 import { useMemo } from "react";
 import type { GitvnDocItem } from "@/interfaces/gitvn";
 
@@ -10,6 +15,7 @@ interface DocsSidebarProps {
   activeDocId: string;
   onSelectDoc: (doc: GitvnDocItem) => void;
   onOpenNewDocModal: () => void;
+  onOpenImportExportModal?: () => void;
 }
 
 export function DocsSidebar({
@@ -17,6 +23,7 @@ export function DocsSidebar({
   activeDocId,
   onSelectDoc,
   onOpenNewDocModal,
+  onOpenImportExportModal,
 }: DocsSidebarProps) {
   // Deduplicate docs by id/name
   const uniqueDocs = useMemo(() => {
@@ -55,16 +62,31 @@ export function DocsSidebar({
             DOCS (MDX)
           </Text>
         </Group>
-        <Tooltip label="Tạo tài liệu mới" withArrow>
-          <ActionIcon
-            size="sm"
-            variant="light"
-            color="vntez"
-            onClick={onOpenNewDocModal}
-          >
-            <IconPlus size={14} />
-          </ActionIcon>
-        </Tooltip>
+
+        <Group gap={4}>
+          {onOpenImportExportModal && (
+            <Tooltip label="Import / Export Docs JSON" withArrow>
+              <ActionIcon
+                size="sm"
+                variant="default"
+                onClick={onOpenImportExportModal}
+              >
+                <IconFileCode size={13} color="#fb291a" />
+              </ActionIcon>
+            </Tooltip>
+          )}
+
+          <Tooltip label="Tạo tài liệu mới" withArrow>
+            <ActionIcon
+              size="sm"
+              variant="light"
+              color="vntez"
+              onClick={onOpenNewDocModal}
+            >
+              <IconPlus size={14} />
+            </ActionIcon>
+          </Tooltip>
+        </Group>
       </Group>
 
       <Box

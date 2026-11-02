@@ -75,10 +75,7 @@ export async function POST(request: NextRequest) {
     if (errData.message === "Resource not accessible by integration") {
       errorMessage = `GitHub App chưa được cài đặt (Install) trên tài khoản '${owner}'. Hãy vào GitHub App Settings -> Install App -> bấm Install vào '${owner}'. (Hoặc dùng OAuth App để tự động hỗ trợ mọi repo).`;
     }
-    return NextResponse.json(
-      { error: errorMessage },
-      { status: res.status },
-    );
+    return NextResponse.json({ error: errorMessage }, { status: res.status });
   } catch (error: any) {
     return NextResponse.json(
       { error: error.message || "Internal Server Error" },

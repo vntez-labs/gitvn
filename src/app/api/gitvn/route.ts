@@ -548,8 +548,12 @@ export async function POST(request: Request) {
     }
 
     // ACTION: LƯU / CẬP NHẬT TÀI LIỆU MDX
-    if (action === "save-doc") {
-      if (!docName || typeof docContent !== "string") {
+    if (action === "save-doc" || action === "saveDoc") {
+      const targetDocName = docName || body.filename;
+      const targetDocContent =
+        docContent !== undefined ? docContent : body.content;
+
+      if (!targetDocName || typeof targetDocContent !== "string") {
         return NextResponse.json(
           { error: "Thiếu tên hoặc nội dung tài liệu" },
           { status: 400 },
@@ -557,12 +561,16 @@ export async function POST(request: Request) {
       }
 
       const safeDocName =
-        docName.endsWith(".mdx") || docName.endsWith(".md")
-          ? docName
-          : `${docName}.mdx`;
+        targetDocName.endsWith(".mdx") || targetDocName.endsWith(".md")
+          ? targetDocName
+          : `${targetDocName}.mdx`;
       const docsDir = path.join(LOCAL_GITVN_DIR, "docs");
       await fs.mkdir(docsDir, { recursive: true });
-      await fs.writeFile(path.join(docsDir, safeDocName), docContent, "utf-8");
+      await fs.writeFile(
+        path.join(docsDir, safeDocName),
+        targetDocContent,
+        "utf-8",
+      );
 
       let syncedToGitHub = false;
       let error: string | undefined;
@@ -572,7 +580,7 @@ export async function POST(request: Request) {
           owner,
           repo,
           `.gitvn/docs/${safeDocName}`,
-          docContent,
+          targetDocContent,
           token,
           `docs(gitvn): update .gitvn/docs/${safeDocName}`,
           branch,

@@ -1,11 +1,7 @@
 "use client";
 
 import { Avatar, Box, Group, Menu, Skeleton, Text } from "@mantine/core";
-import {
-  IconBrandGithub,
-  IconLogout,
-  IconRefresh,
-} from "@tabler/icons-react";
+import { IconBrandGithub, IconLogout, IconRefresh } from "@tabler/icons-react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { GitVNLogo } from "@/components/brand/GitVNLogo";

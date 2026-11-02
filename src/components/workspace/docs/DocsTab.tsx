@@ -21,6 +21,7 @@ import {
   IconDeviceFloppy,
   IconEdit,
   IconEye,
+  IconFileCode,
   IconFileText,
   IconFolderPlus,
   IconSparkles,
@@ -31,6 +32,7 @@ import type { GitvnDocItem } from "@/interfaces/gitvn";
 import { docsService } from "@/services/docs.service";
 import { useDashboardStore } from "@/store/dashboard.store";
 import { CreateNewDocModal } from "./CreateNewDocModal";
+import { DocsImportExportModal } from "./DocsImportExportModal";
 import { DocsSidebar } from "./DocsSidebar";
 import { DocsSnippetsBar } from "./DocsSnippetsBar";
 
@@ -50,6 +52,7 @@ export function DocsTab({ onInitializeGitvn, hasGitvn = true }: DocsTabProps) {
   const [saving, setSaving] = useState<boolean>(false);
   const [newDocModalOpen, setNewDocModalOpen] = useState(false);
   const [newDocName, setNewDocName] = useState("");
+  const [importExportOpen, setImportExportOpen] = useState(false);
 
   const fetchDocs = () => {
     if (!selectedRepo) return;
@@ -291,6 +294,7 @@ export function DocsTab({ onInitializeGitvn, hasGitvn = true }: DocsTabProps) {
         activeDocId={activeDocId}
         onSelectDoc={handleSelectDoc}
         onOpenNewDocModal={() => setNewDocModalOpen(true)}
+        onOpenImportExportModal={() => setImportExportOpen(true)}
       />
 
       {/* CỘT PHẢI: SOẠN THẢO VÀ XEM TRỰC TIẾP */}
@@ -375,6 +379,16 @@ export function DocsTab({ onInitializeGitvn, hasGitvn = true }: DocsTabProps) {
                 label: { fontSize: 12, fontWeight: 500, padding: "3px 8px" },
               }}
             />
+
+            <Button
+              size="xs"
+              variant="default"
+              leftSection={<IconFileCode size={14} color="#fb291a" />}
+              onClick={() => setImportExportOpen(true)}
+              style={{ fontWeight: 600 }}
+            >
+              Import / Export JSON
+            </Button>
 
             <Button
               size="xs"
@@ -469,6 +483,17 @@ export function DocsTab({ onInitializeGitvn, hasGitvn = true }: DocsTabProps) {
         newDocName={newDocName}
         setNewDocName={setNewDocName}
         onCreateDoc={handleCreateNewDoc}
+      />
+
+      {/* Modal Import/Export Docs JSON */}
+      <DocsImportExportModal
+        opened={importExportOpen}
+        onClose={() => setImportExportOpen(false)}
+        docs={docs}
+        owner={selectedRepo?.owner.login || ""}
+        repo={selectedRepo?.name || ""}
+        branch={currentBranch}
+        onDocsUpdated={fetchDocs}
       />
     </Box>
   );

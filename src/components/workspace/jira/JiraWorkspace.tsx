@@ -350,6 +350,17 @@ export function JiraWorkspace() {
               </Menu.Dropdown>
             </Menu>
 
+            <Button
+              size="xs"
+              variant="default"
+              radius="md"
+              leftSection={<IconFileCode size={14} color="#fb291a" />}
+              onClick={() => setJsonModalOpen(true)}
+              style={{ fontWeight: 600 }}
+            >
+              Import / Export JSON
+            </Button>
+
             {canEdit && (
               <Button
                 size="xs"

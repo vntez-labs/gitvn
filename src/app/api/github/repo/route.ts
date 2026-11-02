@@ -76,10 +76,7 @@ export async function POST(request: Request) {
           ? "GitHub App chưa có quyền tạo repo trên Organization (Organization permissions: Administration -> Read and write). Vui lòng cấu hình trên GitHub Developer Settings và đăng nhập lại."
           : "GitHub App chưa có quyền tạo repo (Repository permissions: Administration -> Read and write). Vui lòng cấu hình trên GitHub Developer Settings và đăng nhập lại.";
       }
-      return NextResponse.json(
-        { error: errorMsg },
-        { status: res.status },
-      );
+      return NextResponse.json({ error: errorMsg }, { status: res.status });
     }
 
     return NextResponse.json({ repo: data });
