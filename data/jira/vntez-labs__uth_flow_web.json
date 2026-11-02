@@ -1,0 +1,126 @@
+{
+  "owner": "vntez-labs",
+  "repo": "uth_flow_web",
+  "taskSeq": 5,
+  "tasks": [
+    {
+      "id": "UTHFL-5",
+      "title": "dsfsdaf",
+      "description": "",
+      "status": "done",
+      "priority": "medium",
+      "sprintId": "sprint-1",
+      "storyPoints": 3,
+      "assignee": {
+        "login": "hnamhocit",
+        "name": "hnamhocit"
+      },
+      "reporter": {
+        "login": "hnamhocit",
+        "name": "NGUYEN HOANG NAM",
+        "avatar_url": "https://avatars.githubusercontent.com/u/98753616?v=4"
+      },
+      "createdAt": "2026-10-26T13:09:24.688Z",
+      "updatedAt": "2026-10-26T13:10:15.551Z"
+    },
+    {
+      "id": "UTHFL-1",
+      "title": "Thiết kế kiến trúc hệ thống và luồng dữ liệu",
+      "description": "### Mục tiêu\n\n- Xác định các entity chính\n- Xây dựng sơ đồ luồng dữ liệu (Data flow)\n- Chuẩn bị API endpoints\n\n> [!NOTE]\n> Cần tham khảo tài liệu kỹ thuật trước khi chốt spec.",
+      "status": "review",
+      "priority": "high",
+      "assignee": {
+        "login": "hnamhocit",
+        "name": "hnamhocit"
+      },
+      "reporter": {
+        "login": "hnamhocit",
+        "name": "hnamhocit"
+      },
+      "sprintId": "sprint-1",
+      "storyPoints": 5,
+      "createdAt": "2026-10-26T13:04:12.716Z",
+      "updatedAt": "2026-10-26T13:12:46.971Z"
+    },
+    {
+      "id": "UTHFL-2",
+      "title": "Tích hợp giao diện Kanban kéo thả (Drag & Drop)",
+      "description": "### Yêu cầu chức năng\n\n1. Kéo thả mượt mà giữa các cột: **To Do**, **In Progress**, **In Review**, **Done**\n2. Hỗ trợ cập nhật ngay lập tức\n3. Hỗ trợ hiển thị Markdown cho task description",
+      "status": "in_progress",
+      "priority": "urgent",
+      "assignee": {
+        "login": "hnamhocit",
+        "name": "hnamhocit"
+      },
+      "reporter": {
+        "login": "hnamhocit",
+        "name": "hnamhocit"
+      },
+      "sprintId": "sprint-1",
+      "storyPoints": 8,
+      "createdAt": "2026-10-26T13:04:12.716Z",
+      "updatedAt": "2026-10-26T13:04:12.716Z"
+    },
+    {
+      "id": "UTHFL-3",
+      "title": "Phân quyền tạo Sprint và Backlog theo vai trò",
+      "description": "### Phân quyền theo Role\n\n- **Admin / PM**: Có quyền tạo Sprint, kích hoạt Sprint và tạo Backlog\n- **Member**: Có quyền tạo task và cập nhật trạng thái trong Sprint\n- **Viewer**: Chỉ xem bảng Kanban",
+      "status": "in_progress",
+      "priority": "medium",
+      "assignee": {
+        "login": "hnamhocit",
+        "name": "hnamhocit"
+      },
+      "reporter": {
+        "login": "hnamhocit",
+        "name": "hnamhocit"
+      },
+      "sprintId": "sprint-1",
+      "storyPoints": 3,
+      "createdAt": "2026-10-26T13:04:12.716Z",
+      "updatedAt": "2026-10-26T13:10:11.367Z"
+    },
+    {
+      "id": "UTHFL-4",
+      "title": "Nghiên cứu tính năng tự động chuyển trạng thái khi merge PR",
+      "description": "### Backlog Item\n\nKhi một Pull Request được merge trên GitHub, tự động chuyển task tương ứng từ `In Review` sang `Done` dựa theo cú pháp `fixes #TASK-id`.",
+      "status": "todo",
+      "priority": "low",
+      "reporter": {
+        "login": "hnamhocit",
+        "name": "hnamhocit"
+      },
+      "sprintId": "sprint-1",
+      "storyPoints": 2,
+      "createdAt": "2026-10-26T13:04:12.716Z",
+      "updatedAt": "2026-10-26T13:12:47.959Z"
+    }
+  ],
+  "sprints": [
+    {
+      "id": "sprint-1",
+      "name": "Sprint 1 - Khởi động dự án",
+      "goal": "Thiết lập cấu trúc cơ bản và hoàn thiện các tính năng cốt lõi",
+      "startDate": "2026-10-26",
+      "endDate": "2026-11-09",
+      "status": "active",
+      "createdAt": "2026-10-26T13:04:12.716Z"
+    }
+  ],
+  "permissions": {
+    "userRoles": {
+      "hnamhocit": "admin",
+      "vntez-labs": "admin"
+    },
+    "defaultRole": "member",
+    "canManageSprint": [
+      "admin",
+      "pm"
+    ],
+    "canCreateBacklog": [
+      "admin",
+      "pm",
+      "member"
+    ]
+  }
+}
