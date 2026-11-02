@@ -30,12 +30,18 @@
       "priority": "low",
       "reporter": {
         "login": "hnamhocit",
-        "name": "hnamhocit"
+        "name": "hnamhocit",
+        "avatar_url": "https://github.com/hnamhocit.png"
       },
       "sprintId": "sprint-1",
       "storyPoints": 2,
       "createdAt": "2026-10-26T13:02:50.857Z",
-      "updatedAt": "2026-11-02T10:32:41.769Z"
+      "updatedAt": "2026-11-02T10:33:36.017Z",
+      "assignee": {
+        "login": "Khanhly131",
+        "name": "Khanhly131",
+        "avatar_url": "https://avatars.githubusercontent.com/u/341843509?v=4"
+      }
     }
   ],
   "sprints": [
