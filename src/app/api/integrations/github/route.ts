@@ -31,6 +31,10 @@ export async function GET(request: NextRequest) {
     scope: "repo read:org read:user user:email",
   });
 
+  if (reconnect) {
+    params.set("prompt", "consent");
+  }
+
   return NextResponse.redirect(
     `https://github.com/login/oauth/authorize?${params.toString()}`,
   );

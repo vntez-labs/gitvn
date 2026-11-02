@@ -87,7 +87,9 @@ export function CreateRepoModal({ opened, onClose }: CreateRepoModalProps) {
         name: cleanName,
         description: description.trim() || undefined,
         private: isPrivate,
+        is_private: isPrivate,
         owner,
+        org: owner !== user?.login ? owner : undefined,
       });
 
       notifications.show({

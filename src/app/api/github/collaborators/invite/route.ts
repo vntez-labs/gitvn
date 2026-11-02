@@ -59,12 +59,15 @@ export async function POST(request: NextRequest) {
     }
 
     const errData = await res.json().catch(() => ({}));
+    let errorMessage =
+      errData.message ||
+      "Không thể gửi lời mời. Hãy kiểm tra bạn có quyền Admin trên repository này.";
+    if (errData.message === "Resource not accessible by integration") {
+      errorMessage =
+        "GitHub App chưa được cấp quyền 'Administration (Read and write)'. Vui lòng cấu hình trong GitHub Developer Settings (Permissions & events -> Repository permissions: Administration chọn 'Read and write'), sau đó Reconnect/Đăng nhập lại để áp dụng.";
+    }
     return NextResponse.json(
-      {
-        error:
-          errData.message ||
-          "Không thể gửi lời mời. Hãy kiểm tra bạn có quyền Admin trên repository này.",
-      },
+      { error: errorMessage },
       { status: res.status },
     );
   } catch (error: any) {

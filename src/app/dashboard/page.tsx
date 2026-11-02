@@ -1,7 +1,11 @@
 "use client";
 
 import { Avatar, Box, Group, Menu, Skeleton, Text } from "@mantine/core";
-import { IconBrandGithub, IconLogout } from "@tabler/icons-react";
+import {
+  IconBrandGithub,
+  IconLogout,
+  IconRefresh,
+} from "@tabler/icons-react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { GitVNLogo } from "@/components/brand/GitVNLogo";
@@ -114,6 +118,15 @@ export default function DashboardPage() {
                 fz={13}
               >
                 GitHub Profile
+              </Menu.Item>
+              <Menu.Item
+                leftSection={<IconRefresh size={15} />}
+                component="a"
+                href="/api/integrations/github?reconnect=true"
+                c="#1e293b"
+                fz={13}
+              >
+                Cập nhật quyền GitHub
               </Menu.Item>
               <Menu.Divider style={{ borderColor: "#e2e8f0" }} />
               <Menu.Item
