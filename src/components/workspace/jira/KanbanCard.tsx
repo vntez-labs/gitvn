@@ -1,6 +1,7 @@
 "use client";
 
 import { Avatar, Badge, Box, Group, Text, Tooltip } from "@mantine/core";
+import { IconGitPullRequest } from "@tabler/icons-react";
 import { getGitHubAvatarUrl } from "@/lib/avatar";
 import { getStoryPointsForTask } from "@/lib/jira-priority";
 import type { JiraTask, TaskPriority } from "@/interfaces/jira";
@@ -79,14 +80,45 @@ export function KanbanCard({
     >
       {/* Header: Key & Story Points */}
       <Group justify="space-between" mb={8} wrap="nowrap">
-        <Text
-          fz={11.5}
-          fw={700}
-          c="#fb291a"
-          ff="var(--font-geist-mono), monospace"
-        >
-          {task.id}
-        </Text>
+        <Group gap={6} align="center" wrap="nowrap">
+          <Text
+            fz={11.5}
+            fw={700}
+            c="#fb291a"
+            ff="var(--font-geist-mono), monospace"
+          >
+            {task.id}
+          </Text>
+
+          {task.pullNumber && (
+            <Tooltip
+              label={`Mở Pull Request #${task.pullNumber} trên GitHub`}
+              withArrow
+            >
+              <Badge
+                size="xs"
+                variant="outline"
+                color={task.status === "done" ? "teal" : "violet"}
+                leftSection={<IconGitPullRequest size={10} />}
+                component="a"
+                href={task.pullUrl || "#"}
+                target="_blank"
+                onClick={(e) => e.stopPropagation()}
+                styles={{
+                  root: {
+                    cursor: "pointer",
+                    textTransform: "none",
+                    height: 18,
+                    padding: "0 6px",
+                    fontWeight: 600,
+                  },
+                }}
+              >
+                PR #{task.pullNumber}
+              </Badge>
+            </Tooltip>
+          )}
+        </Group>
 
         <Badge
           size="xs"

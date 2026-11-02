@@ -1,6 +1,7 @@
 import axios from "axios";
 import type { GitvnConfig } from "@/interfaces/gitvn";
 import type { JiraBoardData, TaskAssignee } from "@/interfaces/jira";
+import type { GitHubPullItem } from "@/lib/jira-pr-sync";
 
 export interface BoardFetchResult {
   data: JiraBoardData;
@@ -8,6 +9,7 @@ export interface BoardFetchResult {
   hasGitvn: boolean;
   config?: GitvnConfig;
   members: TaskAssignee[];
+  pulls: GitHubPullItem[];
 }
 
 export const jiraService = {
@@ -16,7 +18,7 @@ export const jiraService = {
     repo: string,
     branch: string,
   ): Promise<BoardFetchResult> {
-    const [jiraRes, gitvnRes, collabRes] = await Promise.all([
+    const [jiraRes, gitvnRes, collabRes, pullsRes] = await Promise.all([
       axios.get(`/api/jira?owner=${owner}&repo=${repo}`),
       axios.get(
         `/api/gitvn?owner=${owner}&repo=${repo}&branch=${encodeURIComponent(branch)}`,
@@ -24,6 +26,11 @@ export const jiraService = {
       axios
         .get(`/api/github/collaborators?owner=${owner}&repo=${repo}`)
         .catch(() => ({ data: { members: [] } })),
+      axios
+        .get(
+          `/api/github/pulls?owner=${owner}&repo=${repo}&state=all&per_page=50`,
+        )
+        .catch(() => ({ data: { pulls: [] } })),
     ]);
 
     return {
@@ -32,6 +39,7 @@ export const jiraService = {
       hasGitvn: Boolean(gitvnRes.data.hasGitvn),
       config: gitvnRes.data.config,
       members: collabRes?.data?.members || [],
+      pulls: pullsRes?.data?.pulls || [],
     };
   },
 

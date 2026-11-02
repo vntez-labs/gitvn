@@ -17,6 +17,9 @@ export interface JiraTask {
   reporter: TaskAssignee;
   sprintId: string | null; // null = Backlog
   storyPoints?: number;
+  branch?: string;
+  pullNumber?: number;
+  pullUrl?: string;
   createdAt: string;
   updatedAt: string;
 }

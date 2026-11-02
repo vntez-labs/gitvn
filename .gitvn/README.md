@@ -161,3 +161,16 @@ Hãy tạo bộ tài liệu kỹ thuật chuẩn cho dự án phần mềm dư�
 
 [DÁN MÔ TẢ DỰ ÁN TẠI ĐÂY]
 ```
+
+---
+
+## 5. Cơ chế Tự động đồng bộ với GitHub Pull Requests (Git-Agile Automation)
+
+GitVN tự động liên kết giữa Pull Requests trên GitHub và Tasks trong `.gitvn/tasks.json`:
+* **Khi có Pull Request đang mở (`open`)**:
+  Nếu tên nhánh (branch), tiêu đề PR, hoặc nội dung PR có chứa Task ID (ví dụ: `TASK-1`, `feature/TASK-1`, `[TASK-1] Setup project`):
+  👉 Khi mở bảng Kanban, task đang ở `in_progress` (hoặc `todo`) sẽ **tự động chuyển sang `review` (In Review)** và hiển thị badge `PR #<số>` liên kết trực tiếp tới GitHub.
+* **Khi Pull Request được Merge (`merged`)**:
+  👉 Task đang ở `review` (hoặc `in_progress`) sẽ **tự động chuyển sang `done` (Done)**.
+* Mọi cập nhật trạng thái đều tự động ghi vào `.gitvn/tasks.json` và commit đồng bộ lên repository.
+

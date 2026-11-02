@@ -1,37 +1,378 @@
 {
   "owner": "hnamhocit",
   "repo": "ctdl-gt-11",
-  "taskSeq": 1,
+  "taskSeq": 18,
   "tasks": [
     {
-      "id": "CTDLG-1",
-      "title": "Khởi tạo dự án ctdl-gt-11 & cấu trúc công việc",
-      "description": "### Mục tiêu ban đầu\n\n- Khởi tạo dự án và thiết lập môi trường phát triển\n- Lên danh sách các tính năng cốt lõi\n- Cập nhật file `.gitvn/tasks.json`",
+      "id": "PROJ-1",
+      "title": "Thiết kế cấu trúc PlateNode và LicensePlateHashTable",
+      "description": "### Mục tiêu\nHiện thực struct PlateNode sử dụng mảng ký tự tĩnh char[] và khung class LicensePlateHashTable với kích thước TABLE_SIZE = 10007.\n\n### Acceptance Criteria\n- Khai báo đầy đủ các trường: fullPlate[16], provinceCode[4], wardCode[4], serialNum[8], registeredDate[12], ownerName[50], next con trỏ.\n- Khởi tạo mảng con trỏ buckets[10007] bằng nullptr.\n- Biên dịch sạch với g++ -std=c++17 -Wall -Wextra.",
       "status": "in_progress",
-      "priority": "high",
+      "priority": "urgent",
       "assignee": {
         "login": "hnamhocit",
-        "name": "hnamhocit"
+        "name": "Nguyễn Hoàng Nam"
       },
       "reporter": {
         "login": "hnamhocit",
-        "name": "hnamhocit"
+        "name": "Nguyễn Hoàng Nam"
+      },
+      "sprintId": "sprint-1",
+      "storyPoints": 5,
+      "createdAt": "2026-11-02T14:30:00.000Z",
+      "updatedAt": "2026-11-02T14:30:00.000Z"
+    },
+    {
+      "id": "PROJ-2",
+      "title": "Cài đặt giải thuật băm DJB2 và cơ chế Separate Chaining",
+      "description": "### Mục tiêu\nHiện thực hàm băm chuỗi DJB2 ((hash << 5) + hash) + c và cơ chế chèn node giải quyết đụng độ bằng danh sách liên kết đơn.\n\n### Acceptance Criteria\n- Hàm hashFunction trả về index hợp lệ từ 0 đến TABLE_SIZE - 1.\n- Thao tác chèn node mới vào đầu bucket đạt O(1).\n- Có cơ chế clear() và Destructor giải phóng 100% node trên Heap.",
+      "status": "todo",
+      "priority": "high",
+      "assignee": {
+        "login": "hnamhocit",
+        "name": "Nguyễn Hoàng Nam"
+      },
+      "reporter": {
+        "login": "hnamhocit",
+        "name": "Nguyễn Hoàng Nam"
+      },
+      "sprintId": "sprint-1",
+      "storyPoints": 5,
+      "createdAt": "2026-11-02T14:30:00.000Z",
+      "updatedAt": "2026-11-02T14:30:00.000Z"
+    },
+    {
+      "id": "PROJ-3",
+      "title": "Xây dựng module Validator kiểm tra định dạng ab-cd-ghxyz",
+      "description": "### Mục tiêu\nXây dựng các hàm kiểm tra tính hợp lệ cú pháp của biển số xe, mã tỉnh, mã xã và chuẩn hóa chuỗi.\n\n### Acceptance Criteria\n- Kiểm tra chính xác định dạng ab-cd-ghxyz (11 ký tự).\n- Kiểm tra ab gồm 2 chữ số, cd gồm 2 ký tự chữ/số, ghxyz gồm 5 chữ số.\n- Tự động chuẩn hóa chữ thường sang in hoa và loại bỏ khoảng trắng thừa.",
+      "status": "todo",
+      "priority": "high",
+      "assignee": {
+        "login": "trinhquocthai",
+        "name": "Trịnh Quốc Thái"
+      },
+      "reporter": {
+        "login": "hnamhocit",
+        "name": "Nguyễn Hoàng Nam"
       },
       "sprintId": "sprint-1",
       "storyPoints": 3,
-      "createdAt": "2026-11-02T14:05:14.183Z",
-      "updatedAt": "2026-11-02T14:05:14.183Z"
+      "createdAt": "2026-11-02T14:30:00.000Z",
+      "updatedAt": "2026-11-02T14:30:00.000Z"
+    },
+    {
+      "id": "PROJ-4",
+      "title": "Thiết kế cấu trúc tệp dữ liệu TXT và module FileIO cơ bản",
+      "description": "### Mục tiêu\nXây dựng khung đọc/ghi dữ liệu phân cách bằng ký tự gạch đứng (fullPlate|provinceCode|wardCode|serialNum|date|owner).\n\n### Acceptance Criteria\n- Định dạng file chuẩn hóa, hỗ trợ tiếng Việt UTF-8.\n- Xử lý được các dòng trống hoặc dòng dữ liệu lỗi mà không crash chương trình.",
+      "status": "todo",
+      "priority": "medium",
+      "assignee": {
+        "login": "duquochung",
+        "name": "Dư Quốc Hưng"
+      },
+      "reporter": {
+        "login": "hnamhocit",
+        "name": "Nguyễn Hoàng Nam"
+      },
+      "sprintId": "sprint-1",
+      "storyPoints": 3,
+      "createdAt": "2026-11-02T14:30:00.000Z",
+      "updatedAt": "2026-11-02T14:30:00.000Z"
+    },
+    {
+      "id": "PROJ-5",
+      "title": "Xây dựng khung giao diện dòng lệnh Console Menu (MenuUI)",
+      "description": "### Mục tiêu\nThiết kế menu console tương tác điều hướng bằng phím số, hiển thị banner và bắt lỗi nhập liệu.\n\n### Acceptance Criteria\n- Hiển thị menu rõ ràng 6 chức năng chính.\n- Bắt ngoại lệ nhập chữ thay vì số tại menu lựa chọn, tránh vòng lặp vô tận.",
+      "status": "todo",
+      "priority": "medium",
+      "assignee": {
+        "login": "trinhquocthai",
+        "name": "Trịnh Quốc Thái"
+      },
+      "reporter": {
+        "login": "hnamhocit",
+        "name": "Nguyễn Hoàng Nam"
+      },
+      "sprintId": "sprint-1",
+      "storyPoints": 3,
+      "createdAt": "2026-11-02T14:30:00.000Z",
+      "updatedAt": "2026-11-02T14:30:00.000Z"
+    },
+    {
+      "id": "PROJ-6",
+      "title": "Lập dàn ý Báo cáo đồ án 8 chương & Quản lý tài liệu AI",
+      "description": "### Mục tiêu\nKhởi tạo khung báo cáo Word/Markdown theo chuẩn 8 mục quy định và thiết lập mẫu ghi chép Mục 6 (Khai thác AI).\n\n### Acceptance Criteria\n- Báo cáo tuân thủ đủ 8 chương theo đề cương môn học.\n- Sẵn sàng biểu mẫu nhật ký prompt AI cho các thành viên điền khi triển khai task.",
+      "status": "todo",
+      "priority": "low",
+      "assignee": {
+        "login": "huynhthikhanhly",
+        "name": "Huỳnh Thị Khánh Ly"
+      },
+      "reporter": {
+        "login": "hnamhocit",
+        "name": "Nguyễn Hoàng Nam"
+      },
+      "sprintId": "sprint-1",
+      "storyPoints": 2,
+      "createdAt": "2026-11-02T14:30:00.000Z",
+      "updatedAt": "2026-11-02T14:30:00.000Z"
+    },
+    {
+      "id": "PROJ-7",
+      "title": "Hiện thực chức năng Đăng ký biển số mới và Tra cứu O(1)",
+      "description": "### Mục tiêu\nHoàn thiện chức năng 1 (insertPlate) và chức năng 2 (searchPlate) trên Bảng Băm.\n\n### Acceptance Criteria\n- Chèn mới kiểm tra trùng lặp khóa trong O(1) trung bình.\n- Tra cứu biển số trả về con trỏ PlateNode* hoặc nullptr trong O(1).\n- Cập nhật biến đếm totalCount chính xác.",
+      "status": "todo",
+      "priority": "urgent",
+      "assignee": {
+        "login": "hnamhocit",
+        "name": "Nguyễn Hoàng Nam"
+      },
+      "reporter": {
+        "login": "hnamhocit",
+        "name": "Nguyễn Hoàng Nam"
+      },
+      "sprintId": "sprint-2",
+      "storyPoints": 5,
+      "createdAt": "2026-11-02T14:30:00.000Z",
+      "updatedAt": "2026-11-02T14:30:00.000Z"
+    },
+    {
+      "id": "PROJ-8",
+      "title": "Cài đặt hàm loadFromFile và saveToFile nạp/lưu dữ liệu TXT",
+      "description": "### Mục tiêu\nHoàn thiện việc nạp dữ liệu tự động từ file khi mở ứng dụng và lưu ngược lại file khi thoát.\n\n### Acceptance Criteria\n- Nạp đúng toàn bộ các trường dữ liệu của từng bản ghi.\n- Tự động lưu toàn bộ nodes hiện hành trong bảng băm ra file TXT khi chọn thoát.",
+      "status": "todo",
+      "priority": "high",
+      "assignee": {
+        "login": "duquochung",
+        "name": "Dư Quốc Hưng"
+      },
+      "reporter": {
+        "login": "hnamhocit",
+        "name": "Nguyễn Hoàng Nam"
+      },
+      "sprintId": "sprint-2",
+      "storyPoints": 5,
+      "createdAt": "2026-11-02T14:30:00.000Z",
+      "updatedAt": "2026-11-02T14:30:00.000Z"
+    },
+    {
+      "id": "PROJ-9",
+      "title": "Sinh bộ dữ liệu mẫu 1.000 bản ghi hợp lệ (sample dataset)",
+      "description": "### Mục tiêu\nXây dựng hàm/script sinh ngẫu nhiên ít nhất 1.000 biển số xe chuẩn ab-cd-ghxyz thuộc nhiều tỉnh thành khác nhau.\n\n### Acceptance Criteria\n- Tệp dữ liệu mẫu đạt tối thiểu 1.000 bản ghi hợp lệ.\n- Dữ liệu đa dạng tỉnh thành (59, 29, 61, 43, 60...).\n- Không có bản ghi trùng lặp biển số.",
+      "status": "todo",
+      "priority": "medium",
+      "assignee": {
+        "login": "duquochung",
+        "name": "Dư Quốc Hưng"
+      },
+      "reporter": {
+        "login": "hnamhocit",
+        "name": "Nguyễn Hoàng Nam"
+      },
+      "sprintId": "sprint-2",
+      "storyPoints": 2,
+      "createdAt": "2026-11-02T14:30:00.000Z",
+      "updatedAt": "2026-11-02T14:30:00.000Z"
+    },
+    {
+      "id": "PROJ-10",
+      "title": "Hiện thực chức năng Hiển thị danh sách mã Xã của một Tỉnh",
+      "description": "### Mục tiêu\nCài đặt giải thuật lọc mã xã theo mã tỉnh nhập vào (Chức năng 3) và loại bỏ các mã trùng lặp.\n\n### Acceptance Criteria\n- Nhập mã tỉnh ab (VD: 59), xuất ra danh sách các mã xã cd duy nhất (distinct).\n- Thông báo rõ nếu tỉnh chưa có phương tiện nào đăng ký.",
+      "status": "todo",
+      "priority": "high",
+      "assignee": {
+        "login": "nguyenngochung",
+        "name": "Nguyễn Ngọc Hưng"
+      },
+      "reporter": {
+        "login": "hnamhocit",
+        "name": "Nguyễn Hoàng Nam"
+      },
+      "sprintId": "sprint-2",
+      "storyPoints": 3,
+      "createdAt": "2026-11-02T14:30:00.000Z",
+      "updatedAt": "2026-11-02T14:30:00.000Z"
+    },
+    {
+      "id": "PROJ-11",
+      "title": "Hiện thực chức năng Hiển thị toàn bộ biển số xe của một Xã",
+      "description": "### Mục tiêu\nCài đặt giải thuật lọc danh sách biển số theo cặp mã Tỉnh ab và mã Xã cd (Chức năng 4).\n\n### Acceptance Criteria\n- Quét bảng băm và in toàn bộ thông tin các xe thuộc xã chỉ định theo định dạng bảng.\n- Xử lý tốt trường hợp xã không tồn tại hoặc chưa có xe.",
+      "status": "todo",
+      "priority": "high",
+      "assignee": {
+        "login": "nguyenngochung",
+        "name": "Nguyễn Ngọc Hưng"
+      },
+      "reporter": {
+        "login": "hnamhocit",
+        "name": "Nguyễn Hoàng Nam"
+      },
+      "sprintId": "sprint-2",
+      "storyPoints": 3,
+      "createdAt": "2026-11-02T14:30:00.000Z",
+      "updatedAt": "2026-11-02T14:30:00.000Z"
+    },
+    {
+      "id": "PROJ-12",
+      "title": "Tích hợp điều hướng Console Menu hoàn chỉnh với Bảng Băm",
+      "description": "### Mục tiêu\nKết nối module MenuUI với HashTable, FileIO, AdministrativeFilter và Validator thành ứng dụng hoàn chỉnh.\n\n### Acceptance Criteria\n- Người dùng thao tác mượt mà qua các chức năng 1, 2, 3, 4, 5.\n- Trải nghiệm người dùng đồng nhất, thông báo lỗi rõ ràng.",
+      "status": "todo",
+      "priority": "high",
+      "assignee": {
+        "login": "trinhquocthai",
+        "name": "Trịnh Quốc Thái"
+      },
+      "reporter": {
+        "login": "hnamhocit",
+        "name": "Nguyễn Hoàng Nam"
+      },
+      "sprintId": "sprint-2",
+      "storyPoints": 3,
+      "createdAt": "2026-11-02T14:30:00.000Z",
+      "updatedAt": "2026-11-02T14:30:00.000Z"
+    },
+    {
+      "id": "PROJ-13",
+      "title": "Soạn thảo Mục 1 đến Mục 4 của Báo cáo đồ án",
+      "description": "### Mục tiêu\nViết chi tiết nội dung Báo cáo: Giới thiệu, Phân tích bài toán, Thiết kế giải pháp (Lưu đồ thuật toán, Struct), Cài đặt và hiện thực.\n\n### Acceptance Criteria\n- Có bảng phân tích độ phức tạp Big-O cho các hàm.\n- Có sơ đồ Separate Chaining và cấu trúc PlateNode.",
+      "status": "todo",
+      "priority": "medium",
+      "assignee": {
+        "login": "huynhthikhanhly",
+        "name": "Huỳnh Thị Khánh Ly"
+      },
+      "reporter": {
+        "login": "hnamhocit",
+        "name": "Nguyễn Hoàng Nam"
+      },
+      "sprintId": "sprint-2",
+      "storyPoints": 3,
+      "createdAt": "2026-11-02T14:30:00.000Z",
+      "updatedAt": "2026-11-02T14:30:00.000Z"
+    },
+    {
+      "id": "PROJ-14",
+      "title": "Xây dựng bộ kiểm thử tự động 20 ca kiểm thử biên (Edge Cases)",
+      "description": "### Mục tiêu\nHiện thực module kiểm thử tự động thực thi 20 test cases theo đặc tả docs/06_testing_and_benchmarks.md.\n\n### Acceptance Criteria\n- Kiểm thử đầy đủ: chuỗi rỗng, sai dấu gạch nối, sai độ dài, ký tự đặc biệt, trùng lặp khóa.\n- Tỷ lệ vượt qua (Pass rate) đạt 100%.",
+      "status": "todo",
+      "priority": "urgent",
+      "assignee": {
+        "login": "huynhquocviet",
+        "name": "Huỳnh Quốc Việt"
+      },
+      "reporter": {
+        "login": "hnamhocit",
+        "name": "Nguyễn Hoàng Nam"
+      },
+      "sprintId": "sprint-3",
+      "storyPoints": 5,
+      "createdAt": "2026-11-02T14:30:00.000Z",
+      "updatedAt": "2026-11-02T14:30:00.000Z"
+    },
+    {
+      "id": "PROJ-15",
+      "title": "Đo đạc Benchmark thời gian thực thi và Kiểm tra rò rỉ Valgrind",
+      "description": "### Mục tiêu\nĐo thời gian chèn/tra cứu với tập dữ liệu 100, 1.000, 10.000 bản ghi bằng std::chrono và chạy Valgrind leak check.\n\n### Acceptance Criteria\n- Xuất bảng số liệu microsecond cho Báo cáo Mục 5.\n- Kết quả Valgrind: 0 errors, 0 memory leaks.",
+      "status": "todo",
+      "priority": "high",
+      "assignee": {
+        "login": "huynhquocviet",
+        "name": "Huỳnh Quốc Việt"
+      },
+      "reporter": {
+        "login": "hnamhocit",
+        "name": "Nguyễn Hoàng Nam"
+      },
+      "sprintId": "sprint-3",
+      "storyPoints": 3,
+      "createdAt": "2026-11-02T14:30:00.000Z",
+      "updatedAt": "2026-11-02T14:30:00.000Z"
+    },
+    {
+      "id": "PROJ-16",
+      "title": "Hoàn thiện Mục 6 AI và tổng hợp toàn diện Báo cáo đồ án",
+      "description": "### Mục tiêu\nTổng hợp đầy đủ Báo cáo 8 chương, hoàn thiện Mục 6 về Khai thác AI (công cụ, prompt, quy trình kiểm chứng) và đóng góp thành viên Mục 8.\n\n### Acceptance Criteria\n- Báo cáo hoàn chỉnh định dạng PDF/DOCX đúng chuẩn rubric.\n- Mục 6 minh bạch đầy đủ prompt log của 6 thành viên.",
+      "status": "todo",
+      "priority": "urgent",
+      "assignee": {
+        "login": "huynhthikhanhly",
+        "name": "Huỳnh Thị Khánh Ly"
+      },
+      "reporter": {
+        "login": "hnamhocit",
+        "name": "Nguyễn Hoàng Nam"
+      },
+      "sprintId": "sprint-3",
+      "storyPoints": 5,
+      "createdAt": "2026-11-02T14:30:00.000Z",
+      "updatedAt": "2026-11-02T14:30:00.000Z"
+    },
+    {
+      "id": "PROJ-17",
+      "title": "Thiết kế Slide thuyết trình bảo vệ đồ án và Kịch bản Demo",
+      "description": "### Mục tiêu\nThiết kế bộ slide PowerPoint/Canva súc tích (15-20 slide) và chuẩn bị kịch bản demo trực tiếp các tính năng.\n\n### Acceptance Criteria\n- Slide bao quát: Đặt vấn đề, Bảng băm DJB2, Demo 4 tính năng, Benchmark, Sử dụng AI.\n- Kịch bản demo trơn tru trong 10-15 phút.",
+      "status": "todo",
+      "priority": "medium",
+      "assignee": {
+        "login": "huynhthikhanhly",
+        "name": "Huỳnh Thị Khánh Ly"
+      },
+      "reporter": {
+        "login": "hnamhocit",
+        "name": "Nguyễn Hoàng Nam"
+      },
+      "sprintId": "sprint-3",
+      "storyPoints": 2,
+      "createdAt": "2026-11-02T14:30:00.000Z",
+      "updatedAt": "2026-11-02T14:30:00.000Z"
+    },
+    {
+      "id": "PROJ-18",
+      "title": "Code Review toàn diện và Luyện tập Mock Vấn đáp Live Coding",
+      "description": "### Mục tiêu\nKiểm tra lại toàn bộ mã nguồn, tối ưu hóa con trỏ, tổ chức buổi thi thử vấn đáp 10 câu hỏi cốt lõi và 5 bài tập live coding.\n\n### Acceptance Criteria\n- 100% 6 thành viên trả lời trôi chảy nguyên lý bảng băm và độ phức tạp.\n- Cả 6 thành viên sẵn sàng sửa code trực tiếp trước giảng viên.",
+      "status": "todo",
+      "priority": "urgent",
+      "assignee": {
+        "login": "hnamhocit",
+        "name": "Nguyễn Hoàng Nam"
+      },
+      "reporter": {
+        "login": "hnamhocit",
+        "name": "Nguyễn Hoàng Nam"
+      },
+      "sprintId": "sprint-3",
+      "storyPoints": 5,
+      "createdAt": "2026-11-02T14:30:00.000Z",
+      "updatedAt": "2026-11-02T14:30:00.000Z"
     }
   ],
   "sprints": [
     {
       "id": "sprint-1",
-      "name": "Sprint 1 - Bắt đầu dự án",
-      "goal": "Kế hoạch phát triển cho ctdl-gt-11",
+      "name": "Sprint 1 - Kiến Trúc Cốt Lõi & Khởi Động",
+      "goal": "Thiết lập nền tảng dự án, cấu trúc PlateNode, giải thuật băm DJB2, Separate Chaining, Validator định dạng và sườn Console Menu.",
       "startDate": "2026-11-02",
-      "endDate": "2026-11-16",
+      "endDate": "2026-11-07",
       "status": "active",
       "createdAt": "2026-11-02T14:05:14.183Z"
+    },
+    {
+      "id": "sprint-2",
+      "name": "Sprint 2 - Nghiệp Vụ, File I/O & Tích Hợp Hệ Thống",
+      "goal": "Hiện thực đầy đủ 4 tính năng cốt lõi (Đăng ký, Tra cứu O(1), Lọc xã của tỉnh, Lọc xe của xã), nạp/lưu file TXT và tích hợp menu.",
+      "startDate": "2026-11-08",
+      "endDate": "2026-11-13",
+      "status": "planned",
+      "createdAt": "2026-11-02T14:30:00.000Z"
+    },
+    {
+      "id": "sprint-3",
+      "name": "Sprint 3 - Kiểm Thử, Review Toàn Diện & Chuẩn Bị Vấn Đáp",
+      "goal": "Giai đoạn 4 ngày cuối: Chạy 20 test cases biên, đo Benchmark, kiểm tra Valgrind, hoàn thiện Báo cáo Mục 6 AI và luyện tập Live Coding bảo vệ.",
+      "startDate": "2026-11-14",
+      "endDate": "2026-11-17",
+      "status": "planned",
+      "createdAt": "2026-11-02T14:30:00.000Z"
     }
   ],
   "permissions": {
@@ -39,14 +380,7 @@
       "hnamhocit": "admin"
     },
     "defaultRole": "member",
-    "canManageSprint": [
-      "admin",
-      "pm"
-    ],
-    "canCreateBacklog": [
-      "admin",
-      "pm",
-      "member"
-    ]
+    "canManageSprint": ["admin", "pm"],
+    "canCreateBacklog": ["admin", "pm", "member"]
   }
 }

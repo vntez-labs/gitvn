@@ -185,6 +185,10 @@ export function createDefaultReadme(): string {
 * **priority**: \`"low" | "medium" | "high" | "urgent"\`
 * **sprintId**: chuỗi sprint ID (vd: \`"sprint-1"\`) hoặc \`null\` nếu là Backlog.
 * **sprints[].status**: \`"planned" | "active" | "completed"\`
+
+### Git-Agile Automation (Đồng bộ PR với Kanban):
+* Khi có PR đang mở (\`state: "open"\`) liên kết với Task ID trong tiêu đề hoặc nhánh: Task \`"in_progress"\` tự động chuyển sang \`"review"\` kèm badge PR.
+* Khi PR được merge (\`merged_at\`): Task \`"review"\` tự động chuyển sang \`"done"\`.
 `;
 }
 

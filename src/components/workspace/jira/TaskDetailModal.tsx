@@ -11,7 +11,7 @@ import {
   Text,
   TextInput,
 } from "@mantine/core";
-import { IconCheck, IconTrash } from "@tabler/icons-react";
+import { IconCheck, IconGitPullRequest, IconTrash } from "@tabler/icons-react";
 import { useEffect, useMemo, useState } from "react";
 import type {
   JiraSprint,
@@ -101,22 +101,13 @@ export function TaskDetailModal({
   const handleSave = () => {
     if (!title.trim()) return;
 
-    const cleanAssignee: TaskAssignee | undefined = assignee
-      ? {
-          ...assignee,
-          avatar_url: getGitHubAvatarUrl(assignee),
-        }
+    const cleanAssignee = assignee
+      ? { ...assignee, avatar_url: getGitHubAvatarUrl(assignee) }
       : undefined;
 
-    const cleanReporter: TaskAssignee = task.reporter
-      ? {
-          ...task.reporter,
-          avatar_url: getGitHubAvatarUrl(task.reporter),
-        }
-      : {
-          login: "unknown",
-          name: "Unknown",
-        };
+    const cleanReporter = task.reporter
+      ? { ...task.reporter, avatar_url: getGitHubAvatarUrl(task.reporter) }
+      : { login: "unknown", name: "Unknown" };
 
     const updated: JiraTask = {
       ...task,
@@ -164,6 +155,20 @@ export function TaskDetailModal({
           >
             {task.id}
           </Badge>
+          {task.pullNumber && (
+            <Badge
+              size="sm"
+              variant="light"
+              color={task.status === "done" ? "teal" : "violet"}
+              leftSection={<IconGitPullRequest size={12} />}
+              component="a"
+              href={task.pullUrl || "#"}
+              target="_blank"
+              styles={{ root: { cursor: "pointer", textTransform: "none" } }}
+            >
+              PR #{task.pullNumber} (GitHub)
+            </Badge>
+          )}
           <Text fw={700} fz={15} c="#0f172a">
             Chi tiết Công việc
           </Text>

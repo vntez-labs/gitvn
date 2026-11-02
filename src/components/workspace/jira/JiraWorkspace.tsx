@@ -21,6 +21,7 @@ import {
   IconFileCode,
   IconFilter,
   IconFolderPlus,
+  IconGitPullRequest,
   IconPlus,
   IconRefresh,
   IconSearch,
@@ -82,6 +83,7 @@ export function JiraWorkspace() {
     activeSprint,
     filteredTasks,
     fetchBoardData,
+    syncWithPullRequests,
     initializeGitvn,
     createTask,
     updateTask,
@@ -294,6 +296,23 @@ export function JiraWorkspace() {
               </Badge>
             </Tooltip>
 
+            {/* Nút Đồng bộ trạng thái Pull Requests */}
+            <Tooltip
+              label="Quét và đồng bộ trạng thái Task từ GitHub Pull Requests (In Progress -> In Review)"
+              withArrow
+            >
+              <ActionIcon
+                variant="light"
+                color="violet"
+                size="sm"
+                radius="md"
+                aria-label="Đồng bộ PR"
+                onClick={syncWithPullRequests}
+              >
+                <IconGitPullRequest size={15} />
+              </ActionIcon>
+            </Tooltip>
+
             {/* Menu options */}
             <Menu
               position="bottom-end"
@@ -340,6 +359,12 @@ export function JiraWorkspace() {
                   onClick={() => setJsonModalOpen(true)}
                 >
                   Xem .gitvn/tasks.json
+                </Menu.Item>
+                <Menu.Item
+                  leftSection={<IconGitPullRequest size={14} color="#8b5cf6" />}
+                  onClick={syncWithPullRequests}
+                >
+                  Đồng bộ Pull Requests
                 </Menu.Item>
                 <Menu.Item
                   leftSection={<IconRefresh size={14} color="#64748b" />}

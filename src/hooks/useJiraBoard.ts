@@ -15,6 +15,10 @@ import type {
   TaskStatus,
 } from "@/interfaces/jira";
 import { getGitHubAvatarUrl } from "@/lib/avatar";
+import {
+  type GitHubPullItem,
+  syncBoardTasksWithPulls,
+} from "@/lib/jira-pr-sync";
 import { jiraService } from "@/services/jira.service";
 import { useAuthStore } from "@/store/auth.store";
 import { useDashboardStore } from "@/store/dashboard.store";
@@ -36,6 +40,7 @@ export function useJiraBoard() {
   const [filterPriority, setFilterPriority] = useState<string | null>(null);
   const [onlyMyTasks, setOnlyMyTasks] = useState(false);
   const [repoMembers, setRepoMembers] = useState<TaskAssignee[]>([]);
+  const [repoPulls, setRepoPulls] = useState<GitHubPullItem[]>([]);
 
   const fetchBoardData = useCallback(() => {
     if (!selectedRepo) return;
@@ -48,11 +53,41 @@ export function useJiraBoard() {
         currentBranch,
       )
       .then((res) => {
-        setBoardData(res.data);
+        let currentBoard = res.data;
         setSyncedToGitHub(res.syncedToGitHub);
         setHasGitvn(res.hasGitvn);
         if (res.config) setGitvnConfig(res.config);
         if (res.members) setRepoMembers(res.members);
+        if (res.pulls) setRepoPulls(res.pulls);
+
+        // Tự động kiểm tra và đồng bộ trạng thái Task với Pull Requests
+        if (res.data && res.pulls && res.pulls.length > 0) {
+          const syncRes = syncBoardTasksWithPulls(res.data, res.pulls);
+          if (syncRes.hasChanges) {
+            currentBoard = syncRes.updatedBoard;
+            jiraService
+              .saveBoardData(
+                selectedRepo.owner.login,
+                selectedRepo.name,
+                currentBranch,
+                syncRes.updatedBoard,
+                true,
+              )
+              .catch((err) =>
+                console.error("Lỗi đồng bộ PR status lên GitHub:", err),
+              );
+
+            syncRes.changes.forEach((ch) => {
+              notifications.show({
+                title: "Tự động đồng bộ PR",
+                message: `Task ${ch.taskId} đã chuyển sang "${ch.toStatus.toUpperCase()}" (${ch.reason})`,
+                color: ch.toStatus === "done" ? "teal" : "violet",
+              });
+            });
+          }
+        }
+
+        setBoardData(currentBoard);
       })
       .catch((err) => {
         console.error("Lỗi tải dữ liệu Jira/Tasks:", err);
@@ -403,6 +438,49 @@ export function useJiraBoard() {
     user,
   ]);
 
+  const syncWithPullRequests = useCallback(async () => {
+    if (!selectedRepo || !boardData) return;
+    setSyncing(true);
+    try {
+      const res = await jiraService.fetchBoardData(
+        selectedRepo.owner.login,
+        selectedRepo.name,
+        currentBranch,
+      );
+      if (res.pulls) setRepoPulls(res.pulls);
+      const syncRes = syncBoardTasksWithPulls(boardData, res.pulls || []);
+      if (syncRes.hasChanges) {
+        setBoardData(syncRes.updatedBoard);
+        await jiraService.saveBoardData(
+          selectedRepo.owner.login,
+          selectedRepo.name,
+          currentBranch,
+          syncRes.updatedBoard,
+          true,
+        );
+        notifications.show({
+          title: "Đồng bộ PR thành công!",
+          message: `Đã cập nhật trạng thái cho ${syncRes.changes.length} task theo Pull Request.`,
+          color: "teal",
+        });
+      } else {
+        notifications.show({
+          title: "Đã cập nhật mới nhất",
+          message: "Tất cả các task đều đã khớp với trạng thái Pull Request.",
+          color: "blue",
+        });
+      }
+    } catch (err: any) {
+      notifications.show({
+        title: "Đồng bộ thất bại",
+        message: err.message || "Lỗi đồng bộ PR",
+        color: "red",
+      });
+    } finally {
+      setSyncing(false);
+    }
+  }, [selectedRepo, currentBranch, boardData]);
+
   return {
     boardData,
     setBoardData,
@@ -423,6 +501,7 @@ export function useJiraBoard() {
     onlyMyTasks,
     setOnlyMyTasks,
     repoMembers,
+    repoPulls,
     allMembers,
     userRole,
     canEdit,
@@ -432,6 +511,7 @@ export function useJiraBoard() {
     effectiveSprintId,
     filteredTasks,
     fetchBoardData,
+    syncWithPullRequests,
     initializeGitvn,
     createTask,
     updateTask,
