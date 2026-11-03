@@ -12,6 +12,7 @@ import {
   IconGitPullRequest,
   IconInfoCircle,
   IconLayoutKanban,
+  IconRefresh,
   IconSettings,
   IconSparkles,
   IconUserPlus,
@@ -20,6 +21,7 @@ import { useState } from "react";
 import { useDashboardStore } from "@/store/dashboard.store";
 import { BranchSelector } from "./BranchSelector";
 import { ClonePopover } from "./ClonePopover";
+import { GitvnStatusBadge } from "./GitvnStatusBadge";
 import { InviteMemberModal } from "./members/InviteMemberModal";
 
 export type WorkspaceTab =
@@ -39,6 +41,9 @@ interface WorkspaceHeaderProps {
   pullsCount?: number;
   issuesCount?: number;
   hasGitvn?: boolean;
+  isOutdated?: boolean;
+  gitvnVersion?: string;
+  onOpenUpgradeModal?: () => void;
   onInitializeGitvn?: () => void;
   initializingGitvn?: boolean;
 }
@@ -50,6 +55,9 @@ export function WorkspaceHeader({
   pullsCount = 0,
   issuesCount = 0,
   hasGitvn = true,
+  isOutdated = false,
+  gitvnVersion,
+  onOpenUpgradeModal,
   onInitializeGitvn,
   initializingGitvn = false,
 }: WorkspaceHeaderProps) {
@@ -131,43 +139,14 @@ export function WorkspaceHeader({
             {selectedRepo.private ? "Private" : "Public"}
           </Badge>
 
-          {hasGitvn ? (
-            <Badge
-              size="xs"
-              variant="outline"
-              leftSection={<IconCheck size={11} />}
-              style={{
-                backgroundColor: "#fef2f2",
-                color: "#b91c1c",
-                borderColor: "#fecaca",
-                borderRadius: 9999,
-                fontWeight: 500,
-                padding: "2px 8px",
-              }}
-            >
-              .gitvn Active
-            </Badge>
-          ) : (
-            onInitializeGitvn && (
-              <Button
-                size="compact-xs"
-                variant="subtle"
-                color="red"
-                loading={initializingGitvn}
-                onClick={onInitializeGitvn}
-                leftSection={<IconSparkles size={12} />}
-                style={{
-                  backgroundColor: "#fef2f2",
-                  color: "#b91c1c",
-                  borderColor: "#fecaca",
-                  borderRadius: 6,
-                  fontWeight: 500,
-                }}
-              >
-                Khởi tạo .gitvn
-              </Button>
-            )
-          )}
+          <GitvnStatusBadge
+            hasGitvn={hasGitvn}
+            isOutdated={isOutdated}
+            gitvnVersion={gitvnVersion}
+            onOpenUpgradeModal={onOpenUpgradeModal}
+            onInitializeGitvn={onInitializeGitvn}
+            initializingGitvn={initializingGitvn}
+          />
 
           <BranchSelector />
         </Group>

@@ -15,6 +15,7 @@ import { JiraWorkspace } from "../workspace/jira/JiraWorkspace";
 import { OverviewTab } from "../workspace/OverviewTab";
 import { PullsTab } from "../workspace/PullsTab";
 import { SettingsTab } from "../workspace/SettingsTab";
+import { UpgradeGitvnModal } from "../workspace/UpgradeGitvnModal";
 import {
   WorkspaceHeader,
   type WorkspaceTab,
@@ -28,6 +29,11 @@ export function RepoWorkspace() {
   const [pullsCount, setPullsCount] = useState<number>(0);
   const [issuesCount, setIssuesCount] = useState<number>(0);
   const [hasGitvn, setHasGitvn] = useState<boolean>(true);
+  const [isOutdated, setIsOutdated] = useState<boolean>(false);
+  const [gitvnVersion, setGitvnVersion] = useState<string>("1.0.0");
+  const [outdatedReason, setOutdatedReason] = useState<string>("");
+  const [upgradeModalOpen, setUpgradeModalOpen] = useState<boolean>(false);
+  const [bannerDismissed, setBannerDismissed] = useState<boolean>(false);
   const [initializingGitvn, setInitializingGitvn] = useState<boolean>(false);
   const { selectedRepo, currentBranch } = useDashboardStore();
 
@@ -41,6 +47,9 @@ export function RepoWorkspace() {
       )
       .then((res) => {
         setHasGitvn(Boolean(res.data.hasGitvn));
+        setIsOutdated(Boolean(res.data.isOutdated));
+        setGitvnVersion(res.data.currentVersion || "1.0.0");
+        setOutdatedReason(res.data.reason || "");
       })
       .catch((err) => {
         console.error("Lỗi kiểm tra .gitvn:", err);
@@ -130,8 +139,57 @@ export function RepoWorkspace() {
         pullsCount={pullsCount}
         issuesCount={issuesCount}
         hasGitvn={hasGitvn}
+        isOutdated={isOutdated}
+        gitvnVersion={gitvnVersion}
+        onOpenUpgradeModal={() => setUpgradeModalOpen(true)}
         onInitializeGitvn={handleInitializeGitvn}
         initializingGitvn={initializingGitvn}
+      />
+
+      {isOutdated && hasGitvn && !bannerDismissed && (
+        <Alert
+          color="orange"
+          variant="light"
+          radius={0}
+          icon={<IconAlertCircle size={16} />}
+          withCloseButton
+          onClose={() => setBannerDismissed(true)}
+          style={{
+            borderBottom: "1px solid #fed7aa",
+            backgroundColor: "#fffbeb",
+            padding: "8px 16px",
+          }}
+        >
+          <Group justify="space-between" wrap="nowrap">
+            <Text fz={13} c="#9a3412">
+              Dự án đang dùng quy chuẩn <b>.gitvn v{gitvnVersion || "1"}</b>{" "}
+              (file gộp tasks.json). Khuyến nghị nâng cấp lên <b>v2.0</b> với
+              kiến trúc file rời để chống xung đột Git khi merge nhánh.
+            </Text>
+            <Button
+              size="compact-xs"
+              color="orange"
+              variant="filled"
+              onClick={() => setUpgradeModalOpen(true)}
+              style={{
+                backgroundColor: "#ea580c",
+                borderRadius: 6,
+                fontWeight: 600,
+                flexShrink: 0,
+              }}
+            >
+              Nâng cấp v2 ngay
+            </Button>
+          </Group>
+        </Alert>
+      )}
+
+      <UpgradeGitvnModal
+        opened={upgradeModalOpen}
+        onClose={() => setUpgradeModalOpen(false)}
+        currentVersion={gitvnVersion}
+        reason={outdatedReason}
+        onUpgraded={checkGitvnStatus}
       />
 
       <BranchActionBanner onTabChange={setActiveTab} />

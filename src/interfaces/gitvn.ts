@@ -17,10 +17,17 @@ export interface GitvnDocItem {
   updatedAt?: string;
 }
 
+export interface GitvnStorageConfig {
+  format: "decoupled" | "monolith";
+  tasks_dir?: string;
+  docs_dir?: string;
+}
+
 export interface GitvnConfig {
   version: string;
   name: string;
   description?: string;
+  storage?: GitvnStorageConfig;
   modules: {
     kanban: boolean;
     docs: boolean;
@@ -43,4 +50,10 @@ export interface GitvnRepoStatus {
   config?: GitvnConfig;
   docs?: GitvnDocItem[];
   source: "github" | "local" | "none";
+  isOutdated?: boolean;
+  currentVersion?: string;
+  latestVersion?: string;
+  hasDecoupledTasks?: boolean;
+  configFormat?: "yaml" | "json";
+  reason?: string;
 }

@@ -1,27 +1,11 @@
-import type { GitvnConfig } from "@/interfaces/gitvn";
 import type { JiraBoardData, JiraSprint, JiraTask } from "@/interfaces/jira";
-
-// Cấu hình config.json mặc định
-export function createDefaultConfig(repo: string): GitvnConfig {
-  return {
-    version: "1.0.0",
-    name: repo,
-    description: `Cấu hình chuẩn GitVN Workspace cho ${repo}`,
-    modules: { kanban: true, docs: true },
-    kanban: {
-      columns: [
-        { id: "todo", title: "To Do", color: "#3b82f6" },
-        { id: "in_progress", title: "In Progress", color: "#eab308" },
-        { id: "review", title: "In Review", color: "#a855f7" },
-        { id: "done", title: "Done", color: "#22c55e" },
-      ],
-    },
-    docs: {
-      entry: "docs/index.mdx",
-      files: ["index.mdx", "architecture.mdx"],
-    },
-  };
-}
+export {
+  LATEST_GITVN_VERSION,
+  createDefaultConfig,
+  configToYaml,
+  parseGitvnConfig,
+  detectOutdated,
+} from "./gitvn-config";
 
 // Dữ liệu tasks.json mặc định
 export function createDefaultTasks(
@@ -135,7 +119,7 @@ export function createDefaultReadme(): string {
 \`\`\`bash
 .gitvn/
 ├── README.md           # Tài liệu quy chuẩn này (dành cho AI & Developers)
-├── config.json         # Cấu hình tính năng & danh sách các cột Kanban
+├── config.yml          # Cấu hình v2.0 (hoặc config.json tương thích cũ)
 ├── tasks/              # Kiến trúc File rời chống xung đột Git Merge Conflicts (SSOT)
 │   ├── PROJ-1.md       # Task chi tiết dạng Markdown + Frontmatter (hoặc PROJ-1.json)
 │   ├── PROJ-2.md

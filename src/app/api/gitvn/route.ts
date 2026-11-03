@@ -1,109 +1,26 @@
 import fs from "fs/promises";
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import path from "path";
-import type {
-  GitvnConfig,
-  GitvnDocItem,
-  GitvnRepoStatus,
-} from "@/interfaces/gitvn";
-import type { JiraBoardData, JiraSprint, JiraTask } from "@/interfaces/jira";
+import type { GitvnDocItem, GitvnRepoStatus } from "@/interfaces/gitvn";
 import {
-  createDefaultConfig,
-  createDefaultDocArchitecture,
-  createDefaultDocIndex,
-  createDefaultReadme,
-  createDefaultTasks,
-} from "@/lib/gitvn-templates";
-import { taskToMarkdown } from "@/lib/task-file";
-import { getValidAuthToken } from "@/lib/auth-token";
+  commitFileToGitHub,
+  getAuthToken,
+  getAuthUser,
+} from "@/lib/github-api";
+import {
+  configToYaml,
+  detectOutdated,
+  LATEST_GITVN_VERSION,
+  parseGitvnConfig,
+} from "@/lib/gitvn-config";
+import { initializeGitvnRepo } from "@/lib/gitvn-init";
+import {
+  inspectGitHubGitvn,
+  LOCAL_GITVN_DIR,
+  upgradeGitvnRepo,
+} from "@/lib/gitvn-service";
+import { createDefaultConfig } from "@/lib/gitvn-templates";
 
-const LOCAL_GITVN_DIR = path.join(process.cwd(), ".gitvn");
-
-async function getAuthToken(): Promise<string | undefined> {
-  const token = await getValidAuthToken();
-  return token || undefined;
-}
-
-async function getAuthUser(): Promise<{
-  login: string;
-  name?: string;
-  avatar_url?: string;
-} | null> {
-  const token = await getAuthToken();
-  if (!token) return null;
-
-  try {
-    const res = await fetch("https://api.github.com/user", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!res.ok) return null;
-    return await res.json();
-  } catch {
-    return null;
-  }
-}
-
-// Commit 1 file lên GitHub
-async function commitFileToGitHub(
-  owner: string,
-  repo: string,
-  filePath: string,
-  content: string,
-  token: string,
-  message: string,
-  branch?: string,
-): Promise<{ ok: boolean; sha?: string; error?: string }> {
-  try {
-    let sha: string | undefined;
-    const getUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}${branch ? `?ref=${encodeURIComponent(branch)}` : ""}`;
-    const getRes = await fetch(getUrl, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: "application/vnd.github+json",
-      },
-      cache: "no-store",
-    });
-
-    if (getRes.ok) {
-      const existing = await getRes.json();
-      sha = existing.sha;
-    }
-
-    const putRes = await fetch(
-      `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`,
-      {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: "application/vnd.github+json",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          message,
-          content: Buffer.from(content).toString("base64"),
-          sha,
-          branch,
-        }),
-      },
-    );
-
-    if (!putRes.ok) {
-      const errData = await putRes.json().catch(() => ({}));
-      return {
-        ok: false,
-        error: errData.message || `GitHub status ${putRes.status}`,
-      };
-    }
-
-    const putData = await putRes.json();
-    return { ok: true, sha: putData.content?.sha };
-  } catch (err: any) {
-    return { ok: false, error: err.message };
-  }
-}
-
-// GET: Kiểm tra và lấy thông tin trạng thái .gitvn của repo
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const owner = searchParams.get("owner");
@@ -118,196 +35,109 @@ export async function GET(request: Request) {
   }
 
   const token = await getAuthToken();
-  const isCurrentWorkspaceRepo = repo.toLowerCase() === "gitvn";
 
   // 1. Kiểm tra trên GitHub nếu có token
   if (token) {
     try {
-      const checkRes = await fetch(
-        `https://api.github.com/repos/${owner}/${repo}/contents/.gitvn${branch ? `?ref=${encodeURIComponent(branch)}` : ""}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: "application/vnd.github+json",
-          },
-          cache: "no-store",
-        },
-      );
-
-      if (checkRes.ok) {
-        const contents = await checkRes.json();
-        const items = Array.isArray(contents) ? contents : [contents];
-        const hasConfig = items.some((item) => item.name === "config.json");
-        const hasTasks = items.some(
-          (item) =>
-            item.name === "tasks.json" ||
-            item.name === "jira.json" ||
-            item.name === "tasks",
-        );
-
-        // Đọc nội dung config.json nếu có
-        let config: GitvnConfig | null = null;
-        if (hasConfig) {
-          try {
-            const configRes = await fetch(
-              `https://api.github.com/repos/${owner}/${repo}/contents/.gitvn/config.json${branch ? `?ref=${encodeURIComponent(branch)}` : ""}`,
-              {
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                  Accept: "application/vnd.github.raw",
-                },
-                cache: "no-store",
-              },
-            );
-            if (configRes.ok) {
-              config = await configRes.json();
-            }
-          } catch {
-            // bỏ qua lỗi parse
-          }
-        }
-
-        // Lấy danh sách tài liệu từ thư mục docs/ nếu có
-        const docsList: GitvnDocItem[] = [];
-        try {
-          const docsRes = await fetch(
-            `https://api.github.com/repos/${owner}/${repo}/contents/.gitvn/docs${branch ? `?ref=${encodeURIComponent(branch)}` : ""}`,
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-                Accept: "application/vnd.github+json",
-              },
-              cache: "no-store",
-            },
-          );
-          if (docsRes.ok) {
-            const docFiles = await docsRes.json();
-            if (Array.isArray(docFiles)) {
-              for (const f of docFiles) {
-                if (f.name.endsWith(".md") || f.name.endsWith(".mdx")) {
-                  // Đọc nội dung text raw
-                  let content = "";
-                  try {
-                    const cRes = await fetch(f.download_url || f.url, {
-                      headers: { Authorization: `Bearer ${token}` },
-                    });
-                    if (cRes.ok) content = await cRes.text();
-                  } catch {}
-
-                  const headingMatch = content.match(/^#\s+(.+)$/m);
-                  const docTitle =
-                    f.name === "index.mdx"
-                      ? "Tổng quan dự án"
-                      : f.name === "architecture.mdx"
-                        ? "Kiến trúc hệ thống"
-                        : headingMatch
-                          ? headingMatch[1].trim()
-                          : f.name;
-
-                  docsList.push({
-                    id: f.name.replace(/\.[^/.]+$/, ""),
-                    name: f.name,
-                    path: f.path,
-                    title: docTitle,
-                    content,
-                  });
-                }
-              }
-            }
-          }
-        } catch {}
-
-        return NextResponse.json<GitvnRepoStatus>({
-          hasGitvn: true,
-          hasConfig: Boolean(config),
-          hasTasks,
-          hasDocs: docsList.length > 0,
-          config: config || createDefaultConfig(repo),
-          docs: docsList,
-          source: "github",
-        });
-      }
-    } catch {
-      // Tiếp tục fallback kiểm tra local
+      const ghStatus = await inspectGitHubGitvn(owner, repo, token, branch);
+      if (ghStatus) return NextResponse.json(ghStatus);
+    } catch (err) {
+      console.warn("[inspectGitHubGitvn error]:", err);
     }
   }
 
-  // 2. Fallback: Kiểm tra trên hệ thống file local
+  // 2. Fallback: Kiểm tra trên local filesystem
   try {
-    const configPath = path.join(LOCAL_GITVN_DIR, "config.json");
+    const yamlPath = path.join(LOCAL_GITVN_DIR, "config.yml");
+    const jsonPath = path.join(LOCAL_GITVN_DIR, "config.json");
     const tasksPath = path.join(LOCAL_GITVN_DIR, "tasks.json");
+    const tasksDir = path.join(LOCAL_GITVN_DIR, "tasks");
     const docsDir = path.join(LOCAL_GITVN_DIR, "docs");
 
-    let hasLocalConfig = false;
-    let localConfig: GitvnConfig | null = null;
-    let hasLocalTasks = false;
-    const docsList: GitvnDocItem[] = [];
-
+    let localConfig = null;
+    let configFormat: "yaml" | "json" = "yaml";
     try {
-      const configRaw = await fs.readFile(configPath, "utf-8");
-      localConfig = JSON.parse(configRaw);
-      hasLocalConfig = true;
-    } catch {}
+      const yamlRaw = await fs.readFile(yamlPath, "utf-8");
+      localConfig = parseGitvnConfig(yamlRaw, true);
+    } catch {
+      try {
+        const jsonRaw = await fs.readFile(jsonPath, "utf-8");
+        localConfig = parseGitvnConfig(jsonRaw, false);
+        configFormat = "json";
+      } catch {}
+    }
 
+    let hasLocalTasksJson = false;
     try {
       await fs.access(tasksPath);
-      hasLocalTasks = true;
+      hasLocalTasksJson = true;
     } catch {}
 
+    let hasDecoupledTasks = false;
+    try {
+      const taskFiles = await fs.readdir(tasksDir);
+      hasDecoupledTasks = taskFiles.length > 0;
+    } catch {}
+
+    const docsList: GitvnDocItem[] = [];
     try {
       const files = await fs.readdir(docsDir);
       for (const fileName of files) {
         if (fileName.endsWith(".md") || fileName.endsWith(".mdx")) {
-          const filePath = path.join(docsDir, fileName);
-          const content = await fs.readFile(filePath, "utf-8");
-          const headingMatch = content.match(/^#\s+(.+)$/m);
-          const docTitle =
-            fileName === "index.mdx"
-              ? "Tổng quan dự án"
-              : fileName === "architecture.mdx"
-                ? "Kiến trúc hệ thống"
-                : headingMatch
-                  ? headingMatch[1].trim()
-                  : fileName;
-
+          const content = await fs.readFile(
+            path.join(docsDir, fileName),
+            "utf-8",
+          );
+          const heading = content.match(/^#\s+(.+)$/m);
           docsList.push({
             id: fileName.replace(/\.[^/.]+$/, ""),
             name: fileName,
             path: `.gitvn/docs/${fileName}`,
-            title: docTitle,
+            title: heading ? heading[1].trim() : fileName,
             content,
           });
         }
       }
     } catch {}
 
-    if (
-      isCurrentWorkspaceRepo &&
-      (hasLocalConfig || hasLocalTasks || docsList.length > 0)
-    ) {
+    const hasGitvn = Boolean(
+      localConfig || hasLocalTasksJson || hasDecoupledTasks || docsList.length,
+    );
+    if (hasGitvn) {
+      const { isOutdated, reason } = detectOutdated(
+        localConfig,
+        hasDecoupledTasks,
+        hasLocalTasksJson,
+      );
       return NextResponse.json<GitvnRepoStatus>({
         hasGitvn: true,
-        hasConfig: hasLocalConfig,
-        hasTasks: hasLocalTasks,
+        hasConfig: Boolean(localConfig),
+        hasTasks: hasLocalTasksJson || hasDecoupledTasks,
         hasDocs: docsList.length > 0,
         config: localConfig || createDefaultConfig(repo),
         docs: docsList,
         source: "local",
+        isOutdated,
+        currentVersion:
+          localConfig?.version || (hasLocalTasksJson ? "1.0.0" : undefined),
+        latestVersion: LATEST_GITVN_VERSION,
+        hasDecoupledTasks,
+        configFormat,
+        reason,
       });
     }
   } catch {}
 
-  // 3. Không tìm thấy .gitvn
   return NextResponse.json<GitvnRepoStatus>({
     hasGitvn: false,
     hasConfig: false,
     hasTasks: false,
     hasDocs: false,
     source: "none",
+    isOutdated: false,
   });
 }
 
-// POST: Khởi tạo .gitvn chuẩn hoặc lưu tài liệu / config
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -324,158 +154,44 @@ export async function POST(request: Request) {
     const user = await getAuthUser();
     const currentUserLogin = user?.login || "admin";
 
-    // ACTION: KHỞI TẠO .gitvn CHUẨN (INITIALIZE)
-    if (action === "init") {
-      const defaultConfig = createDefaultConfig(repo);
-      const defaultTasks = createDefaultTasks(owner, repo, currentUserLogin);
-      const defaultIndexDoc = createDefaultDocIndex(repo);
-      const defaultArchDoc = createDefaultDocArchitecture(repo);
-      const defaultReadme = createDefaultReadme();
-
-      // 1. Lưu vào thư mục local .gitvn (nếu môi trường cho phép ghi, Vercel sẽ tự bỏ qua)
-      try {
-        await fs.mkdir(LOCAL_GITVN_DIR, { recursive: true });
-        await fs.mkdir(path.join(LOCAL_GITVN_DIR, "docs"), { recursive: true });
-        await fs.mkdir(path.join(LOCAL_GITVN_DIR, "tasks"), {
-          recursive: true,
-        });
-
-        await fs.writeFile(
-          path.join(LOCAL_GITVN_DIR, "README.md"),
-          defaultReadme,
-          "utf-8",
-        );
-        await fs.writeFile(
-          path.join(LOCAL_GITVN_DIR, "config.json"),
-          JSON.stringify(defaultConfig, null, 2),
-          "utf-8",
-        );
-        await fs.writeFile(
-          path.join(LOCAL_GITVN_DIR, "tasks.json"),
-          JSON.stringify(defaultTasks, null, 2),
-          "utf-8",
-        );
-        for (const t of defaultTasks.tasks) {
-          await fs.writeFile(
-            path.join(LOCAL_GITVN_DIR, "tasks", `${t.id}.md`),
-            taskToMarkdown(t),
-            "utf-8",
-          );
-        }
-        await fs.writeFile(
-          path.join(LOCAL_GITVN_DIR, "docs", "index.mdx"),
-          defaultIndexDoc,
-          "utf-8",
-        );
-        await fs.writeFile(
-          path.join(LOCAL_GITVN_DIR, "docs", "architecture.mdx"),
-          defaultArchDoc,
-          "utf-8",
-        );
-      } catch {
-        // Bỏ qua lỗi EROFS trên môi trường serverless (Vercel)
-      }
-
-      // 2. Commit lên GitHub nếu có token
-      let syncedToGitHub = false;
-      const errors: string[] = [];
-
-      if (token) {
-        const commitMsg = `chore(gitvn): initialize canonical .gitvn workspace`;
-        const resReadme = await commitFileToGitHub(
-          owner,
-          repo,
-          ".gitvn/README.md",
-          defaultReadme,
-          token,
-          `${commitMsg} AI conventions README`,
-          branch,
-        );
-        const resConfig = await commitFileToGitHub(
-          owner,
-          repo,
-          ".gitvn/config.json",
-          JSON.stringify(defaultConfig, null, 2),
-          token,
-          `${commitMsg} config`,
-          branch,
-        );
-        const resTasks = await commitFileToGitHub(
-          owner,
-          repo,
-          ".gitvn/tasks.json",
-          JSON.stringify(defaultTasks, null, 2),
-          token,
-          `${commitMsg} tasks`,
-          branch,
-        );
-        const resIndex = await commitFileToGitHub(
-          owner,
-          repo,
-          ".gitvn/docs/index.mdx",
-          defaultIndexDoc,
-          token,
-          `${commitMsg} docs index`,
-          branch,
-        );
-        const resArch = await commitFileToGitHub(
-          owner,
-          repo,
-          ".gitvn/docs/architecture.mdx",
-          defaultArchDoc,
-          token,
-          `${commitMsg} docs architecture`,
-          branch,
-        );
-
-        for (const t of defaultTasks.tasks) {
-          await commitFileToGitHub(
-            owner,
-            repo,
-            `.gitvn/tasks/${t.id}.md`,
-            taskToMarkdown(t),
-            token,
-            `${commitMsg} task ${t.id}`,
-            branch,
-          );
-        }
-
-        syncedToGitHub =
-          resReadme.ok &&
-          resConfig.ok &&
-          resTasks.ok &&
-          resIndex.ok &&
-          resArch.ok;
-        if (!syncedToGitHub) {
-          if (!resReadme.ok) errors.push(`readme: ${resReadme.error}`);
-          if (!resConfig.ok) errors.push(`config: ${resConfig.error}`);
-          if (!resTasks.ok) errors.push(`tasks: ${resTasks.error}`);
-        }
-      }
-
+    // ACTION 1: NÂNG CẤP LÊN V2 DECOUPLED SCHEMA
+    if (action === "upgrade") {
+      const upgradeRes = await upgradeGitvnRepo(owner, repo, token, branch);
       return NextResponse.json({
-        success: true,
-        message: "Khởi tạo cấu trúc .gitvn chuẩn thành công!",
-        syncedToGitHub,
-        errors: errors.length > 0 ? errors : undefined,
-        config: defaultConfig,
-        tasks: defaultTasks,
+        success: upgradeRes.success,
+        migratedTasksCount: upgradeRes.migratedTasksCount,
+        message: `Đã nâng cấp dự án sang quy chuẩn .gitvn v${LATEST_GITVN_VERSION} thành công!`,
       });
     }
 
-    // ACTION: LƯU / CẬP NHẬT TÀI LIỆU MDX
+    // ACTION 2: KHỞI TẠO .gitvn CHUẨN V2
+    if (action === "init") {
+      const initRes = await initializeGitvnRepo(
+        owner,
+        repo,
+        currentUserLogin,
+        token,
+        branch,
+      );
+      return NextResponse.json({
+        success: initRes.success,
+        message: "Khởi tạo cấu trúc .gitvn v2 thành công!",
+        syncedToGitHub: initRes.syncedToGitHub,
+        config: initRes.config,
+      });
+    }
+
+    // ACTION 3: LƯU TÀI LIỆU MDX
     if (action === "save-doc" || action === "saveDoc") {
       const targetDocName = docName || body.filename;
       const targetDocContent =
         docContent !== undefined ? docContent : body.content;
-
       if (!targetDocName || typeof targetDocContent !== "string") {
         return NextResponse.json(
           { error: "Thiếu tên hoặc nội dung tài liệu" },
           { status: 400 },
         );
       }
-
       const safeDocName =
         targetDocName.endsWith(".mdx") || targetDocName.endsWith(".md")
           ? targetDocName
@@ -488,15 +204,11 @@ export async function POST(request: Request) {
           targetDocContent,
           "utf-8",
         );
-      } catch {
-        // Bỏ qua lỗi EROFS trên môi trường serverless (Vercel)
-      }
+      } catch {}
 
       let syncedToGitHub = false;
-      let error: string | undefined;
-
       if (token) {
-        const commitRes = await commitFileToGitHub(
+        const res = await commitFileToGitHub(
           owner,
           repo,
           `.gitvn/docs/${safeDocName}`,
@@ -505,19 +217,16 @@ export async function POST(request: Request) {
           `docs(gitvn): update .gitvn/docs/${safeDocName}`,
           branch,
         );
-        syncedToGitHub = commitRes.ok;
-        error = commitRes.error;
+        syncedToGitHub = res.ok;
       }
-
       return NextResponse.json({
         success: true,
         file: `.gitvn/docs/${safeDocName}`,
         syncedToGitHub,
-        error,
       });
     }
 
-    // ACTION: LƯU CẤU HÌNH CONFIG.JSON
+    // ACTION 4: LƯU CẤU HÌNH CONFIG.YML
     if (action === "save-config") {
       if (!config) {
         return NextResponse.json(
@@ -525,41 +234,30 @@ export async function POST(request: Request) {
           { status: 400 },
         );
       }
-
-      const configStr = JSON.stringify(config, null, 2);
+      const configYaml = configToYaml(config);
       try {
         await fs.mkdir(LOCAL_GITVN_DIR, { recursive: true });
         await fs.writeFile(
-          path.join(LOCAL_GITVN_DIR, "config.json"),
-          configStr,
+          path.join(LOCAL_GITVN_DIR, "config.yml"),
+          configYaml,
           "utf-8",
         );
-      } catch {
-        // Bỏ qua lỗi EROFS trên môi trường serverless (Vercel)
-      }
+      } catch {}
 
       let syncedToGitHub = false;
-      let error: string | undefined;
-
       if (token) {
-        const commitRes = await commitFileToGitHub(
+        const res = await commitFileToGitHub(
           owner,
           repo,
-          ".gitvn/config.json",
-          configStr,
+          ".gitvn/config.yml",
+          configYaml,
           token,
-          `chore(gitvn): update .gitvn/config.json`,
+          `chore(gitvn): update config.yml`,
           branch,
         );
-        syncedToGitHub = commitRes.ok;
-        error = commitRes.error;
+        syncedToGitHub = res.ok;
       }
-
-      return NextResponse.json({
-        success: true,
-        syncedToGitHub,
-        error,
-      });
+      return NextResponse.json({ success: true, syncedToGitHub });
     }
 
     return NextResponse.json(
@@ -567,7 +265,6 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   } catch (err: any) {
-    console.error("Lỗi API /api/gitvn:", err);
     return NextResponse.json(
       { error: err.message || "Internal Server Error" },
       { status: 500 },
