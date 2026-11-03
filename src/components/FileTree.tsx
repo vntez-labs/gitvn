@@ -120,10 +120,8 @@ function TreeItem({
           width: "100%",
           padding: "4px 8px",
           paddingLeft: depth * 12 + 6,
-          backgroundColor: isActive
-            ? "rgba(238, 242, 255, 0.85)"
-            : "transparent",
-          borderLeft: isActive ? "2px solid #6366f1" : "2px solid transparent",
+          backgroundColor: isActive ? "#fef2f2" : "transparent",
+          borderLeft: isActive ? "2px solid #dc2626" : "2px solid transparent",
           borderRadius: isActive ? "0 4px 4px 0" : "0",
           transition: "background 0.1s ease",
         }}
@@ -165,7 +163,7 @@ function TreeItem({
           <Text
             fz={13}
             ff="monospace"
-            c={isActive ? "#4338ca" : isFolder ? "#27272a" : "#52525b"}
+            c={isActive ? "#b91c1c" : isFolder ? "#27272a" : "#52525b"}
             fw={isActive ? 600 : isFolder ? 500 : 400}
             truncate
           >

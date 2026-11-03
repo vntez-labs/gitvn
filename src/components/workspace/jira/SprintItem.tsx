@@ -2,7 +2,6 @@
 
 import {
   ActionIcon,
-  Avatar,
   Badge,
   Box,
   Button,
@@ -13,20 +12,18 @@ import {
   Progress,
   Stack,
   Text,
-  Tooltip,
 } from "@mantine/core";
 import {
   IconCalendar,
   IconCheck,
   IconDotsVertical,
   IconFlame,
-  IconGripVertical,
   IconPlayerPlay,
   IconPlus,
 } from "@tabler/icons-react";
 import type { JiraSprint, JiraTask, SprintStatus } from "@/interfaces/jira";
-import { getGitHubAvatarUrl } from "@/lib/avatar";
 import { getStoryPointsForTask } from "@/lib/jira-priority";
+import { TaskRowItem } from "./TaskRowItem";
 
 export const PRIORITY_BADGE = {
   urgent: { color: "red", label: "Khẩn cấp" },
@@ -103,18 +100,22 @@ export function SprintItem({
       key={sprint.id}
       p="md"
       bg="#ffffff"
-      radius="md"
+      radius="lg"
       onDragOver={(e) => onDragOver(e, sprint.id)}
       onDragLeave={onDragLeave}
       onDrop={(e) => onDrop(e, sprint.id)}
       style={{
-        border: `2px ${isDragOver ? "dashed #fb291a" : "solid " + (isActive ? "#ffc5be" : "#e2e8f0")}`,
-        backgroundColor: isDragOver ? "#fff1f0" : "#ffffff",
-        boxShadow: isActive
-          ? "0 4px 12px rgba(251, 41, 26, 0.06)"
-          : "0 1px 3px rgba(0, 0, 0, 0.04)",
+        border: isDragOver ? "2px dashed #dc2626" : "1px solid #e4e4e7",
+        borderLeft: isDragOver
+          ? "2px dashed #dc2626"
+          : isActive
+            ? "4px solid #dc2626"
+            : "1px solid #e4e4e7",
+        backgroundColor: isDragOver ? "#fef2f2" : "#ffffff",
+        boxShadow: "0 1px 2px rgba(0, 0, 0, 0.04)",
         transition: "all 0.15s ease",
         userSelect: "none",
+        borderRadius: 12,
       }}
     >
       {/* Sprint Header */}
@@ -136,14 +137,29 @@ export function SprintItem({
             />
           )}
 
-          <Text fw={700} fz={16} c="#0f172a">
+          <Text fw={700} fz={15} c="#18181b">
             {sprint.name}
           </Text>
 
           <Badge
-            size="sm"
-            variant="light"
-            color={isActive ? "vntez" : isCompleted ? "green" : "gray"}
+            size="xs"
+            variant="outline"
+            style={{
+              backgroundColor: isActive
+                ? "#fef2f2"
+                : isCompleted
+                  ? "#f0fdf4"
+                  : "#f4f4f5",
+              color: isActive ? "#b91c1c" : isCompleted ? "#15803d" : "#52525b",
+              borderColor: isActive
+                ? "#fecaca"
+                : isCompleted
+                  ? "#bbf7d0"
+                  : "#e4e4e7",
+              borderRadius: 9999,
+              fontWeight: 600,
+              padding: "2px 8px",
+            }}
           >
             {isActive
               ? "ĐANG CHẠY"
@@ -153,7 +169,7 @@ export function SprintItem({
           </Badge>
 
           {sprint.startDate && sprint.endDate && (
-            <Group gap={4} fz={12} c="#64748b">
+            <Group gap={4} fz={12} c="#71717a">
               <IconCalendar size={14} />
               <span>
                 {sprint.startDate} → {sprint.endDate}
@@ -163,10 +179,30 @@ export function SprintItem({
         </Group>
 
         <Group gap="xs" wrap="nowrap" align="center">
-          <Badge size="sm" variant="outline" color="vntez">
+          <Badge
+            size="xs"
+            variant="outline"
+            style={{
+              backgroundColor: "#f4f4f5",
+              borderColor: "#e4e4e7",
+              color: "#52525b",
+              fontFamily: "monospace",
+              fontSize: 11,
+              fontWeight: 600,
+            }}
+          >
             {donePoints}/{totalPoints} SP
           </Badge>
-          <Badge size="sm" variant="light" color="gray">
+          <Badge
+            size="xs"
+            variant="outline"
+            style={{
+              backgroundColor: "#f4f4f5",
+              borderColor: "#e4e4e7",
+              color: "#52525b",
+              fontSize: 11,
+            }}
+          >
             {doneTasks.length}/{sprintTasks.length} việc
           </Badge>
 
@@ -175,12 +211,19 @@ export function SprintItem({
               {isPlanned && (
                 <Button
                   size="xs"
-                  color="teal"
-                  variant="light"
-                  radius="md"
-                  leftSection={<IconPlayerPlay size={13} />}
+                  variant="default"
+                  leftSection={<IconPlayerPlay size={13} color="#15803d" />}
                   onClick={() => onUpdateSprintStatus(sprint.id, "active")}
-                  style={{ fontWeight: 600 }}
+                  styles={{
+                    root: {
+                      backgroundColor: "#ffffff",
+                      borderColor: "#d4d4d8",
+                      color: "#3f3f46",
+                      fontWeight: 500,
+                      borderRadius: 8,
+                      boxShadow: "0 1px 2px rgba(0, 0, 0, 0.05)",
+                    },
+                  }}
                 >
                   Bắt đầu Sprint
                 </Button>
@@ -189,12 +232,19 @@ export function SprintItem({
               {isActive && (
                 <Button
                   size="xs"
-                  color="vntez"
-                  variant="filled"
-                  radius="md"
-                  leftSection={<IconCheck size={13} />}
+                  variant="default"
+                  leftSection={<IconCheck size={13} color="#dc2626" />}
                   onClick={() => onUpdateSprintStatus(sprint.id, "completed")}
-                  style={{ fontWeight: 600 }}
+                  styles={{
+                    root: {
+                      backgroundColor: "#ffffff",
+                      borderColor: "#d4d4d8",
+                      color: "#3f3f46",
+                      fontWeight: 500,
+                      borderRadius: 8,
+                      boxShadow: "0 1px 2px rgba(0, 0, 0, 0.05)",
+                    },
+                  }}
                 >
                   Hoàn thành Sprint
                 </Button>
@@ -203,12 +253,19 @@ export function SprintItem({
               {isCompleted && (
                 <Button
                   size="xs"
-                  color="gray"
-                  variant="subtle"
-                  radius="md"
-                  leftSection={<IconFlame size={13} />}
+                  variant="default"
+                  leftSection={<IconFlame size={13} color="#71717a" />}
                   onClick={() => onUpdateSprintStatus(sprint.id, "active")}
-                  style={{ fontWeight: 600 }}
+                  styles={{
+                    root: {
+                      backgroundColor: "#ffffff",
+                      borderColor: "#d4d4d8",
+                      color: "#3f3f46",
+                      fontWeight: 500,
+                      borderRadius: 8,
+                      boxShadow: "0 1px 2px rgba(0, 0, 0, 0.05)",
+                    },
+                  }}
                 >
                   Mở lại
                 </Button>
@@ -267,169 +324,20 @@ export function SprintItem({
             </Text>
           </Box>
         ) : (
-          sprintTasks.map((t) => {
-            const isSelected = selectedTaskIds.includes(t.id);
-            const prio = PRIORITY_BADGE[t.priority] || PRIORITY_BADGE.medium;
-
-            return (
-              <Paper
-                key={t.id}
-                px="md"
-                py={10}
-                bg={isSelected ? "#fff1f0" : "#ffffff"}
-                radius="sm"
-                draggable
-                onDragStart={(e) => onDragStart(e, t.id)}
-                style={{
-                  border: `1px solid ${isSelected ? "#fb291a" : "#e2e8f0"}`,
-                  cursor: "grab",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  transition: "all 0.12s ease",
-                  userSelect: "none",
-                }}
-                onMouseEnter={(e) => {
-                  if (!isSelected) {
-                    e.currentTarget.style.backgroundColor = "#f8fafc";
-                    e.currentTarget.style.borderColor = "#ffc5be";
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isSelected) {
-                    e.currentTarget.style.backgroundColor = "#ffffff";
-                    e.currentTarget.style.borderColor = "#e2e8f0";
-                  }
-                }}
-                onClick={() => onSelectTask(t)}
-              >
-                <Group gap="sm" style={{ flex: 1, minWidth: 0 }}>
-                  <IconGripVertical
-                    size={15}
-                    color="#94a3b8"
-                    style={{ cursor: "grab", flexShrink: 0 }}
-                  />
-
-                  <Checkbox
-                    size="xs"
-                    color="vntez"
-                    checked={isSelected}
-                    onClick={(e) => e.stopPropagation()}
-                    onChange={() => onToggleSelectTask(t.id)}
-                    aria-label={`Chọn task ${t.id}`}
-                  />
-
-                  <Text
-                    fz={12.5}
-                    fw={700}
-                    c="#fb291a"
-                    ff="var(--font-geist-mono), monospace"
-                    style={{ flexShrink: 0 }}
-                  >
-                    {t.id}
-                  </Text>
-
-                  <Text fz={14} fw={600} c="#0f172a" truncate>
-                    {t.title}
-                  </Text>
-                </Group>
-
-                <Group gap="xs" style={{ flexShrink: 0, userSelect: "none" }}>
-                  {/* Avatar Người thực hiện với getGitHubAvatarUrl */}
-                  <Tooltip
-                    label={`Người thực hiện: ${t.assignee?.name || t.assignee?.login || "Chưa gán"}`}
-                    withArrow
-                  >
-                    <Avatar
-                      src={getGitHubAvatarUrl(t.assignee, 48)}
-                      size={22}
-                      radius="xl"
-                      style={{
-                        border: "1px solid #cbd5e1",
-                        backgroundColor: "#fff1f0",
-                        color: "#fb291a",
-                        fontSize: 10,
-                        fontWeight: 700,
-                      }}
-                    >
-                      {t.assignee?.login?.slice(0, 2).toUpperCase() || "?"}
-                    </Avatar>
-                  </Tooltip>
-
-                  <Badge
-                    size="xs"
-                    variant="dot"
-                    color={prio.color}
-                    styles={{ root: { textTransform: "none" } }}
-                  >
-                    {prio.label}
-                  </Badge>
-
-                  <Badge
-                    size="xs"
-                    variant="light"
-                    color={
-                      t.status === "done"
-                        ? "green"
-                        : t.status === "in_progress"
-                          ? "yellow"
-                          : t.status === "review"
-                            ? "grape"
-                            : "blue"
-                    }
-                  >
-                    {t.status.toUpperCase()}
-                  </Badge>
-
-                  <Badge size="xs" variant="outline" color="gray">
-                    {getStoryPointsForTask(t)} SP
-                  </Badge>
-
-                  {canManageSprint && (
-                    <Menu shadow="sm" position="bottom-end">
-                      <Menu.Target>
-                        <ActionIcon
-                          size="xs"
-                          variant="subtle"
-                          color="gray"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <IconDotsVertical size={13} />
-                        </ActionIcon>
-                      </Menu.Target>
-                      <Menu.Dropdown
-                        bg="#ffffff"
-                        style={{ borderColor: "#e2e8f0" }}
-                      >
-                        <Menu.Label fz={11}>Chuyển sang Sprint</Menu.Label>
-                        <Menu.Item
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onMoveTaskToSprint(t.id, null);
-                          }}
-                        >
-                          📦 Về Backlog
-                        </Menu.Item>
-                        {allSprints
-                          .filter((s) => s.id !== sprint.id)
-                          .map((s) => (
-                            <Menu.Item
-                              key={s.id}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onMoveTaskToSprint(t.id, s.id);
-                              }}
-                            >
-                              🏃 {s.name}
-                            </Menu.Item>
-                          ))}
-                      </Menu.Dropdown>
-                    </Menu>
-                  )}
-                </Group>
-              </Paper>
-            );
-          })
+          sprintTasks.map((t) => (
+            <TaskRowItem
+              key={t.id}
+              task={t}
+              isSelected={selectedTaskIds.includes(t.id)}
+              sprints={allSprints}
+              canManageSprint={canManageSprint}
+              onSelectTask={onSelectTask}
+              onToggleSelectTask={onToggleSelectTask}
+              onDragStart={onDragStart}
+              onMoveTaskToSprint={onMoveTaskToSprint}
+              currentSprintId={sprint.id}
+            />
+          ))
         )}
       </Stack>
     </Paper>

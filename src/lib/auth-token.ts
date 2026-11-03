@@ -21,9 +21,11 @@ export function attachAuthCookiesToResponse(
   tokenData: GitHubTokenResponse,
   requestUrl?: string,
 ) {
-  const isLocalhost =
-    requestUrl?.includes("localhost") || requestUrl?.includes("127.0.0.1");
-  const isProd = process.env.NODE_ENV === "production" && !isLocalhost;
+  const isHttps = requestUrl
+    ? requestUrl.startsWith("https://")
+    : process.env.NODE_ENV === "production" &&
+      Boolean(process.env.VERCEL || process.env.NEXT_PUBLIC_VERCEL_ENV);
+  const isSecure = Boolean(isHttps);
   const accessMaxAge = tokenData.expires_in || 60 * 60 * 24 * 30;
   const refreshMaxAge =
     tokenData.refresh_token_expires_in || 60 * 60 * 24 * 180;
@@ -32,7 +34,7 @@ export function attachAuthCookiesToResponse(
     name: "github_access_token",
     value: tokenData.access_token,
     httpOnly: true,
-    secure: isProd,
+    secure: isSecure,
     path: "/",
     maxAge: accessMaxAge,
     sameSite: "lax",
@@ -43,9 +45,19 @@ export function attachAuthCookiesToResponse(
       name: "github_refresh_token",
       value: tokenData.refresh_token,
       httpOnly: true,
-      secure: isProd,
+      secure: isSecure,
       path: "/",
       maxAge: refreshMaxAge,
+      sameSite: "lax",
+    });
+  } else {
+    response.cookies.set({
+      name: "github_refresh_token",
+      value: "",
+      httpOnly: true,
+      secure: isSecure,
+      path: "/",
+      maxAge: 0,
       sameSite: "lax",
     });
   }
@@ -56,9 +68,19 @@ export function attachAuthCookiesToResponse(
       name: "github_token_expires_at",
       value: String(expiresAt),
       httpOnly: true,
-      secure: isProd,
+      secure: isSecure,
       path: "/",
       maxAge: refreshMaxAge,
+      sameSite: "lax",
+    });
+  } else {
+    response.cookies.set({
+      name: "github_token_expires_at",
+      value: "",
+      httpOnly: true,
+      secure: isSecure,
+      path: "/",
+      maxAge: 0,
       sameSite: "lax",
     });
   }
@@ -90,7 +112,7 @@ export async function setAuthCookies(
     sameSite: "lax",
   });
 
-  // 2. Lưu Refresh Token nếu GitHub App có cấp (Expiring User Tokens)
+  // 2. Lưu Refresh Token nếu có, ngược lại xoá cookie cũ
   if (tokenData.refresh_token) {
     cookieStore.set("github_refresh_token", tokenData.refresh_token, {
       httpOnly: true,
@@ -99,9 +121,16 @@ export async function setAuthCookies(
       maxAge: refreshMaxAge,
       sameSite: "lax",
     });
+  } else {
+    cookieStore.set("github_refresh_token", "", {
+      path: "/",
+      maxAge: 0,
+      httpOnly: true,
+      secure,
+    });
   }
 
-  // 3. Lưu mốc thời gian hết hạn (Timestamp ms) để kiểm tra chủ động
+  // 3. Lưu mốc thời gian hết hạn nếu có, ngược lại xoá cookie cũ
   if (tokenData.expires_in) {
     const expiresAt = Date.now() + tokenData.expires_in * 1000;
     cookieStore.set("github_token_expires_at", String(expiresAt), {
@@ -110,6 +139,13 @@ export async function setAuthCookies(
       path: "/",
       maxAge: refreshMaxAge,
       sameSite: "lax",
+    });
+  } else {
+    cookieStore.set("github_token_expires_at", "", {
+      path: "/",
+      maxAge: 0,
+      httpOnly: true,
+      secure,
     });
   }
 }

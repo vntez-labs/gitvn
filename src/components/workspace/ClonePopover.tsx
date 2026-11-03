@@ -39,7 +39,7 @@ export function ClonePopover() {
         <Button
           size="compact-sm"
           variant="default"
-          leftSection={<IconTerminal2 size={13} color="#4f46e5" />}
+          leftSection={<IconTerminal2 size={13} color="#dc2626" />}
           rightSection={<IconChevronDown size={11} color="#71717a" />}
           styles={{
             root: {

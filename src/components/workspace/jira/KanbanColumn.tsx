@@ -68,8 +68,8 @@ export function KanbanColumn({
         flex: 1,
         minWidth: 280,
         maxWidth: 380,
-        backgroundColor: isDragOver ? "#fff1f0" : "#f1f5f9",
-        border: `1px solid ${isDragOver ? "#fb291a" : "#e2e8f0"}`,
+        backgroundColor: isDragOver ? "#fef2f2" : "#fbfbfc",
+        border: `1px solid ${isDragOver ? "#dc2626" : "#e4e4e7"}`,
         borderRadius: 10,
         display: "flex",
         flexDirection: "column",
@@ -87,7 +87,7 @@ export function KanbanColumn({
         px="md"
         py={12}
         style={{
-          borderBottom: "1px solid #e2e8f0",
+          borderBottom: "1px solid #e4e4e7",
           backgroundColor: "#ffffff",
           borderTopLeftRadius: 9,
           borderTopRightRadius: 9,
@@ -101,13 +101,12 @@ export function KanbanColumn({
               height: 8,
               borderRadius: "50%",
               backgroundColor: color,
-              boxShadow: `0 0 6px ${color}66`,
             }}
           />
           <Text
             fz={12.5}
-            fw={700}
-            c="#0f172a"
+            fw={600}
+            c="#18181b"
             style={{ textTransform: "uppercase", letterSpacing: "0.04em" }}
           >
             {title}
@@ -115,39 +114,18 @@ export function KanbanColumn({
 
           <Badge
             size="xs"
-            variant="light"
-            color="gray"
-            styles={{
-              root: {
-                fontWeight: 600,
-                fontSize: 10.5,
-                borderRadius: 10,
-                padding: "2px 7px",
-                height: 18,
-              },
+            variant="outline"
+            style={{
+              borderColor: "#e4e4e7",
+              color: "#52525b",
+              backgroundColor: "#f4f4f5",
+              fontFamily: "monospace",
+              fontSize: 11,
+              padding: "2px 7px",
             }}
           >
-            {tasks.length}
+            {tasks.length} {totalPoints > 0 ? `· ${totalPoints} SP` : ""}
           </Badge>
-
-          {totalPoints > 0 && (
-            <Tooltip label={`Tổng Story Points: ${totalPoints} SP`} withArrow>
-              <Badge
-                size="xs"
-                variant="outline"
-                color="vntez"
-                styles={{
-                  root: {
-                    fontSize: 10,
-                    padding: "2px 6px",
-                    height: 18,
-                  },
-                }}
-              >
-                {totalPoints} SP
-              </Badge>
-            </Tooltip>
-          )}
         </Group>
 
         {canEdit && (
@@ -195,23 +173,24 @@ export function KanbanColumn({
               flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
-              border: "1px dashed #cbd5e1",
+              border: "1px dashed #e4e4e7",
               borderRadius: 8,
-              backgroundColor: "rgba(255, 255, 255, 0.4)",
+              backgroundColor: "#f4f4f5",
             }}
           >
-            <IconInbox size={24} color="#94a3b8" />
-            <Text fz={12} c="#94a3b8" mt={6}>
+            <IconInbox size={24} color="#a1a1aa" />
+            <Text fz={12} c="#71717a" mt={6}>
               Chưa có task nào
             </Text>
             {canEdit && (
               <Button
                 variant="subtle"
-                color="vntez"
+                color="gray"
                 size="compact-xs"
                 mt={4}
                 leftSection={<IconPlus size={12} />}
                 onClick={() => onQuickAdd(status)}
+                style={{ color: "#71717a" }}
               >
                 Tạo task mới
               </Button>

@@ -71,10 +71,10 @@ export const FileExplorerDock: FC<FileExplorerDockProps> = ({
             <ActionIcon
               size="xs"
               variant="subtle"
-              color="indigo"
+              color="red"
               onClick={onCreateFileClick}
             >
-              <IconFilePlus size={15} color="#4f46e5" />
+              <IconFilePlus size={15} color="#dc2626" />
             </ActionIcon>
           </Tooltip>
         </Group>

@@ -55,7 +55,7 @@ export function RepoListItem({
             top: 6,
             bottom: 6,
             width: 3,
-            backgroundColor: "#6366f1",
+            backgroundColor: "#dc2626",
             borderRadius: "0 3px 3px 0",
           }}
         />

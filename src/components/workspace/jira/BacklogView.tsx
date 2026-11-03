@@ -1,31 +1,22 @@
 "use client";
 
 import {
-  ActionIcon,
-  Avatar,
   Badge,
   Box,
   Button,
   Checkbox,
   Group,
-  Menu,
   Paper,
   Stack,
   Text,
-  Tooltip,
 } from "@mantine/core";
-import {
-  IconDotsVertical,
-  IconGripVertical,
-  IconInbox,
-  IconPlus,
-} from "@tabler/icons-react";
+import { IconInbox, IconPlus } from "@tabler/icons-react";
 import { useMemo, useState } from "react";
 import type { JiraSprint, JiraTask, SprintStatus } from "@/interfaces/jira";
-import { getGitHubAvatarUrl } from "@/lib/avatar";
 import { getStoryPointsForTask } from "@/lib/jira-priority";
 import { FloatingBulkActionBar } from "./FloatingBulkActionBar";
-import { PRIORITY_BADGE, SprintItem } from "./SprintItem";
+import { SprintItem } from "./SprintItem";
+import { TaskRowItem } from "./TaskRowItem";
 
 interface BacklogViewProps {
   sprints: JiraSprint[];
@@ -193,12 +184,19 @@ export function BacklogView({
             {canManageSprint && (
               <Button
                 size="sm"
-                variant="filled"
-                color="vntez"
+                variant="default"
                 radius="md"
                 leftSection={<IconPlus size={15} />}
                 onClick={onOpenCreateSprint}
-                style={{ fontWeight: 600 }}
+                styles={{
+                  root: {
+                    backgroundColor: "#ffffff",
+                    borderColor: "#d4d4d8",
+                    color: "#3f3f46",
+                    fontWeight: 500,
+                    boxShadow: "0 1px 2px rgba(0, 0, 0, 0.05)",
+                  },
+                }}
               >
                 Tạo Sprint mới
               </Button>
@@ -250,14 +248,14 @@ export function BacklogView({
               <Paper
                 p="md"
                 bg="#ffffff"
-                radius="md"
+                radius="lg"
                 onDragOver={(e) => handleDragOver(e, "backlog")}
                 onDragLeave={handleDragLeave}
                 onDrop={(e) => handleDrop(e, null)}
                 style={{
-                  border: `2px ${isDragOver ? "dashed #fb291a" : "solid #e2e8f0"}`,
-                  backgroundColor: isDragOver ? "#fff1f0" : "#ffffff",
-                  boxShadow: "0 1px 3px rgba(0, 0, 0, 0.04)",
+                  border: `1px solid ${isDragOver ? "#dc2626" : "#e4e4e7"}`,
+                  backgroundColor: isDragOver ? "#fef2f2" : "#ffffff",
+                  boxShadow: "0 1px 2px rgba(0, 0, 0, 0.04)",
                   transition: "all 0.15s ease",
                   userSelect: "none",
                 }}
@@ -280,14 +278,36 @@ export function BacklogView({
                       />
                     )}
 
-                    <Text fw={700} fz={16} c="#0f172a">
+                    <Text fw={600} fz={15} c="#18181b">
                       📁 Backlog (Tồn đọng dự án)
                     </Text>
-                    <Badge size="sm" variant="light" color="gray">
+                    <Badge
+                      size="xs"
+                      variant="outline"
+                      style={{
+                        borderColor: "#e4e4e7",
+                        color: "#52525b",
+                        backgroundColor: "#f4f4f5",
+                        fontFamily: "monospace",
+                        fontSize: 11,
+                        padding: "2px 6px",
+                      }}
+                    >
                       {backlogTasks.length} việc
                     </Badge>
                     {totalBacklogPoints > 0 && (
-                      <Badge size="sm" variant="outline" color="vntez">
+                      <Badge
+                        size="xs"
+                        variant="outline"
+                        style={{
+                          borderColor: "#e4e4e7",
+                          color: "#52525b",
+                          backgroundColor: "#f4f4f5",
+                          fontFamily: "monospace",
+                          fontSize: 11,
+                          padding: "2px 6px",
+                        }}
+                      >
                         {totalBacklogPoints} SP
                       </Badge>
                     )}
@@ -300,7 +320,15 @@ export function BacklogView({
                       radius="md"
                       leftSection={<IconPlus size={13} />}
                       onClick={() => onOpenCreateTask(null)}
-                      style={{ fontWeight: 600 }}
+                      styles={{
+                        root: {
+                          backgroundColor: "#ffffff",
+                          borderColor: "#d4d4d8",
+                          color: "#3f3f46",
+                          fontWeight: 500,
+                          boxShadow: "0 1px 2px rgba(0, 0, 0, 0.05)",
+                        },
+                      }}
                     >
                       Thêm vào Backlog
                     </Button>
@@ -331,149 +359,20 @@ export function BacklogView({
                       </Text>
                     </Box>
                   ) : (
-                    backlogTasks.map((t) => {
-                      const isSelected = selectedTaskIds.includes(t.id);
-                      const prio =
-                        PRIORITY_BADGE[t.priority] || PRIORITY_BADGE.medium;
-
-                      return (
-                        <Paper
-                          key={t.id}
-                          px="md"
-                          py={10}
-                          bg={isSelected ? "#fff1f0" : "#ffffff"}
-                          radius="sm"
-                          draggable
-                          onDragStart={(e) => handleDragStart(e, t.id)}
-                          style={{
-                            border: `1px solid ${isSelected ? "#fb291a" : "#e2e8f0"}`,
-                            cursor: "grab",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            transition: "all 0.12s ease",
-                            userSelect: "none",
-                          }}
-                          onMouseEnter={(e) => {
-                            if (!isSelected) {
-                              e.currentTarget.style.backgroundColor = "#f8fafc";
-                              e.currentTarget.style.borderColor = "#ffc5be";
-                            }
-                          }}
-                          onMouseLeave={(e) => {
-                            if (!isSelected) {
-                              e.currentTarget.style.backgroundColor = "#ffffff";
-                              e.currentTarget.style.borderColor = "#e2e8f0";
-                            }
-                          }}
-                          onClick={() => onSelectTask(t)}
-                        >
-                          <Group gap="sm" style={{ flex: 1, minWidth: 0 }}>
-                            <IconGripVertical
-                              size={15}
-                              color="#94a3b8"
-                              style={{ cursor: "grab", flexShrink: 0 }}
-                            />
-
-                            <Checkbox
-                              size="xs"
-                              checked={isSelected}
-                              onClick={(e) => e.stopPropagation()}
-                              onChange={() => toggleSelectTask(t.id)}
-                              aria-label={`Chọn task ${t.id}`}
-                            />
-
-                            <Text
-                              fz={12.5}
-                              fw={700}
-                              c="#fb291a"
-                              ff="var(--font-geist-mono), monospace"
-                              style={{ flexShrink: 0 }}
-                            >
-                              {t.id}
-                            </Text>
-
-                            <Text fz={14} fw={600} c="#0f172a" truncate>
-                              {t.title}
-                            </Text>
-                          </Group>
-
-                          <Group
-                            gap="xs"
-                            style={{ flexShrink: 0, userSelect: "none" }}
-                          >
-                            {/* Avatar Người thực hiện với getGitHubAvatarUrl */}
-                            <Tooltip
-                              label={`Người thực hiện: ${t.assignee?.name || t.assignee?.login || "Chưa gán"}`}
-                              withArrow
-                            >
-                              <Avatar
-                                src={getGitHubAvatarUrl(t.assignee, 48)}
-                                size={22}
-                                radius="xl"
-                                style={{
-                                  border: "1px solid #cbd5e1",
-                                  backgroundColor: "#fff1f0",
-                                  color: "#fb291a",
-                                  fontSize: 10,
-                                  fontWeight: 700,
-                                }}
-                              >
-                                {t.assignee?.login?.slice(0, 2).toUpperCase() ||
-                                  "?"}
-                              </Avatar>
-                            </Tooltip>
-
-                            <Badge
-                              size="xs"
-                              variant="dot"
-                              color={prio.color}
-                              styles={{ root: { textTransform: "none" } }}
-                            >
-                              {prio.label}
-                            </Badge>
-
-                            <Badge size="xs" variant="outline" color="gray">
-                              {getStoryPointsForTask(t)} SP
-                            </Badge>
-
-                            {canManageSprint && sprints.length > 0 && (
-                              <Menu shadow="sm" position="bottom-end">
-                                <Menu.Target>
-                                  <ActionIcon
-                                    size="xs"
-                                    variant="subtle"
-                                    color="gray"
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    <IconDotsVertical size={13} />
-                                  </ActionIcon>
-                                </Menu.Target>
-                                <Menu.Dropdown
-                                  bg="#ffffff"
-                                  style={{ borderColor: "#e2e8f0" }}
-                                >
-                                  <Menu.Label fz={11}>
-                                    Đưa vào Sprint
-                                  </Menu.Label>
-                                  {sprints.map((s) => (
-                                    <Menu.Item
-                                      key={s.id}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        onMoveTaskToSprint(t.id, s.id);
-                                      }}
-                                    >
-                                      🏃 {s.name}
-                                    </Menu.Item>
-                                  ))}
-                                </Menu.Dropdown>
-                              </Menu>
-                            )}
-                          </Group>
-                        </Paper>
-                      );
-                    })
+                    backlogTasks.map((t) => (
+                      <TaskRowItem
+                        key={t.id}
+                        task={t}
+                        isSelected={selectedTaskIds.includes(t.id)}
+                        sprints={sprints}
+                        canManageSprint={canManageSprint}
+                        onSelectTask={onSelectTask}
+                        onToggleSelectTask={toggleSelectTask}
+                        onDragStart={handleDragStart}
+                        onMoveTaskToSprint={onMoveTaskToSprint}
+                        currentSprintId={null}
+                      />
+                    ))
                   )}
                 </Stack>
               </Paper>

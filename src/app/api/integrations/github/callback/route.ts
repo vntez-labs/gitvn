@@ -1,6 +1,5 @@
-import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
-import { attachAuthCookiesToResponse, setAuthCookies } from "@/lib/auth-token";
+import { attachAuthCookiesToResponse } from "@/lib/auth-token";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -41,15 +40,8 @@ export async function GET(request: NextRequest) {
     const redirectUrl = new URL("/dashboard", request.url);
     const response = NextResponse.redirect(redirectUrl);
 
-    // 2. GẮN TRỰC TIẾP Set-Cookie vào Redirect Response (Bắt buộc để trình duyệt nhận cookie)
+    // 2. GẮN TRỰC TIẾP Set-Cookie vào Redirect Response
     attachAuthCookiesToResponse(response, tokenData, request.url);
-
-    // 3. Đồng thời lưu vào cookieStore cho server-side context
-    const isLocalhost =
-      request.url.includes("localhost") || request.url.includes("127.0.0.1");
-    const isSecure = process.env.NODE_ENV === "production" && !isLocalhost;
-    const cookieStore = await cookies();
-    await setAuthCookies(cookieStore, tokenData, isSecure);
 
     return response;
   } catch (error) {

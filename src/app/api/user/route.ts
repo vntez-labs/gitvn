@@ -13,12 +13,14 @@ export async function GET() {
     const res = await fetchGitHubWithAuth("https://api.github.com/user");
 
     if (!res.ok) {
+      console.warn(`[api/user] GitHub /user returned ${res.status}`);
       return NextResponse.json({ user: null }, { status: 200 });
     }
 
     const user = await res.json();
     return NextResponse.json({ user }, { status: 200 });
-  } catch {
+  } catch (err) {
+    console.error("[api/user exception]:", err);
     return NextResponse.json({ user: null }, { status: 200 });
   }
 }

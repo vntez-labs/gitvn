@@ -242,16 +242,16 @@ export function JiraWorkspace() {
                 { value: "backlog", label: "Backlog & Sprints" },
               ]}
               styles={{
-                root: { backgroundColor: "#f1f5f9" },
+                root: { backgroundColor: "#f4f4f5" },
                 indicator: {
                   backgroundColor: "#ffffff",
-                  boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+                  boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
                 },
                 label: {
                   fontSize: 12,
                   fontWeight: 600,
                   padding: "4px 10px",
-                  "&[data-active]": { color: "#fb291a" },
+                  "&[data-active]": { color: "#18181b" },
                 },
               }}
             />
@@ -263,15 +263,15 @@ export function JiraWorkspace() {
                 value={selectedSprintId}
                 onChange={(val) => setSelectedSprintId(val || "active")}
                 allowDeselect={false}
-                leftSection={<IconCalendar size={13} color="#64748b" />}
+                leftSection={<IconCalendar size={13} color="#71717a" />}
                 styles={{
                   input: {
                     fontWeight: 600,
                     fontSize: 12,
                     minWidth: 210,
-                    backgroundColor: "#f8fafc",
-                    borderColor: "#e2e8f0",
-                    color: "#0f172a",
+                    backgroundColor: "#ffffff",
+                    borderColor: "#e4e4e7",
+                    color: "#18181b",
                   },
                 }}
               />
@@ -382,9 +382,17 @@ export function JiraWorkspace() {
               size="xs"
               variant="default"
               radius="md"
-              leftSection={<IconFileCode size={14} color="#fb291a" />}
+              leftSection={<IconFileCode size={14} color="#71717a" />}
               onClick={() => setJsonModalOpen(true)}
-              style={{ fontWeight: 600 }}
+              styles={{
+                root: {
+                  backgroundColor: "#ffffff",
+                  borderColor: "#d4d4d8",
+                  color: "#3f3f46",
+                  fontWeight: 500,
+                  boxShadow: "0 1px 2px rgba(0, 0, 0, 0.05)",
+                },
+              }}
             >
               Import / Export JSON
             </Button>
@@ -392,8 +400,6 @@ export function JiraWorkspace() {
             {canEdit && (
               <Button
                 size="xs"
-                variant="filled"
-                color="vntez"
                 radius="md"
                 leftSection={<IconPlus size={14} />}
                 onClick={() => {
@@ -401,7 +407,17 @@ export function JiraWorkspace() {
                   setQuickAddStatus("todo");
                   setCreateTaskOpen(true);
                 }}
-                style={{ fontWeight: 600 }}
+                styles={{
+                  root: {
+                    backgroundColor: "#dc2626",
+                    color: "#ffffff",
+                    fontWeight: 500,
+                    boxShadow: "0 1px 2px rgba(220, 38, 38, 0.2)",
+                    "&:hover": {
+                      backgroundColor: "#b91c1c",
+                    },
+                  },
+                }}
               >
                 Tạo việc
               </Button>
@@ -427,7 +443,7 @@ export function JiraWorkspace() {
             flexDirection: "column",
             overflow: "hidden",
             minHeight: 0,
-            backgroundColor: "#f8fafc",
+            backgroundColor: "#ffffff",
           }}
         >
           {/* Filters Bar */}
@@ -436,7 +452,7 @@ export function JiraWorkspace() {
             py={8}
             bg="#ffffff"
             style={{
-              borderBottom: "1px solid #e2e8f0",
+              borderBottom: "1px solid #e4e4e7",
               flexShrink: 0,
             }}
           >
@@ -447,12 +463,12 @@ export function JiraWorkspace() {
                   size="xs"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.currentTarget.value)}
-                  leftSection={<IconSearch size={13} color="#94a3b8" />}
+                  leftSection={<IconSearch size={13} color="#a1a1aa" />}
                   style={{ width: 260 }}
                   styles={{
                     input: {
-                      backgroundColor: "#f8fafc",
-                      borderColor: "#e2e8f0",
+                      backgroundColor: "#ffffff",
+                      borderColor: "#e4e4e7",
                       fontSize: 12,
                     },
                   }}
@@ -464,7 +480,7 @@ export function JiraWorkspace() {
                   clearable
                   value={filterPriority}
                   onChange={setFilterPriority}
-                  leftSection={<IconFilter size={13} color="#94a3b8" />}
+                  leftSection={<IconFilter size={13} color="#a1a1aa" />}
                   data={[
                     { value: "urgent", label: "🔴 Khẩn cấp" },
                     { value: "high", label: "🟠 Cao" },
@@ -474,8 +490,8 @@ export function JiraWorkspace() {
                   style={{ width: 140 }}
                   styles={{
                     input: {
-                      backgroundColor: "#f8fafc",
-                      borderColor: "#e2e8f0",
+                      backgroundColor: "#ffffff",
+                      borderColor: "#e4e4e7",
                       fontSize: 12,
                     },
                   }}
@@ -488,7 +504,7 @@ export function JiraWorkspace() {
                   clearable
                   value={filterAssignee}
                   onChange={setFilterAssignee}
-                  leftSection={<IconUser size={13} color="#94a3b8" />}
+                  leftSection={<IconUser size={13} color="#a1a1aa" />}
                   data={[
                     { value: "unassigned", label: "❓ Chưa gán ai" },
                     ...allMembers.map((m) => ({
@@ -499,8 +515,8 @@ export function JiraWorkspace() {
                   style={{ width: 160 }}
                   styles={{
                     input: {
-                      backgroundColor: "#f8fafc",
-                      borderColor: "#e2e8f0",
+                      backgroundColor: "#ffffff",
+                      borderColor: "#e4e4e7",
                       fontSize: 12,
                     },
                   }}

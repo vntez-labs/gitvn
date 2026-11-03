@@ -90,7 +90,7 @@ export default function DashboardPage() {
           >
             <GitVNLogo size={28} />
             <Text fw={700} fz={15} c="#18181b" ff="monospace">
-              Git<span style={{ color: "#6366f1" }}>VN</span>{" "}
+              Git<span style={{ color: "#dc2626" }}>VN</span>{" "}
               <span style={{ color: "#71717a", fontWeight: 500, fontSize: 13 }}>
                 Workspace
               </span>
@@ -116,7 +116,7 @@ export default function DashboardPage() {
               >
                 <Text fz={11} fw={600} c="#52525b">
                   by{" "}
-                  <Text span c="#4f46e5" fw={700}>
+                  <Text span c="#dc2626" fw={700}>
                     @hnamhocit
                   </Text>
                 </Text>
@@ -151,7 +151,7 @@ export default function DashboardPage() {
                   Tài khoản {user.name || user.login}
                 </Menu.Label>
                 <Menu.Item
-                  leftSection={<IconUser size={15} color="#6366f1" />}
+                  leftSection={<IconUser size={15} color="#dc2626" />}
                   component="a"
                   href={`/u/${user.login}`}
                   target="_blank"

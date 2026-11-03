@@ -69,22 +69,22 @@ export function KanbanCard({
       p={12}
       style={{
         backgroundColor: "#ffffff",
-        border: "1px solid #e2e8f0",
+        border: "1px solid #e4e4e7",
         borderRadius: 8,
         cursor: canDrag ? "grab" : "pointer",
-        boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
+        boxShadow: "0 1px 2px rgba(0, 0, 0, 0.04)",
         transition: "all 0.15s cubic-bezier(0.4, 0, 0.2, 1)",
         userSelect: "none",
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = "#ffc5be";
-        e.currentTarget.style.transform = "translateY(-2px)";
-        e.currentTarget.style.boxShadow = "0 6px 14px rgba(251, 41, 26, 0.08)";
+        e.currentTarget.style.borderColor = "#d4d4d8";
+        e.currentTarget.style.transform = "translateY(-1px)";
+        e.currentTarget.style.boxShadow = "0 3px 6px rgba(0, 0, 0, 0.05)";
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = "#e2e8f0";
+        e.currentTarget.style.borderColor = "#e4e4e7";
         e.currentTarget.style.transform = "none";
-        e.currentTarget.style.boxShadow = "0 1px 3px rgba(0, 0, 0, 0.05)";
+        e.currentTarget.style.boxShadow = "0 1px 2px rgba(0, 0, 0, 0.04)";
       }}
     >
       {/* Header: Key & Story Points */}
@@ -92,8 +92,8 @@ export function KanbanCard({
         <Group gap={6} align="center" wrap="nowrap">
           <Text
             fz={11.5}
-            fw={700}
-            c="#fb291a"
+            fw={500}
+            c="#a1a1aa"
             ff="var(--font-geist-mono), monospace"
           >
             {task.id}
@@ -107,7 +107,7 @@ export function KanbanCard({
               <Badge
                 size="xs"
                 variant="outline"
-                color={task.status === "done" ? "teal" : "violet"}
+                color={task.status === "done" ? "teal" : "gray"}
                 leftSection={<IconGitPullRequest size={10} />}
                 component="a"
                 href={task.pullUrl || "#"}
@@ -119,7 +119,7 @@ export function KanbanCard({
                     textTransform: "none",
                     height: 18,
                     padding: "0 6px",
-                    fontWeight: 600,
+                    fontWeight: 500,
                   },
                 }}
               >
@@ -134,27 +134,27 @@ export function KanbanCard({
             <ActionIcon
               size="xs"
               variant="subtle"
-              color="grape"
+              color="gray"
               onClick={(e) => {
                 e.stopPropagation();
                 copyTaskAIPrompt(task);
               }}
             >
-              <IconSparkles size={13} />
+              <IconSparkles size={13} color="#a1a1aa" />
             </ActionIcon>
           </Tooltip>
 
           <Badge
             size="xs"
-            variant="light"
-            color="gray"
-            styles={{
-              root: {
-                fontWeight: 600,
-                fontSize: 10,
-                padding: "2px 6px",
-                height: 18,
-              },
+            variant="outline"
+            style={{
+              borderColor: "#e4e4e7",
+              color: "#52525b",
+              backgroundColor: "#f4f4f5",
+              fontFamily: "monospace",
+              fontSize: 10,
+              padding: "2px 6px",
+              height: 18,
             }}
           >
             {getStoryPointsForTask(task)} SP
@@ -165,8 +165,8 @@ export function KanbanCard({
       {/* Title */}
       <Text
         fz={13.5}
-        fw={600}
-        c="#0f172a"
+        fw={500}
+        c="#27272a"
         lineClamp={2}
         mb={12}
         lh={1.45}

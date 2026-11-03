@@ -77,7 +77,8 @@ export const metadata: Metadata = {
       "Nền tảng quản lý mã nguồn, bảng Kanban Agile, chu kỳ Sprint và tài liệu MDX chuẩn hoá từ hệ sinh thái VNTEZ.",
     images: [
       {
-        url: "/og-image.png",
+        url: "https://gitvn.vercel.app/og-image.png",
+        secureUrl: "https://gitvn.vercel.app/og-image.png",
         width: 1200,
         height: 630,
         type: "image/png",
@@ -91,7 +92,7 @@ export const metadata: Metadata = {
     description:
       "Nền tảng quản lý mã nguồn, bảng Kanban Agile, chu kỳ Sprint và tài liệu MDX từ VNTEZ.",
     creator: "@vntez",
-    images: ["/og-image.png"],
+    images: ["https://gitvn.vercel.app/og-image.png"],
   },
   robots: {
     index: true,

@@ -81,11 +81,12 @@ export function WorkspaceHeader({
   const btnStyles = {
     root: {
       backgroundColor: "#ffffff",
-      borderColor: "#e4e4e7",
+      borderColor: "#d4d4d8",
       color: "#3f3f46",
       fontWeight: 500,
+      fontSize: 13,
       boxShadow: "0 1px 2px rgba(0, 0, 0, 0.05)",
-      borderRadius: 6,
+      borderRadius: 8,
     },
   };
 
@@ -107,7 +108,7 @@ export function WorkspaceHeader({
     >
       <Group justify="space-between" align="center" wrap="nowrap" mb={12}>
         <Group gap="xs" wrap="nowrap">
-          <IconBook size={19} color="#6366f1" />
+          <IconBook size={19} color="#dc2626" />
           <Text fw={600} fz={15} c="#18181b" ff="monospace">
             {selectedRepo.owner.login} /{" "}
             <span style={{ color: "#18181b", fontWeight: 700 }}>
@@ -136,9 +137,9 @@ export function WorkspaceHeader({
               variant="outline"
               leftSection={<IconCheck size={11} />}
               style={{
-                backgroundColor: "#eef2ff",
-                color: "#4338ca",
-                borderColor: "#c7d2fe",
+                backgroundColor: "#fef2f2",
+                color: "#b91c1c",
+                borderColor: "#fecaca",
                 borderRadius: 9999,
                 fontWeight: 500,
                 padding: "2px 8px",
@@ -151,14 +152,14 @@ export function WorkspaceHeader({
               <Button
                 size="compact-xs"
                 variant="subtle"
-                color="indigo"
+                color="red"
                 loading={initializingGitvn}
                 onClick={onInitializeGitvn}
                 leftSection={<IconSparkles size={12} />}
                 style={{
-                  backgroundColor: "#eef2ff",
-                  color: "#4338ca",
-                  borderColor: "#c7d2fe",
+                  backgroundColor: "#fef2f2",
+                  color: "#b91c1c",
+                  borderColor: "#fecaca",
                   borderRadius: 6,
                   fontWeight: 500,
                 }}
@@ -175,7 +176,7 @@ export function WorkspaceHeader({
           <Button
             size="compact-sm"
             variant="default"
-            leftSection={<IconUserPlus size={14} color="#6366f1" />}
+            leftSection={<IconUserPlus size={14} color="#71717a" />}
             onClick={() => setInviteModalOpen(true)}
             styles={btnStyles}
           >
@@ -229,7 +230,7 @@ export function WorkspaceHeader({
                 fontWeight: isActive ? 600 : 500,
                 color: isActive ? "#18181b" : "#71717a",
                 borderBottom: isActive
-                  ? "2px solid #18181b"
+                  ? "2px solid #dc2626"
                   : "2px solid transparent",
                 cursor: "pointer",
                 transition: "all 0.15s ease",
@@ -239,8 +240,7 @@ export function WorkspaceHeader({
               onMouseEnter={(e) => {
                 if (!isActive) {
                   e.currentTarget.style.color = "#18181b";
-                  e.currentTarget.style.backgroundColor =
-                    "rgba(244, 244, 245, 0.6)";
+                  e.currentTarget.style.backgroundColor = "#f4f4f5";
                 }
               }}
               onMouseLeave={(e) => {
@@ -257,9 +257,9 @@ export function WorkspaceHeader({
                   size="xs"
                   variant="outline"
                   style={{
-                    backgroundColor: isActive ? "#e4e4e7" : "#f4f4f5",
-                    borderColor: isActive ? "#d4d4d8" : "#e4e4e7",
-                    color: isActive ? "#18181b" : "#71717a",
+                    backgroundColor: isActive ? "#fef2f2" : "#f4f4f5",
+                    borderColor: isActive ? "#fecaca" : "#e4e4e7",
+                    color: isActive ? "#b91c1c" : "#71717a",
                     fontWeight: 600,
                     fontSize: 11,
                     padding: "0 6px",

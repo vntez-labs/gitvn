@@ -144,10 +144,10 @@ export function DashboardSidebar() {
               <ActionIcon
                 size="sm"
                 variant="subtle"
-                color="indigo"
+                color="red"
                 onClick={() => setCreateModalOpen(true)}
               >
-                <IconPlus size={15} color="#4f46e5" />
+                <IconPlus size={15} color="#dc2626" />
               </ActionIcon>
             </Tooltip>
           </Group>

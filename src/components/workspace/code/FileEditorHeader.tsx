@@ -134,13 +134,13 @@ export function FileEditorHeader({
               loading={saving}
               styles={{
                 root: {
-                  backgroundColor: "#18181b",
+                  backgroundColor: "#dc2626",
                   color: "#ffffff",
                   fontWeight: 500,
-                  boxShadow: "0 1px 2px rgba(0, 0, 0, 0.1)",
+                  boxShadow: "0 1px 2px rgba(220, 38, 38, 0.2)",
                   borderRadius: 6,
                   "&:hover": {
-                    backgroundColor: "#27272a",
+                    backgroundColor: "#b91c1c",
                   },
                 },
               }}

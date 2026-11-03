@@ -73,15 +73,13 @@ export function BranchSelector() {
               key={b.name}
               leftSection={<IconGitBranch size={14} />}
               onClick={() => changeBranch(b.name)}
-              c={currentBranch === b.name ? "#4f46e5" : "#18181b"}
+              c={currentBranch === b.name ? "#dc2626" : "#18181b"}
               style={{
                 fontSize: 13,
                 fontFamily: "monospace",
                 fontWeight: currentBranch === b.name ? 600 : 400,
                 backgroundColor:
-                  currentBranch === b.name
-                    ? "rgba(238, 242, 255, 0.7)"
-                    : "transparent",
+                  currentBranch === b.name ? "#fef2f2" : "transparent",
               }}
             >
               {b.name} {b.name === defaultBranch && "(default)"}
@@ -89,7 +87,7 @@ export function BranchSelector() {
           ))
         ) : (
           <Menu.Item
-            c="#4f46e5"
+            c="#dc2626"
             style={{ fontSize: 13, fontFamily: "monospace", fontWeight: 600 }}
           >
             {defaultBranch} (default)
