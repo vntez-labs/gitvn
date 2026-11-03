@@ -11,7 +11,7 @@ import {
   Tooltip,
 } from "@mantine/core";
 import { IconInbox, IconPlus } from "@tabler/icons-react";
-import { useState } from "react";
+import { memo, useCallback, useState } from "react";
 import type { JiraTask, TaskStatus } from "@/interfaces/jira";
 import { KanbanCard } from "./KanbanCard";
 
@@ -31,7 +31,7 @@ interface KanbanColumnProps {
   canEdit: boolean;
 }
 
-export function KanbanColumn({
+export const KanbanColumn = memo(function KanbanColumn({
   status,
   title,
   color,
@@ -66,13 +66,16 @@ export function KanbanColumn({
     }
   };
 
-  const handleDropOnCard = (e: React.DragEvent, targetIndex: number) => {
-    setIsDragOver(false);
-    const taskId = e.dataTransfer.getData("text/plain");
-    if (taskId) {
-      onDropTask(taskId, status, targetIndex);
-    }
-  };
+  const handleDropOnCard = useCallback(
+    (e: React.DragEvent, targetIndex: number) => {
+      setIsDragOver(false);
+      const taskId = e.dataTransfer.getData("text/plain");
+      if (taskId) {
+        onDropTask(taskId, status, targetIndex);
+      }
+    },
+    [onDropTask, status],
+  );
 
   return (
     <Box
@@ -241,4 +244,4 @@ export function KanbanColumn({
       )}
     </Box>
   );
-}
+});

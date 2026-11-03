@@ -10,7 +10,7 @@ import {
   Tooltip,
 } from "@mantine/core";
 import { IconGitPullRequest, IconSparkles } from "@tabler/icons-react";
-import { useState } from "react";
+import { memo, useState } from "react";
 import { copyTaskAIPrompt } from "@/lib/ai-prompt";
 import { getGitHubAvatarUrl } from "@/lib/avatar";
 import { getStoryPointsForTask } from "@/lib/jira-priority";
@@ -55,7 +55,7 @@ const PRIORITY_CONFIG: Record<
   },
 };
 
-export function KanbanCard({
+export const KanbanCard = memo(function KanbanCard({
   task,
   index,
   onClick,
@@ -306,4 +306,4 @@ export function KanbanCard({
       </Group>
     </Box>
   );
-}
+});

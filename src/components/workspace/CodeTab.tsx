@@ -4,8 +4,8 @@ import { Box, Button, Skeleton, Stack, Text, Textarea } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { IconCheck, IconFileCode, IconGitCommit } from "@tabler/icons-react";
 import axios from "axios";
-import { useEffect, useState } from "react";
-import { CodeViewer } from "@/components/CodeViewer";
+import dynamic from "next/dynamic";
+import { useCallback, useEffect, useState } from "react";
 import { MarkdownViewer } from "@/components/MarkdownViewer";
 import { EmptyRepoView } from "@/components/workspace/EmptyRepoView";
 import type { WorkspaceTab } from "@/components/workspace/WorkspaceHeader";
@@ -14,6 +14,23 @@ import { CodeTreeSkeleton } from "./code/CodeTreeSkeleton";
 import { CreateFileModal } from "./code/CreateFileModal";
 import { FileEditorHeader } from "./code/FileEditorHeader";
 import { FileExplorerDock } from "./code/FileExplorerDock";
+
+const CodeViewer = dynamic(
+  () => import("@/components/CodeViewer").then((mod) => mod.CodeViewer),
+  {
+    ssr: false,
+    loading: () => (
+      <Stack p="xl" gap="sm">
+        <Skeleton height={18} width="35%" radius="sm" />
+        <Skeleton height={18} width="60%" radius="sm" />
+        <Skeleton height={18} width="45%" radius="sm" />
+        <Skeleton height={18} width="75%" radius="sm" />
+        <Skeleton height={18} width="50%" radius="sm" />
+        <Skeleton height={18} width="40%" radius="sm" />
+      </Stack>
+    ),
+  },
+);
 
 interface CodeTabProps {
   onNavigateTab?: (tab: WorkspaceTab) => void;
@@ -36,6 +53,10 @@ export function CodeTab({ onNavigateTab }: CodeTabProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState("");
   const [saving, setSaving] = useState(false);
+
+  const handleOpenCreateFile = useCallback(() => {
+    setCreateFileOpen(true);
+  }, []);
 
   useEffect(() => {
     setIsEditing(false);
@@ -105,7 +126,7 @@ export function CodeTab({ onNavigateTab }: CodeTabProps) {
         tree={tree}
         activeFile={activeFile}
         onSelectFile={selectFile}
-        onCreateFileClick={() => setCreateFileOpen(true)}
+        onCreateFileClick={handleOpenCreateFile}
       />
 
       {/* Editor Content (Right Panel) */}

@@ -21,6 +21,7 @@ import {
   IconPlayerPlay,
   IconPlus,
 } from "@tabler/icons-react";
+import { memo } from "react";
 import type { JiraSprint, JiraTask, SprintStatus } from "@/interfaces/jira";
 import { getStoryPointsForTask } from "@/lib/jira-priority";
 import { TaskRowItem } from "./TaskRowItem";
@@ -51,7 +52,7 @@ interface SprintItemProps {
   onDrop: (e: React.DragEvent, sprintId: string) => void;
 }
 
-export function SprintItem({
+export const SprintItem = memo(function SprintItem({
   sprint,
   sprintTasks,
   allSprints,
@@ -342,4 +343,4 @@ export function SprintItem({
       </Stack>
     </Paper>
   );
-}
+});

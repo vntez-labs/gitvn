@@ -60,7 +60,7 @@ export function DashboardSidebar() {
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
-      await fetchInitialData();
+      await fetchInitialData(true);
       notifications.show({
         title: "Đã cập nhật",
         message:

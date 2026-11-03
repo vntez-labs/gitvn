@@ -12,6 +12,7 @@ import {
   Tooltip,
 } from "@mantine/core";
 import { IconDotsVertical, IconGripVertical } from "@tabler/icons-react";
+import { memo } from "react";
 import type { JiraSprint, JiraTask } from "@/interfaces/jira";
 import { getGitHubAvatarUrl } from "@/lib/avatar";
 import { getStoryPointsForTask } from "@/lib/jira-priority";
@@ -29,7 +30,7 @@ interface TaskRowItemProps {
   currentSprintId?: string | null;
 }
 
-export function TaskRowItem({
+export const TaskRowItem = memo(function TaskRowItem({
   task,
   isSelected,
   sprints,
@@ -214,4 +215,4 @@ export function TaskRowItem({
       </Group>
     </Paper>
   );
-}
+});

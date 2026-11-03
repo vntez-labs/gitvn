@@ -1,25 +1,83 @@
 "use client";
 
-import { Alert, Box, Button, Group, Text } from "@mantine/core";
+import {
+  Alert,
+  Box,
+  Button,
+  Group,
+  Skeleton,
+  Stack,
+  Text,
+} from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { IconAlertCircle, IconCheck, IconSparkles } from "@tabler/icons-react";
 import axios from "axios";
+import dynamic from "next/dynamic";
 import { useCallback, useEffect, useState } from "react";
 import { useDashboardStore } from "@/store/dashboard.store";
 import { BranchActionBanner } from "../workspace/BranchActionBanner";
 import { CodeTab } from "../workspace/CodeTab";
-import { CommitsTab } from "../workspace/CommitsTab";
-import { DocsTab } from "../workspace/docs/DocsTab";
-import { IssuesTab } from "../workspace/IssuesTab";
-import { JiraWorkspace } from "../workspace/jira/JiraWorkspace";
-import { OverviewTab } from "../workspace/OverviewTab";
-import { PullsTab } from "../workspace/PullsTab";
-import { SettingsTab } from "../workspace/SettingsTab";
-import { UpgradeGitvnModal } from "../workspace/UpgradeGitvnModal";
 import {
   WorkspaceHeader,
   type WorkspaceTab,
 } from "../workspace/WorkspaceHeader";
+
+function TabSkeleton() {
+  return (
+    <Box p="xl" style={{ flex: 1, backgroundColor: "#ffffff" }}>
+      <Stack gap="md">
+        <Skeleton height={32} width="30%" radius="sm" />
+        <Skeleton height={20} width="60%" radius="sm" />
+        <Skeleton height={180} radius="md" />
+        <Skeleton height={140} radius="md" />
+      </Stack>
+    </Box>
+  );
+}
+
+const CommitsTab = dynamic(
+  () => import("../workspace/CommitsTab").then((mod) => mod.CommitsTab),
+  { ssr: false, loading: () => <TabSkeleton /> },
+);
+
+const DocsTab = dynamic(
+  () => import("../workspace/docs/DocsTab").then((mod) => mod.DocsTab),
+  { ssr: false, loading: () => <TabSkeleton /> },
+);
+
+const JiraWorkspace = dynamic(
+  () =>
+    import("../workspace/jira/JiraWorkspace").then((mod) => mod.JiraWorkspace),
+  { ssr: false, loading: () => <TabSkeleton /> },
+);
+
+const OverviewTab = dynamic(
+  () => import("../workspace/OverviewTab").then((mod) => mod.OverviewTab),
+  { ssr: false, loading: () => <TabSkeleton /> },
+);
+
+const PullsTab = dynamic(
+  () => import("../workspace/PullsTab").then((mod) => mod.PullsTab),
+  { ssr: false, loading: () => <TabSkeleton /> },
+);
+
+const IssuesTab = dynamic(
+  () => import("../workspace/IssuesTab").then((mod) => mod.IssuesTab),
+  { ssr: false, loading: () => <TabSkeleton /> },
+);
+
+const SettingsTab = dynamic(
+  () => import("../workspace/SettingsTab").then((mod) => mod.SettingsTab),
+  { ssr: false, loading: () => <TabSkeleton /> },
+);
+
+const UpgradeGitvnModal = dynamic(
+  () =>
+    import("../workspace/UpgradeGitvnModal").then(
+      (mod) => mod.UpgradeGitvnModal,
+    ),
+  { ssr: false },
+);
 
 export function RepoWorkspace() {
   const [activeTab, setActiveTab] = useState<WorkspaceTab>("code");
@@ -35,7 +93,14 @@ export function RepoWorkspace() {
   const [upgradeModalOpen, setUpgradeModalOpen] = useState<boolean>(false);
   const [bannerDismissed, setBannerDismissed] = useState<boolean>(false);
   const [initializingGitvn, setInitializingGitvn] = useState<boolean>(false);
+  const [kanbanMounted, setKanbanMounted] = useState<boolean>(false);
   const { selectedRepo, currentBranch } = useDashboardStore();
+
+  useEffect(() => {
+    if (activeTab === "kanban") {
+      setKanbanMounted(true);
+    }
+  }, [activeTab]);
 
   const checkGitvnStatus = useCallback(() => {
     if (!selectedRepo) return;
@@ -184,13 +249,15 @@ export function RepoWorkspace() {
         </Alert>
       )}
 
-      <UpgradeGitvnModal
-        opened={upgradeModalOpen}
-        onClose={() => setUpgradeModalOpen(false)}
-        currentVersion={gitvnVersion}
-        reason={outdatedReason}
-        onUpgraded={checkGitvnStatus}
-      />
+      {upgradeModalOpen && (
+        <UpgradeGitvnModal
+          opened={upgradeModalOpen}
+          onClose={() => setUpgradeModalOpen(false)}
+          currentVersion={gitvnVersion}
+          reason={outdatedReason}
+          onUpgraded={checkGitvnStatus}
+        />
+      )}
 
       <BranchActionBanner onTabChange={setActiveTab} />
 
@@ -198,16 +265,18 @@ export function RepoWorkspace() {
       {activeTab === "commits" && (
         <CommitsTab onCommitsLoaded={setCommitsCount} />
       )}
-      <Box
-        style={{
-          display: activeTab === "kanban" ? "flex" : "none",
-          flex: 1,
-          minHeight: 0,
-          flexDirection: "column",
-        }}
-      >
-        <JiraWorkspace isTabActive={activeTab === "kanban"} />
-      </Box>
+      {(kanbanMounted || activeTab === "kanban") && (
+        <Box
+          style={{
+            display: activeTab === "kanban" ? "flex" : "none",
+            flex: 1,
+            minHeight: 0,
+            flexDirection: "column",
+          }}
+        >
+          <JiraWorkspace isTabActive={activeTab === "kanban"} />
+        </Box>
+      )}
       {activeTab === "docs" && (
         <DocsTab
           onInitializeGitvn={handleInitializeGitvn}

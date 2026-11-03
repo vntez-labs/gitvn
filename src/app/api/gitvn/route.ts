@@ -21,6 +21,24 @@ import {
 } from "@/lib/gitvn-service";
 import { createDefaultConfig } from "@/lib/gitvn-templates";
 
+interface GitvnCacheEntry {
+  data: GitvnRepoStatus;
+  timestamp: number;
+}
+
+const gitvnStatusCache = new Map<string, GitvnCacheEntry>();
+const inFlightRequests = new Map<string, Promise<GitvnRepoStatus | null>>();
+const CACHE_TTL_MS = 60 * 1000; // 60s cache
+
+function invalidateGitvnCache(owner: string, repo: string) {
+  const prefix = `${owner}/${repo}`.toLowerCase();
+  for (const key of gitvnStatusCache.keys()) {
+    if (key.startsWith(prefix)) {
+      gitvnStatusCache.delete(key);
+    }
+  }
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const owner = searchParams.get("owner");
@@ -34,15 +52,42 @@ export async function GET(request: Request) {
     );
   }
 
+  const cacheKey = `${owner}/${repo}@${branch || "default"}`.toLowerCase();
+  const now = Date.now();
+  const cached = gitvnStatusCache.get(cacheKey);
+
+  if (cached && now - cached.timestamp < CACHE_TTL_MS) {
+    return NextResponse.json(cached.data, {
+      headers: {
+        "Cache-Control": "private, max-age=60, stale-while-revalidate=120",
+      },
+    });
+  }
+
   const token = await getAuthToken();
 
-  // 1. Kiểm tra trên GitHub nếu có token
+  // 1. Kiểm tra trên GitHub nếu có token (có cơ chế gộp request song song)
   if (token) {
+    let pending = inFlightRequests.get(cacheKey);
+    if (!pending) {
+      pending = inspectGitHubGitvn(owner, repo, token, branch);
+      inFlightRequests.set(cacheKey, pending);
+    }
+
     try {
-      const ghStatus = await inspectGitHubGitvn(owner, repo, token, branch);
-      if (ghStatus) return NextResponse.json(ghStatus);
+      const ghStatus = await pending;
+      if (ghStatus) {
+        gitvnStatusCache.set(cacheKey, { data: ghStatus, timestamp: now });
+        return NextResponse.json(ghStatus, {
+          headers: {
+            "Cache-Control": "private, max-age=60, stale-while-revalidate=120",
+          },
+        });
+      }
     } catch (err) {
       console.warn("[inspectGitHubGitvn error]:", err);
+    } finally {
+      inFlightRequests.delete(cacheKey);
     }
   }
 
@@ -149,6 +194,9 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
+
+    // Xóa cache để các request GET sau đó nhận trạng thái mới nhất
+    invalidateGitvnCache(owner, repo);
 
     const token = await getAuthToken();
     const user = await getAuthUser();

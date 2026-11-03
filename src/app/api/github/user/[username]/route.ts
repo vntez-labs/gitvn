@@ -30,6 +30,13 @@ function parseProfileBadges(html: string) {
   return { achievements, isPro };
 }
 
+interface UserProfileCacheEntry {
+  data: any;
+  timestamp: number;
+}
+const userProfileCache = new Map<string, UserProfileCacheEntry>();
+const CACHE_TTL_MS = 2 * 60 * 1000; // 2 phút cache
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ username: string }> },
@@ -37,6 +44,17 @@ export async function GET(
   const { username } = await params;
   if (!username) {
     return NextResponse.json({ error: "Thiếu username" }, { status: 400 });
+  }
+
+  const cacheKey = username.toLowerCase();
+  const requestTime = Date.now();
+  const cached = userProfileCache.get(cacheKey);
+  if (cached && requestTime - cached.timestamp < CACHE_TTL_MS) {
+    return NextResponse.json(cached.data, {
+      headers: {
+        "Cache-Control": "public, s-maxage=120, stale-while-revalidate=300",
+      },
+    });
   }
 
   const token = await getValidAuthToken();
@@ -136,7 +154,8 @@ export async function GET(
       fetch(`https://github.com/${username}?tab=achievements`, {
         headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" },
         cache: "no-store",
-      }),
+        signal: AbortSignal.timeout(3000), // Timeout 3s để không bao giờ block trang
+      }).catch(() => null),
     ]);
 
     const gqlData = await gqlRes.json();
@@ -160,9 +179,10 @@ export async function GET(
         );
       }
     }
-    const profileHtml = profileHtmlRes.ok
-      ? await profileHtmlRes.text().catch(() => "")
-      : "";
+    const profileHtml =
+      profileHtmlRes && profileHtmlRes.ok
+        ? await profileHtmlRes.text().catch(() => "")
+        : "";
     const { achievements, isPro } = parseProfileBadges(profileHtml);
 
     // 1. Phân bổ ngôn ngữ lập trình theo byte thật
@@ -247,88 +267,91 @@ export async function GET(
       0,
     );
 
-    return NextResponse.json(
-      {
-        user: {
-          name: userData.name,
-          login: userData.login,
-          avatar_url: userData.avatarUrl,
-          bio: userData.bio,
-          company: userData.company,
-          location: userData.location,
-          email: userData.email,
-          blog: userData.websiteUrl,
-          created_at: userData.createdAt,
-          followers: userData.followers?.totalCount ?? 0,
-          following: userData.following?.totalCount ?? 0,
-          html_url: `https://github.com/${userData.login}`,
-        },
-        seniority: {
-          totalDays,
-          years,
-          months,
-          formattedJoined: createdDate.toLocaleDateString("vi-VN", {
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-          }),
-        },
-        streak: {
-          currentStreak,
-          maxStreak,
-        },
-        shipReadiness: {
-          totalReleases,
-          reposWithLicense,
-          licenseRate:
-            repos.length > 0
-              ? Math.round((reposWithLicense / repos.length) * 100)
-              : 0,
-        },
-        isPro,
-        achievements,
-        orgs: userData.organizations?.nodes || [],
-        readme: readmeContent,
-        pinnedRepos: repos.slice(0, 6),
-        languages,
-        totalCodeBytes: totalBytes,
-        stats: {
-          totalContributions: calendar?.totalContributions ?? 0,
-          totalCommits:
-            userData.contributionsCollection?.totalCommitContributions ?? 0,
-          totalPRs:
-            userData.pullRequests?.totalCount ??
-            userData.contributionsCollection?.totalPullRequestContributions ??
-            0,
-          recentPRs:
-            userData.contributionsCollection?.totalPullRequestContributions ??
-            0,
-          totalIssues:
-            userData.issues?.totalCount ??
-            userData.contributionsCollection?.totalIssueContributions ??
-            0,
-          recentIssues:
-            userData.contributionsCollection?.totalIssueContributions ?? 0,
-          totalReviews:
-            userData.contributionsCollection
-              ?.totalPullRequestReviewContributions ?? 0,
-          contributedRepoCount:
-            userData.repositoriesContributedTo?.totalCount ??
-            userData.contributionsCollection
-              ?.totalRepositoriesWithContributedCommits ??
-            0,
-          totalStars,
-          totalForks,
-          totalRepos: userData.repositories?.totalCount ?? 0,
-        },
-        calendarWeeks: calendar?.weeks || [],
+    const payload = {
+      user: {
+        name: userData.name,
+        login: userData.login,
+        avatar_url: userData.avatarUrl,
+        bio: userData.bio,
+        company: userData.company,
+        location: userData.location,
+        email: userData.email,
+        blog: userData.websiteUrl,
+        created_at: userData.createdAt,
+        followers: userData.followers?.totalCount ?? 0,
+        following: userData.following?.totalCount ?? 0,
+        html_url: `https://github.com/${userData.login}`,
       },
-      {
-        headers: {
-          "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
-        },
+      seniority: {
+        totalDays,
+        years,
+        months,
+        formattedJoined: createdDate.toLocaleDateString("vi-VN", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        }),
       },
-    );
+      streak: {
+        currentStreak,
+        maxStreak,
+      },
+      shipReadiness: {
+        totalReleases,
+        reposWithLicense,
+        licenseRate:
+          repos.length > 0
+            ? Math.round((reposWithLicense / repos.length) * 100)
+            : 0,
+      },
+      isPro,
+      achievements,
+      orgs: userData.organizations?.nodes || [],
+      readme: readmeContent,
+      pinnedRepos: repos.slice(0, 6),
+      languages,
+      totalCodeBytes: totalBytes,
+      stats: {
+        totalContributions: calendar?.totalContributions ?? 0,
+        totalCommits:
+          userData.contributionsCollection?.totalCommitContributions ?? 0,
+        totalPRs:
+          userData.pullRequests?.totalCount ??
+          userData.contributionsCollection?.totalPullRequestContributions ??
+          0,
+        recentPRs:
+          userData.contributionsCollection?.totalPullRequestContributions ?? 0,
+        totalIssues:
+          userData.issues?.totalCount ??
+          userData.contributionsCollection?.totalIssueContributions ??
+          0,
+        recentIssues:
+          userData.contributionsCollection?.totalIssueContributions ?? 0,
+        totalReviews:
+          userData.contributionsCollection
+            ?.totalPullRequestReviewContributions ?? 0,
+        contributedRepoCount:
+          userData.repositoriesContributedTo?.totalCount ??
+          userData.contributionsCollection
+            ?.totalRepositoriesWithContributedCommits ??
+          0,
+        totalStars,
+        totalForks,
+        totalRepos: userData.repositories?.totalCount ?? 0,
+      },
+      calendarWeeks: calendar?.weeks || [],
+    };
+
+    userProfileCache.set(cacheKey, {
+      data: payload,
+      timestamp: Date.now(),
+    });
+
+    return NextResponse.json(payload, {
+      headers: {
+        "Cache-Control": "public, s-maxage=120, stale-while-revalidate=300",
+      },
+    });
   } catch (error) {
     console.error("[API /api/github/user] Error:", error);
     return NextResponse.json(

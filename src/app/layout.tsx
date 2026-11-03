@@ -5,12 +5,7 @@ import { JetBrains_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import "@mantine/core/styles.css";
 
 // 2. Styles của các package mở rộng
-import "@mantine/dates/styles.css";
 import "@mantine/notifications/styles.css";
-import "@mantine/code-highlight/styles.css";
-import "@mantine/spotlight/styles.css";
-import "@mantine/charts/styles.css";
-import "@mantine/dropzone/styles.css";
 import "@mantine/nprogress/styles.css";
 
 // 3. Global CSS của dự án (đặt sau cùng để có thể override khi cần)

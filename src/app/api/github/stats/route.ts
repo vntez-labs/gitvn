@@ -8,7 +8,7 @@ interface CacheEntry {
 }
 
 const statsCache = new Map<string, CacheEntry>();
-const CACHE_TTL_MS = 15 * 1000; // 15s cache để dữ liệu luôn tươi mới khi refresh/switch tab
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 phút cache (người dùng có thể nhấn Refresh để xóa cache ngay lập tức)
 
 // Helper parse JSON an toàn tuyệt đối
 async function safeFetchJson(
@@ -70,7 +70,11 @@ export async function GET(request: Request) {
 
   // 1. Trả về cache nếu còn trong hạn và không yêu cầu refresh
   if (!forceRefresh && cached && now - cached.timestamp < CACHE_TTL_MS) {
-    return NextResponse.json(cached.data);
+    return NextResponse.json(cached.data, {
+      headers: {
+        "Cache-Control": "private, max-age=300, stale-while-revalidate=600",
+      },
+    });
   }
 
   const token = await getValidAuthToken();

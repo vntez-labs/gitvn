@@ -11,7 +11,7 @@ import {
   Text,
 } from "@mantine/core";
 import { IconInbox, IconPlus } from "@tabler/icons-react";
-import { useMemo, useState } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import type { JiraSprint, JiraTask, SprintStatus } from "@/interfaces/jira";
 import { getStoryPointsForTask } from "@/lib/jira-priority";
 import { FloatingBulkActionBar } from "./FloatingBulkActionBar";
@@ -32,7 +32,7 @@ interface BacklogViewProps {
   canCreateBacklog: boolean;
 }
 
-export function BacklogView({
+export const BacklogView = memo(function BacklogView({
   sprints,
   tasks,
   onSelectTask,
@@ -57,68 +57,86 @@ export function BacklogView({
     return backlogTasks.reduce((sum, t) => sum + getStoryPointsForTask(t), 0);
   }, [backlogTasks]);
 
-  // Kéo thả HTML5
-  const handleDragStart = (e: React.DragEvent, taskId: string) => {
-    e.dataTransfer.setData("text/plain", taskId);
-  };
-
-  const handleDragOver = (e: React.DragEvent, targetId: string) => {
-    e.preventDefault();
-    if (dragOverTargetId !== targetId) {
-      setDragOverTargetId(targetId);
+  const tasksBySprintId = useMemo(() => {
+    const map: Record<string, JiraTask[]> = {};
+    for (const s of sprints) {
+      map[s.id] = [];
     }
-  };
-
-  const handleDragLeave = () => {
-    setDragOverTargetId(null);
-  };
-
-  const handleDrop = (e: React.DragEvent, targetSprintId: string | null) => {
-    e.preventDefault();
-    setDragOverTargetId(null);
-    const taskId = e.dataTransfer.getData("text/plain");
-    if (!taskId) return;
-
-    if (selectedTaskIds.includes(taskId) && selectedTaskIds.length > 1) {
-      if (onBulkMoveTasks) {
-        onBulkMoveTasks(selectedTaskIds, targetSprintId);
-      } else {
-        selectedTaskIds.forEach((id) => onMoveTaskToSprint(id, targetSprintId));
+    for (const t of tasks) {
+      if (t.sprintId && map[t.sprintId]) {
+        map[t.sprintId].push(t);
       }
-      setSelectedTaskIds([]);
-    } else {
-      onMoveTaskToSprint(taskId, targetSprintId);
     }
-  };
+    return map;
+  }, [sprints, tasks]);
+
+  // Kéo thả HTML5
+  const handleDragStart = useCallback((e: React.DragEvent, taskId: string) => {
+    e.dataTransfer.setData("text/plain", taskId);
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent, targetId: string) => {
+    e.preventDefault();
+    setDragOverTargetId((prev) => (prev !== targetId ? targetId : prev));
+  }, []);
+
+  const handleDragLeave = useCallback(() => {
+    setDragOverTargetId(null);
+  }, []);
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent, targetSprintId: string | null) => {
+      e.preventDefault();
+      setDragOverTargetId(null);
+      const taskId = e.dataTransfer.getData("text/plain");
+      if (!taskId) return;
+
+      if (selectedTaskIds.includes(taskId) && selectedTaskIds.length > 1) {
+        if (onBulkMoveTasks) {
+          onBulkMoveTasks(selectedTaskIds, targetSprintId);
+        } else {
+          selectedTaskIds.forEach((id) =>
+            onMoveTaskToSprint(id, targetSprintId),
+          );
+        }
+        setSelectedTaskIds([]);
+      } else {
+        onMoveTaskToSprint(taskId, targetSprintId);
+      }
+    },
+    [selectedTaskIds, onBulkMoveTasks, onMoveTaskToSprint],
+  );
 
   // Chọn checkbox nhiều task
-  const toggleSelectTask = (taskId: string) => {
+  const toggleSelectTask = useCallback((taskId: string) => {
     setSelectedTaskIds((prev) =>
       prev.includes(taskId)
         ? prev.filter((id) => id !== taskId)
         : [...prev, taskId],
     );
-  };
+  }, []);
 
-  const toggleSelectAllSprint = (sprintTasks: JiraTask[]) => {
+  const toggleSelectAllSprint = useCallback((sprintTasks: JiraTask[]) => {
     const taskIds = sprintTasks.map((t) => t.id);
-    const allSelected = taskIds.every((id) => selectedTaskIds.includes(id));
-    if (allSelected) {
-      setSelectedTaskIds((prev) => prev.filter((id) => !taskIds.includes(id)));
-    } else {
-      setSelectedTaskIds((prev) => Array.from(new Set([...prev, ...taskIds])));
-    }
-  };
+    setSelectedTaskIds((prev) => {
+      const allSelected = taskIds.every((id) => prev.includes(id));
+      if (allSelected) {
+        return prev.filter((id) => !taskIds.includes(id));
+      }
+      return Array.from(new Set([...prev, ...taskIds]));
+    });
+  }, []);
 
-  const toggleSelectAllBacklog = () => {
+  const toggleSelectAllBacklog = useCallback(() => {
     const taskIds = backlogTasks.map((t) => t.id);
-    const allSelected = taskIds.every((id) => selectedTaskIds.includes(id));
-    if (allSelected) {
-      setSelectedTaskIds((prev) => prev.filter((id) => !taskIds.includes(id)));
-    } else {
-      setSelectedTaskIds((prev) => Array.from(new Set([...prev, ...taskIds])));
-    }
-  };
+    setSelectedTaskIds((prev) => {
+      const allSelected = taskIds.every((id) => prev.includes(id));
+      if (allSelected) {
+        return prev.filter((id) => !taskIds.includes(id));
+      }
+      return Array.from(new Set([...prev, ...taskIds]));
+    });
+  }, [backlogTasks]);
 
   // Thao tác hàng loạt
   const handleBulkMove = (targetSprintId: string | null) => {
@@ -207,7 +225,7 @@ export function BacklogView({
         {/* Danh sách Sprints */}
         <Stack gap="lg">
           {sprints.map((sprint) => {
-            const sprintTasks = tasks.filter((t) => t.sprintId === sprint.id);
+            const sprintTasks = tasksBySprintId[sprint.id] || [];
             const isDragOver = dragOverTargetId === sprint.id;
 
             return (
@@ -392,4 +410,4 @@ export function BacklogView({
       />
     </Box>
   );
-}
+});

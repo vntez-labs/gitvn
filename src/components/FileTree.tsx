@@ -2,7 +2,7 @@
 
 import { Box, Collapse, Group, Text, UnstyledButton } from "@mantine/core";
 import { IconChevronDown, IconChevronRight } from "@tabler/icons-react";
-import { useState } from "react";
+import { memo, useMemo, useState } from "react";
 import {
   getIconForFile,
   getIconForFolder,
@@ -95,7 +95,7 @@ function buildTree(flatData: TreeNode[]) {
   return sortNodes(root);
 }
 
-function TreeItem({
+const TreeItem = memo(function TreeItem({
   node,
   depth,
   activePath,
@@ -195,10 +195,14 @@ function TreeItem({
       )}
     </Box>
   );
-}
+});
 
-export function FileTree({ data, activePath, onFileClick }: FileTreeProps) {
-  const tree = buildTree(data);
+export const FileTree = memo(function FileTree({
+  data,
+  activePath,
+  onFileClick,
+}: FileTreeProps) {
+  const tree = useMemo(() => buildTree(data), [data]);
   return (
     <Box py={2}>
       {tree.map((node: any) => (
@@ -212,4 +216,4 @@ export function FileTree({ data, activePath, onFileClick }: FileTreeProps) {
       ))}
     </Box>
   );
-}
+});

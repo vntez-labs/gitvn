@@ -1,11 +1,13 @@
 "use client";
 
-import { Badge, Box, Group, Paper, Text } from "@mantine/core";
+import { Badge, Box, Button, Group, Paper, Text } from "@mantine/core";
 import { IconMinus, IconPlus } from "@tabler/icons-react";
+import { memo, useMemo, useState } from "react";
 import { getIconForFile } from "vscode-icons-js";
 
 const ICON_BASE_URL =
   "https://cdn.jsdelivr.net/gh/vscode-icons/vscode-icons@master/icons";
+const MAX_PREVIEW_LINES = 250;
 
 interface FileDiff {
   filename: string;
@@ -15,9 +17,16 @@ interface FileDiff {
   patch?: string;
 }
 
-export function DiffViewer({ file }: { file: FileDiff }) {
-  const lines = (file.patch || "").split("\n");
+export const DiffViewer = memo(function DiffViewer({
+  file,
+}: {
+  file: FileDiff;
+}) {
+  const [showAll, setShowAll] = useState(false);
+  const lines = useMemo(() => (file.patch || "").split("\n"), [file.patch]);
   const iconName = getIconForFile(file.filename) || "default_file.svg";
+  const hasTruncated = lines.length > MAX_PREVIEW_LINES && !showAll;
+  const visibleLines = hasTruncated ? lines.slice(0, MAX_PREVIEW_LINES) : lines;
 
   return (
     <Paper
@@ -96,55 +105,77 @@ export function DiffViewer({ file }: { file: FileDiff }) {
         }}
       >
         {lines.length > 0 && file.patch ? (
-          lines.map((line, idx) => {
-            const isAdd = line.startsWith("+") && !line.startsWith("+++");
-            const isDel = line.startsWith("-") && !line.startsWith("---");
-            const isHunkHeader = line.startsWith("@@");
-            const isNoNewline = line.startsWith("\\");
+          <>
+            {visibleLines.map((line, idx) => {
+              const isAdd = line.startsWith("+") && !line.startsWith("+++");
+              const isDel = line.startsWith("-") && !line.startsWith("---");
+              const isHunkHeader = line.startsWith("@@");
+              const isNoNewline = line.startsWith("\\");
 
-            let content = line;
-            if (isAdd || isDel) {
-              content = line.slice(1);
-            } else if (line.startsWith(" ")) {
-              content = line.slice(1);
-            }
+              let content = line;
+              if (isAdd || isDel) {
+                content = line.slice(1);
+              } else if (line.startsWith(" ")) {
+                content = line.slice(1);
+              }
 
-            let bg = "transparent";
-            let color = "#334155";
-            let borderLeft = "3px solid transparent";
+              let bg = "transparent";
+              let color = "#334155";
+              let borderLeft = "3px solid transparent";
 
-            if (isAdd) {
-              bg = "rgba(34, 197, 94, 0.12)";
-              color = "#166534";
-              borderLeft = "3px solid #22c55e";
-            } else if (isDel) {
-              bg = "rgba(239, 68, 68, 0.12)";
-              color = "#991b1b";
-              borderLeft = "3px solid #ef4444";
-            } else if (isHunkHeader) {
-              bg = "rgba(59, 130, 246, 0.08)";
-              color = "#1d4ed8";
-            } else if (isNoNewline) {
-              color = "#94a3b8";
-            }
+              if (isAdd) {
+                bg = "rgba(34, 197, 94, 0.12)";
+                color = "#166534";
+                borderLeft = "3px solid #22c55e";
+              } else if (isDel) {
+                bg = "rgba(239, 68, 68, 0.12)";
+                color = "#991b1b";
+                borderLeft = "3px solid #ef4444";
+              } else if (isHunkHeader) {
+                bg = "rgba(59, 130, 246, 0.08)";
+                color = "#1d4ed8";
+              } else if (isNoNewline) {
+                color = "#94a3b8";
+              }
 
-            return (
+              return (
+                <Box
+                  key={idx}
+                  px="md"
+                  style={{
+                    backgroundColor: bg,
+                    color,
+                    borderLeft,
+                    whiteSpace: "pre-wrap",
+                    wordBreak: "break-all",
+                    minHeight: 20,
+                  }}
+                >
+                  {content || "\u00A0"}
+                </Box>
+              );
+            })}
+
+            {hasTruncated && (
               <Box
-                key={idx}
-                px="md"
+                p="xs"
+                ta="center"
                 style={{
-                  backgroundColor: bg,
-                  color,
-                  borderLeft,
-                  whiteSpace: "pre-wrap",
-                  wordBreak: "break-all",
-                  minHeight: 20,
+                  borderTop: "1px dashed #e2e8f0",
+                  backgroundColor: "#f8fafc",
                 }}
               >
-                {content || "\u00A0"}
+                <Button
+                  size="xs"
+                  variant="subtle"
+                  color="gray"
+                  onClick={() => setShowAll(true)}
+                >
+                  Hiển thị thêm {lines.length - MAX_PREVIEW_LINES} dòng diff...
+                </Button>
               </Box>
-            );
-          })
+            )}
+          </>
         ) : (
           <Box p="md" ta="center">
             <Text fz="xs" c="#64748b">
@@ -155,4 +186,4 @@ export function DiffViewer({ file }: { file: FileDiff }) {
       </Box>
     </Paper>
   );
-}
+});

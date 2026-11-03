@@ -143,19 +143,33 @@ export async function fetchBoardFromGitHub(
     if (folderRes.ok) {
       const items = await folderRes.json();
       if (Array.isArray(items) && items.length > 0) {
+        const mdItems = items.filter(
+          (item: any) => item.type === "file" && item.name.endsWith(".md"),
+        );
+
+        const fetchSingleTask = async (item: any): Promise<JiraTask | null> => {
+          try {
+            const fileRes = await fetch(item.download_url, {
+              cache: "no-store",
+              signal: AbortSignal.timeout(6000),
+            });
+            if (fileRes.ok) {
+              const text = await fileRes.text();
+              const taskId = item.name.replace(/\.md$/, "");
+              return parseTaskMarkdown(text, taskId);
+            }
+          } catch {}
+          return null;
+        };
+
+        // Tải song song theo batch 10 tasks để không bị nghẽn tuần tự
         const individualTasks: JiraTask[] = [];
-        for (const item of items) {
-          if (item.type === "file" && item.name.endsWith(".md")) {
-            try {
-              const fileRes = await fetch(item.download_url, {
-                cache: "no-store",
-              });
-              if (fileRes.ok) {
-                const text = await fileRes.text();
-                const taskId = item.name.replace(/\.md$/, "");
-                individualTasks.push(parseTaskMarkdown(text, taskId));
-              }
-            } catch {}
+        const BATCH_SIZE = 10;
+        for (let i = 0; i < mdItems.length; i += BATCH_SIZE) {
+          const batch = mdItems.slice(i, i + BATCH_SIZE);
+          const results = await Promise.all(batch.map(fetchSingleTask));
+          for (const task of results) {
+            if (task) individualTasks.push(task);
           }
         }
         if (individualTasks.length > 0) {

@@ -20,7 +20,7 @@ interface DashboardState {
   fileContent: string;
   loadingContent: boolean;
 
-  fetchInitialData: () => Promise<void>;
+  fetchInitialData: (forceRefresh?: boolean) => Promise<void>;
   acceptInvitation: (invitationId: number) => Promise<boolean>;
   selectOrg: (org: string | null) => void;
   selectRepo: (
@@ -50,10 +50,13 @@ export const useDashboardStore = create<DashboardState>()(
       fileContent: "",
       loadingContent: false,
 
-      fetchInitialData: async () => {
+      fetchInitialData: async (forceRefresh = false) => {
         set({ dataLoading: true });
         try {
-          const { data } = await axios.get("/api/user/data");
+          const url = forceRefresh
+            ? "/api/user/data?refresh=true"
+            : "/api/user/data";
+          const { data } = await axios.get(url);
           set({
             repos: data.repos || [],
             orgs: data.orgs || [],

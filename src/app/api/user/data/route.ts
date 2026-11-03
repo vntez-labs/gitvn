@@ -8,11 +8,37 @@ import {
 } from "@/lib/auth-token";
 import { cookies } from "next/headers";
 
-export async function GET() {
+interface CacheEntry {
+  data: any;
+  timestamp: number;
+}
+const userDataCache = new Map<string, CacheEntry>();
+const CACHE_TTL_MS = 60 * 1000; // 60s cache in-memory
+
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const forceRefresh = searchParams.get("refresh") === "true";
+
   let token = await getValidAuthToken();
 
   if (!token) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const cacheKey = token.slice(-20);
+  const now = Date.now();
+
+  if (forceRefresh) {
+    userDataCache.delete(cacheKey);
+  }
+
+  const cached = userDataCache.get(cacheKey);
+  if (!forceRefresh && cached && now - cached.timestamp < CACHE_TTL_MS) {
+    return NextResponse.json(cached.data, {
+      headers: {
+        "Cache-Control": "private, max-age=60, stale-while-revalidate=120",
+      },
+    });
   }
 
   const getHeaders = (t: string | null) => ({
@@ -184,10 +210,17 @@ export async function GET() {
       }
     });
 
-    // 5. Quét toàn bộ repo của các Organization để không bỏ sót repo mới tạo của thành viên khác trong org
+    // 5. Quét thêm repo của các Organization chưa có repo trong danh sách
     const orgsList = Array.from(orgsMap.values());
-    if (orgsList.length > 0) {
-      const extraReposPromises = orgsList.slice(0, 10).map(async (org) => {
+    const orgsNeedingScan = orgsList
+      .filter((org) => {
+        const orgKey = org.login.toLowerCase();
+        return !repos.some((r) => r.owner?.login?.toLowerCase() === orgKey);
+      })
+      .slice(0, 3); // Giới hạn tối đa 3 org chưa có repo thay vì quét mù quáng 10 orgs
+
+    if (orgsNeedingScan.length > 0) {
+      const extraReposPromises = orgsNeedingScan.map(async (org) => {
         try {
           const orgRepos = await safeFetchJson(
             `https://api.github.com/orgs/${org.login}/repos?per_page=100&type=all&sort=updated`,
@@ -231,18 +264,19 @@ export async function GET() {
       }
     });
 
-    return NextResponse.json(
-      {
-        repos,
-        orgs: finalOrgs,
-        invitations: Array.isArray(invitationsData) ? invitationsData : [],
+    const payload = {
+      repos,
+      orgs: finalOrgs,
+      invitations: Array.isArray(invitationsData) ? invitationsData : [],
+    };
+
+    userDataCache.set(cacheKey, { data: payload, timestamp: now });
+
+    return NextResponse.json(payload, {
+      headers: {
+        "Cache-Control": "private, max-age=60, stale-while-revalidate=120",
       },
-      {
-        headers: {
-          "Cache-Control": "private, max-age=15, stale-while-revalidate=60",
-        },
-      },
-    );
+    });
   } catch (error) {
     console.error("Lỗi API user/data:", error);
     return NextResponse.json(
