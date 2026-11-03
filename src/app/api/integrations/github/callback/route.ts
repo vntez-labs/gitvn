@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
-import { setAuthCookies } from "@/lib/auth-token";
+import { attachAuthCookiesToResponse, setAuthCookies } from "@/lib/auth-token";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -37,12 +37,21 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Lưu toàn bộ access token, refresh token và thời hạn sống vào HTTP-only cookies
-    const cookieStore = await cookies();
-    await setAuthCookies(cookieStore, tokenData);
+    // 1. Tạo redirect response
+    const redirectUrl = new URL("/dashboard", request.url);
+    const response = NextResponse.redirect(redirectUrl);
 
-    // Redirect to home or dashboard
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    // 2. GẮN TRỰC TIẾP Set-Cookie vào Redirect Response (Bắt buộc để trình duyệt nhận cookie)
+    attachAuthCookiesToResponse(response, tokenData, request.url);
+
+    // 3. Đồng thời lưu vào cookieStore cho server-side context
+    const isLocalhost =
+      request.url.includes("localhost") || request.url.includes("127.0.0.1");
+    const isSecure = process.env.NODE_ENV === "production" && !isLocalhost;
+    const cookieStore = await cookies();
+    await setAuthCookies(cookieStore, tokenData, isSecure);
+
+    return response;
   } catch (error) {
     console.error("GitHub OAuth callback error:", error);
     return NextResponse.json(

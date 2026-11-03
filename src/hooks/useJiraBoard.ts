@@ -38,6 +38,7 @@ export function useJiraBoard() {
   const [selectedSprintId, setSelectedSprintId] = useState<string>("active");
   const [searchQuery, setSearchQuery] = useState("");
   const [filterPriority, setFilterPriority] = useState<string | null>(null);
+  const [filterAssignee, setFilterAssignee] = useState<string | null>(null);
   const [onlyMyTasks, setOnlyMyTasks] = useState(false);
   const [repoMembers, setRepoMembers] = useState<TaskAssignee[]>([]);
   const [repoPulls, setRepoPulls] = useState<GitHubPullItem[]>([]);
@@ -411,8 +412,12 @@ export function useJiraBoard() {
   const filteredTasks = useMemo(() => {
     if (!boardData?.tasks) return [];
     return boardData.tasks.filter((task) => {
-      if (effectiveSprintId !== "all" && task.sprintId !== effectiveSprintId) {
-        return false;
+      if (effectiveSprintId !== "all") {
+        if (effectiveSprintId === "null") {
+          if (task.sprintId) return false;
+        } else if (task.sprintId !== effectiveSprintId) {
+          return false;
+        }
       }
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
@@ -422,6 +427,15 @@ export function useJiraBoard() {
         if (!matchTitle && !matchId && !matchAssignee) return false;
       }
       if (filterPriority && task.priority !== filterPriority) return false;
+      if (filterAssignee) {
+        if (filterAssignee === "unassigned") {
+          if (task.assignee) return false;
+        } else if (
+          task.assignee?.login.toLowerCase() !== filterAssignee.toLowerCase()
+        ) {
+          return false;
+        }
+      }
       if (onlyMyTasks && user) {
         if (task.assignee?.login.toLowerCase() !== user.login.toLowerCase()) {
           return false;
@@ -434,6 +448,7 @@ export function useJiraBoard() {
     effectiveSprintId,
     searchQuery,
     filterPriority,
+    filterAssignee,
     onlyMyTasks,
     user,
   ]);
@@ -498,6 +513,8 @@ export function useJiraBoard() {
     setSearchQuery,
     filterPriority,
     setFilterPriority,
+    filterAssignee,
+    setFilterAssignee,
     onlyMyTasks,
     setOnlyMyTasks,
     repoMembers,

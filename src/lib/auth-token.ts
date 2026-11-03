@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import type { NextResponse } from "next/server";
 
 export interface GitHubTokenResponse {
   access_token: string;
@@ -12,13 +13,70 @@ export interface GitHubTokenResponse {
 }
 
 /**
+ * Đính kèm trực tiếp Set-Cookie vào NextResponse
+ * (Bắt buộc đối với NextResponse.redirect trong Route Handlers để trình duyệt nhận cookie)
+ */
+export function attachAuthCookiesToResponse(
+  response: NextResponse,
+  tokenData: GitHubTokenResponse,
+  requestUrl?: string,
+) {
+  const isLocalhost =
+    requestUrl?.includes("localhost") || requestUrl?.includes("127.0.0.1");
+  const isProd = process.env.NODE_ENV === "production" && !isLocalhost;
+  const accessMaxAge = tokenData.expires_in || 60 * 60 * 24 * 30;
+  const refreshMaxAge =
+    tokenData.refresh_token_expires_in || 60 * 60 * 24 * 180;
+
+  response.cookies.set({
+    name: "github_access_token",
+    value: tokenData.access_token,
+    httpOnly: true,
+    secure: isProd,
+    path: "/",
+    maxAge: accessMaxAge,
+    sameSite: "lax",
+  });
+
+  if (tokenData.refresh_token) {
+    response.cookies.set({
+      name: "github_refresh_token",
+      value: tokenData.refresh_token,
+      httpOnly: true,
+      secure: isProd,
+      path: "/",
+      maxAge: refreshMaxAge,
+      sameSite: "lax",
+    });
+  }
+
+  if (tokenData.expires_in) {
+    const expiresAt = Date.now() + tokenData.expires_in * 1000;
+    response.cookies.set({
+      name: "github_token_expires_at",
+      value: String(expiresAt),
+      httpOnly: true,
+      secure: isProd,
+      path: "/",
+      maxAge: refreshMaxAge,
+      sameSite: "lax",
+    });
+  }
+}
+
+/**
  * Lưu toàn bộ token và thời gian hết hạn vào HTTP-Only Cookies an toàn
  */
 export async function setAuthCookies(
   cookieStore: Awaited<ReturnType<typeof cookies>>,
   tokenData: GitHubTokenResponse,
+  isSecure?: boolean,
 ) {
-  const isProd = process.env.NODE_ENV === "production";
+  const secure =
+    isSecure !== undefined
+      ? isSecure
+      : process.env.NODE_ENV === "production" &&
+        Boolean(process.env.VERCEL || process.env.NEXT_PUBLIC_VERCEL_ENV);
   const accessMaxAge = tokenData.expires_in || 60 * 60 * 24 * 30; // 30 ngày nếu không có expires_in
   const refreshMaxAge =
     tokenData.refresh_token_expires_in || 60 * 60 * 24 * 180; // 6 tháng
@@ -26,7 +84,7 @@ export async function setAuthCookies(
   // 1. Lưu Access Token
   cookieStore.set("github_access_token", tokenData.access_token, {
     httpOnly: true,
-    secure: isProd,
+    secure,
     path: "/",
     maxAge: accessMaxAge,
     sameSite: "lax",
@@ -36,7 +94,7 @@ export async function setAuthCookies(
   if (tokenData.refresh_token) {
     cookieStore.set("github_refresh_token", tokenData.refresh_token, {
       httpOnly: true,
-      secure: isProd,
+      secure,
       path: "/",
       maxAge: refreshMaxAge,
       sameSite: "lax",
@@ -48,7 +106,7 @@ export async function setAuthCookies(
     const expiresAt = Date.now() + tokenData.expires_in * 1000;
     cookieStore.set("github_token_expires_at", String(expiresAt), {
       httpOnly: true,
-      secure: isProd,
+      secure,
       path: "/",
       maxAge: refreshMaxAge,
       sameSite: "lax",
@@ -61,9 +119,14 @@ export async function setAuthCookies(
  */
 export async function clearAuthCookies(
   cookieStore: Awaited<ReturnType<typeof cookies>>,
+  isSecure?: boolean,
 ) {
-  const isProd = process.env.NODE_ENV === "production";
-  const opts = { path: "/", maxAge: 0, httpOnly: true, secure: isProd };
+  const secure =
+    isSecure !== undefined
+      ? isSecure
+      : process.env.NODE_ENV === "production" &&
+        Boolean(process.env.VERCEL || process.env.NEXT_PUBLIC_VERCEL_ENV);
+  const opts = { path: "/", maxAge: 0, httpOnly: true, secure };
 
   cookieStore.set("github_access_token", "", opts);
   cookieStore.set("github_refresh_token", "", opts);

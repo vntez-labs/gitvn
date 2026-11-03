@@ -14,6 +14,7 @@ import {
   IconBrandGithub,
   IconLogout,
   IconRefresh,
+  IconUser,
 } from "@tabler/icons-react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -144,6 +145,17 @@ export default function DashboardPage() {
                 <Menu.Label c="#64748b" fz={12}>
                   Tài khoản {user.name || user.login}
                 </Menu.Label>
+                <Menu.Item
+                  leftSection={<IconUser size={15} color="#fb291a" />}
+                  component="a"
+                  href={`/u/${user.login}`}
+                  target="_blank"
+                  c="#1e293b"
+                  fz={13}
+                  fw={600}
+                >
+                  Trang Insights cá nhân (@{user.login})
+                </Menu.Item>
                 <Menu.Item
                   leftSection={<IconBrandGithub size={15} />}
                   component="a"

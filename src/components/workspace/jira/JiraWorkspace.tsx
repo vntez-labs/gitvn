@@ -73,6 +73,8 @@ export function JiraWorkspace() {
     setSearchQuery,
     filterPriority,
     setFilterPriority,
+    filterAssignee,
+    setFilterAssignee,
     onlyMyTasks,
     setOnlyMyTasks,
     allMembers,
@@ -123,13 +125,14 @@ export function JiraWorkspace() {
       {
         value: "active",
         label: activeSprint
-          ? `Đang chạy: ${activeSprint.name}`
+          ? `🏃 Đang chạy: ${activeSprint.name}`
           : "Chưa có Sprint kích hoạt",
       },
-      { value: "all", label: "Tất cả công việc" },
+      { value: "all", label: "🌟 Tất cả công việc" },
+      { value: "null", label: "📦 Backlog (Chưa vào Sprint)" },
       ...boardData.sprints.map((s) => ({
         value: s.id,
-        label: `${s.name} (${s.status.toUpperCase()})`,
+        label: `🏃 ${s.name} (${s.status.toUpperCase()})`,
       })),
     ];
   }, [boardData, activeSprint]);
@@ -469,6 +472,31 @@ export function JiraWorkspace() {
                     { value: "low", label: "⚪ Thấp" },
                   ]}
                   style={{ width: 140 }}
+                  styles={{
+                    input: {
+                      backgroundColor: "#f8fafc",
+                      borderColor: "#e2e8f0",
+                      fontSize: 12,
+                    },
+                  }}
+                />
+
+                {/* Lọc theo Thành viên (Assignee) */}
+                <Select
+                  placeholder="Thành viên"
+                  size="xs"
+                  clearable
+                  value={filterAssignee}
+                  onChange={setFilterAssignee}
+                  leftSection={<IconUser size={13} color="#94a3b8" />}
+                  data={[
+                    { value: "unassigned", label: "❓ Chưa gán ai" },
+                    ...allMembers.map((m) => ({
+                      value: m.login,
+                      label: `👤 ${m.name || m.login}`,
+                    })),
+                  ]}
+                  style={{ width: 160 }}
                   styles={{
                     input: {
                       backgroundColor: "#f8fafc",

@@ -11,7 +11,12 @@ import {
   Text,
   TextInput,
 } from "@mantine/core";
-import { IconCheck, IconGitPullRequest, IconTrash } from "@tabler/icons-react";
+import {
+  IconCheck,
+  IconGitPullRequest,
+  IconSparkles,
+  IconTrash,
+} from "@tabler/icons-react";
 import { useEffect, useMemo, useState } from "react";
 import type {
   JiraSprint,
@@ -20,6 +25,7 @@ import type {
   TaskPriority,
   TaskStatus,
 } from "@/interfaces/jira";
+import { copyTaskAIPrompt } from "@/lib/ai-prompt";
 import { getGitHubAvatarUrl } from "@/lib/avatar";
 import {
   PRIORITY_OPTIONS,
@@ -43,14 +49,6 @@ interface TaskDetailModalProps {
 }
 
 export const PRIORITY_DEFAULT_POINTS = PRIORITY_TO_POINTS;
-
-const STATUS_OPTIONS = [
-  { value: "backlog", label: "Backlog" },
-  { value: "todo", label: "To Do" },
-  { value: "in_progress", label: "In Progress" },
-  { value: "review", label: "In Review" },
-  { value: "done", label: "Done" },
-];
 
 export function TaskDetailModal({
   opened,
@@ -175,20 +173,13 @@ export function TaskDetailModal({
         </Group>
       }
       styles={{
-        content: {
-          backgroundColor: "#ffffff",
-          border: "1px solid #e2e8f0",
-          color: "#0f172a",
-          borderRadius: 12,
-        },
+        content: { borderRadius: 12, border: "1px solid #e2e8f0" },
         header: {
           backgroundColor: "#f8fafc",
           borderBottom: "1px solid #e2e8f0",
           padding: "14px 20px",
         },
-        body: {
-          padding: 20,
-        },
+        body: { padding: 20 },
       }}
     >
       <Stack gap="md">
@@ -250,26 +241,36 @@ export function TaskDetailModal({
 
         <Divider color="#e2e8f0" my={4} />
 
-        {/* Nút hành động Lưu / Xóa */}
+        {/* Nút hành động Lưu / Xóa / Prompt AI */}
         <Group justify="space-between">
-          {canEdit ? (
+          <Group gap="xs">
+            {canEdit && (
+              <Button
+                variant="subtle"
+                color="red"
+                size="xs"
+                leftSection={<IconTrash size={14} />}
+                onClick={() => {
+                  if (confirm(`Bạn có chắc chắn muốn xóa task ${task.id}?`)) {
+                    onDeleteTask(task.id);
+                    onClose();
+                  }
+                }}
+              >
+                Xóa công việc
+              </Button>
+            )}
+
             <Button
-              variant="subtle"
-              color="red"
+              variant="light"
+              color="grape"
               size="xs"
-              leftSection={<IconTrash size={14} />}
-              onClick={() => {
-                if (confirm(`Bạn có chắc chắn muốn xóa task ${task.id}?`)) {
-                  onDeleteTask(task.id);
-                  onClose();
-                }
-              }}
+              leftSection={<IconSparkles size={14} />}
+              onClick={() => copyTaskAIPrompt(task)}
             >
-              Xóa công việc
+              Xuất Prompt AI (Cursor/Claude)
             </Button>
-          ) : (
-            <Box />
-          )}
+          </Group>
 
           <Group gap="xs">
             <Button variant="default" size="xs" onClick={onClose}>

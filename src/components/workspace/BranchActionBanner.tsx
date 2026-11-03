@@ -9,10 +9,16 @@ import {
   Text,
   Tooltip,
 } from "@mantine/core";
-import { IconGitMerge, IconGitPullRequest, IconX } from "@tabler/icons-react";
+import {
+  IconGitCompare,
+  IconGitMerge,
+  IconGitPullRequest,
+  IconX,
+} from "@tabler/icons-react";
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { useDashboardStore } from "@/store/dashboard.store";
+import { CompareDiffModal } from "./CompareDiffModal";
 import { CreatePullModal } from "./pulls/CreatePullModal";
 import type { WorkspaceTab } from "./WorkspaceHeader";
 
@@ -34,6 +40,7 @@ export function BranchActionBanner({ onTabChange }: BranchActionBannerProps) {
   const [loading, setLoading] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [compareModalOpen, setCompareModalOpen] = useState(false);
 
   // Reset dismissed khi đổi branch hoặc đổi repo
   useEffect(() => {
@@ -198,6 +205,15 @@ export function BranchActionBanner({ onTabChange }: BranchActionBannerProps) {
 
           <Button
             size="xs"
+            variant="default"
+            leftSection={<IconGitCompare size={14} />}
+            onClick={() => setCompareModalOpen(true)}
+          >
+            Xem Diff ({aheadCount})
+          </Button>
+
+          <Button
+            size="xs"
             variant="filled"
             onClick={() => setCreateModalOpen(true)}
             leftSection={<IconGitPullRequest size={14} />}
@@ -234,6 +250,15 @@ export function BranchActionBanner({ onTabChange }: BranchActionBannerProps) {
           onSuccess={() => {
             if (onTabChange) onTabChange("pulls");
           }}
+        />
+
+        <CompareDiffModal
+          opened={compareModalOpen}
+          onClose={() => setCompareModalOpen(false)}
+          owner={selectedRepo.owner.login}
+          repo={selectedRepo.name}
+          baseBranch={baseBranch}
+          headBranch={targetBranch}
         />
       </Box>
     );

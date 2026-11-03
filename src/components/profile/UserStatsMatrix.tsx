@@ -9,7 +9,6 @@ import {
   SimpleGrid,
   Stack,
   Text,
-  Tooltip,
 } from "@mantine/core";
 import {
   IconBox,
@@ -21,14 +20,9 @@ import {
   IconGitPullRequest,
   IconStar,
 } from "@tabler/icons-react";
+import { ContributionHeatmap, LEVEL_COLORS } from "./ContributionHeatmap";
 
-export const LEVEL_COLORS: Record<string, string> = {
-  NONE: "#ebedf0",
-  FIRST_QUARTILE: "#ffc5be",
-  SECOND_QUARTILE: "#fca59b",
-  THIRD_QUARTILE: "#f87171",
-  FOURTH_QUARTILE: "#fb291a",
-};
+export { LEVEL_COLORS };
 
 interface UserStatsMatrixProps {
   data: any;
@@ -83,13 +77,7 @@ export function UserStatsMatrix({
           </Group>
           <Text fz={22} fw={700} c="#fb291a" mt={2} ff="monospace">
             {data.streak?.maxStreak} ngày{" "}
-            <span
-              style={{
-                fontSize: 13,
-                color: "#64748b",
-                fontWeight: 400,
-              }}
-            >
+            <span style={{ fontSize: 13, color: "#64748b", fontWeight: 400 }}>
               kỷ lục
             </span>
           </Text>
@@ -112,101 +100,24 @@ export function UserStatsMatrix({
         >
           <Group justify="space-between">
             <Text fz="xs" c="#64748b" fw={600}>
-              ĐỘ HOÀN THIỆN (SHIP-READY)
+              TỔNG ĐÓNG GÓP (TOTAL)
             </Text>
-            <IconBox size={16} color="#16a34a" />
+            <IconGitCommit size={16} color="#fb291a" />
           </Group>
-          <Text fz={22} fw={700} c="#16a34a" mt={2} ff="monospace">
-            {data.shipReadiness?.totalReleases}{" "}
-            <span
-              style={{
-                fontSize: 13,
-                color: "#64748b",
-                fontWeight: 400,
-              }}
-            >
-              Releases
-            </span>
+          <Text fz={22} fw={700} c="#0f172a" mt={2} ff="monospace">
+            {formatCompactNumber(data.stats?.totalContributions ?? 0)}
           </Text>
           <Text fz={11} c="#64748b" mt={4}>
-            {data.shipReadiness?.licenseRate}% repo có License chuẩn
+            commits, PRs & reviews
           </Text>
         </Paper>
       </SimpleGrid>
 
-      {/* BẢNG 2: HEATMAP CONTRIBUTION CALENDAR 52 TUẦN */}
-      <Paper
-        p="lg"
-        radius="md"
-        bg="#ffffff"
-        style={{
-          border: "1px solid #e2e8f0",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
-        }}
-      >
-        <Group justify="space-between" align="baseline" mb="md">
-          <Box>
-            <Text fz={16} fw={700} c="#0f172a">
-              {data.stats?.totalContributions ?? 0} đóng góp trong 1 năm qua
-            </Text>
-            <Text fz={11} c="#64748b">
-              Bao gồm commits, pull requests, code reviews và mở issues
-            </Text>
-          </Box>
-
-          <Group gap={4} align="center">
-            <Text fz={10} c="#64748b">
-              Ít
-            </Text>
-            {Object.entries(LEVEL_COLORS).map(([lvl, color]) => (
-              <Box
-                key={lvl}
-                w={10}
-                h={10}
-                style={{ backgroundColor: color, borderRadius: 2 }}
-              />
-            ))}
-            <Text fz={10} c="#64748b">
-              Nhiều
-            </Text>
-          </Group>
-        </Group>
-
-        <Box style={{ overflowX: "auto", paddingBottom: 6 }}>
-          <Box style={{ display: "flex", gap: 3, minWidth: 780 }}>
-            {data.calendarWeeks?.map((week: any, wIdx: number) => (
-              <Box
-                key={wIdx}
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 3,
-                }}
-              >
-                {week.contributionDays?.map((day: any) => (
-                  <Tooltip
-                    key={day.date}
-                    label={`${day.contributionCount} đóng góp vào ${day.date}`}
-                    withArrow
-                  >
-                    <Box
-                      w={11}
-                      h={11}
-                      style={{
-                        backgroundColor:
-                          LEVEL_COLORS[day.contributionLevel] || "#ebedf0",
-                        borderRadius: 2,
-                        cursor: "pointer",
-                        outline: "1px solid rgba(0, 0, 0, 0.04)",
-                      }}
-                    />
-                  </Tooltip>
-                ))}
-              </Box>
-            ))}
-          </Box>
-        </Box>
-      </Paper>
+      {/* BẢNG 2: BIỂU ĐỒ ĐÓNG GÓP (CONTRIBUTION HEATMAP) */}
+      <ContributionHeatmap
+        totalContributions={data.stats?.totalContributions ?? 0}
+        calendarWeeks={data.calendarWeeks}
+      />
 
       {/* BẢNG 3: BỐN THẺ CHỈ SỐ CỘNG TÁC THẬT */}
       <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="md">
@@ -252,12 +163,12 @@ export function UserStatsMatrix({
         >
           <Group justify="space-between">
             <Text fz="xs" c="#64748b" fw={600}>
-              MERGE RATE
+              MERGED PRs
             </Text>
-            <IconGitMerge size={15} color="#16a34a" />
+            <IconGitMerge size={15} color="#10b981" />
           </Group>
-          <Text fz={20} fw={700} c="#16a34a" mt={4} ff="monospace">
-            {data.collaborativeImpact?.prMergeRate ?? 0}%
+          <Text fz={20} fw={700} c="#0f172a" mt={4} ff="monospace">
+            {formatCompactNumber(data.stats?.mergedPRs ?? 0)}
           </Text>
         </Paper>
 
@@ -269,12 +180,12 @@ export function UserStatsMatrix({
         >
           <Group justify="space-between">
             <Text fz="xs" c="#64748b" fw={600}>
-              STARS EARNED
+              STARS RECEIVED
             </Text>
-            <IconStar size={15} color="#eab308" />
+            <IconStar size={15} color="#f59e0b" />
           </Group>
           <Text fz={20} fw={700} c="#0f172a" mt={4} ff="monospace">
-            {formatCompactNumber(data.stats?.totalStarsEarned ?? 0)}
+            {formatCompactNumber(data.stats?.starsReceived ?? 0)}
           </Text>
         </Paper>
       </SimpleGrid>

@@ -1,36 +1,19 @@
 "use client";
 
-import {
-  ActionIcon,
-  Avatar,
-  Badge,
-  Box,
-  Button,
-  CopyButton,
-  Group,
-  Skeleton,
-  Stack,
-  Text,
-  Tooltip,
-} from "@mantine/core";
-import {
-  IconArrowDown,
-  IconCheck,
-  IconCopy,
-  IconFileCode,
-  IconGitCommit,
-} from "@tabler/icons-react";
+import { Box, Button, Skeleton, Stack, Text, Textarea } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
+import { IconCheck, IconFileCode, IconGitCommit } from "@tabler/icons-react";
+import axios from "axios";
 import { useEffect, useState } from "react";
-import { getIconForFile } from "vscode-icons-js";
 import { CodeViewer } from "@/components/CodeViewer";
-import { FileTree } from "@/components/FileTree";
 import { MarkdownViewer } from "@/components/MarkdownViewer";
 import { EmptyRepoView } from "@/components/workspace/EmptyRepoView";
 import type { WorkspaceTab } from "@/components/workspace/WorkspaceHeader";
 import { useDashboardStore } from "@/store/dashboard.store";
 import { CodeTreeSkeleton } from "./code/CodeTreeSkeleton";
+import { CreateFileModal } from "./code/CreateFileModal";
 import { FileEditorHeader } from "./code/FileEditorHeader";
-import { ICON_BASE_URL } from "./constants";
+import { FileExplorerDock } from "./code/FileExplorerDock";
 
 interface CodeTabProps {
   onNavigateTab?: (tab: WorkspaceTab) => void;
@@ -46,7 +29,18 @@ export function CodeTab({ onNavigateTab }: CodeTabProps) {
     loadingContent,
     selectedRepo,
     currentBranch,
+    selectRepo,
   } = useDashboardStore();
+
+  const [createFileOpen, setCreateFileOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editContent, setEditContent] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setIsEditing(false);
+    setEditContent(fileContent || "");
+  }, [activeFile, fileContent]);
 
   if (loadingTree) {
     return <CodeTreeSkeleton />;
@@ -59,10 +53,41 @@ export function CodeTab({ onNavigateTab }: CodeTabProps) {
   const isMarkdown =
     activeFile?.toLowerCase().endsWith(".md") ||
     activeFile?.toLowerCase().endsWith(".mdx");
-  const activeFileIcon = activeFile
-    ? getIconForFile(activeFile)
-    : "default_file.svg";
   const lineCount = fileContent ? fileContent.split("\n").length : 0;
+
+  const handleSaveFile = async () => {
+    if (!selectedRepo || !activeFile) return;
+    setSaving(true);
+    try {
+      const res = await axios.put("/api/github/content", {
+        owner: selectedRepo.owner.login,
+        repo: selectedRepo.name,
+        path: activeFile,
+        branch: currentBranch,
+        content: editContent,
+        message: `chore: update ${activeFile} via GitVN`,
+      });
+
+      if (res.data.success) {
+        notifications.show({
+          title: "Đã lưu & commit thành công!",
+          message: `Thay đổi trên ${activeFile} đã được đẩy lên branch ${currentBranch}`,
+          color: "teal",
+          icon: <IconCheck size={16} />,
+        });
+        setIsEditing(false);
+        selectFile(activeFile);
+      }
+    } catch (err: any) {
+      notifications.show({
+        title: "Lưu file thất bại",
+        message: err.response?.data?.error || err.message,
+        color: "red",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <Box
@@ -75,68 +100,13 @@ export function CodeTab({ onNavigateTab }: CodeTabProps) {
         backgroundColor: "#ffffff",
       }}
     >
-      {/* File Explorer (Left Panel) */}
-      <Box
-        style={{
-          borderRight: "1px solid #e8e5de",
-          backgroundColor: "#f5f3ee",
-          display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
-          minHeight: 0,
-        }}
-      >
-        <Box
-          p="xs"
-          px="md"
-          style={{
-            borderBottom: "1px solid #e8e5de",
-            backgroundColor: "#f5f3ee",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <Text
-            fz={11}
-            fw={700}
-            c="#6e675f"
-            style={{ textTransform: "uppercase", letterSpacing: "0.05em" }}
-          >
-            Files
-          </Text>
-          <Badge
-            size="xs"
-            variant="outline"
-            color="gray"
-            style={{ borderColor: "#e8e5de", color: "#6e675f" }}
-          >
-            {tree.length} files
-          </Badge>
-        </Box>
-
-        <Box
-          className="hide-scrollbar"
-          style={{
-            flex: 1,
-            overflowY: "auto",
-            padding: 8,
-            minHeight: 0,
-          }}
-        >
-          {tree.length === 0 ? (
-            <Text fz="xs" c="#6e675f" ta="center" mt="xl">
-              Không có file nào trong thư mục này
-            </Text>
-          ) : (
-            <FileTree
-              data={tree}
-              activePath={activeFile}
-              onFileClick={selectFile}
-            />
-          )}
-        </Box>
-      </Box>
+      {/* File Explorer (Left Panel - Dark Mode) */}
+      <FileExplorerDock
+        tree={tree}
+        activeFile={activeFile}
+        onSelectFile={selectFile}
+        onCreateFileClick={() => setCreateFileOpen(true)}
+      />
 
       {/* Editor Content (Right Panel) */}
       <Box
@@ -151,17 +121,29 @@ export function CodeTab({ onNavigateTab }: CodeTabProps) {
         {activeFile && (
           <FileEditorHeader
             activeFile={activeFile}
-            activeFileIcon={activeFileIcon}
             lineCount={lineCount}
             isMarkdown={isMarkdown}
-            fileContent={fileContent}
+            fileContent={isEditing ? editContent : fileContent}
+            isEditing={isEditing}
+            onToggleEdit={() => {
+              if (!isEditing) setEditContent(fileContent);
+              setIsEditing(!isEditing);
+            }}
+            onSave={handleSaveFile}
+            saving={saving}
           />
         )}
 
         {/* Nội dung file hoặc màn hình chờ */}
         <Box
           className="hide-scrollbar"
-          style={{ flex: 1, overflowY: "auto", minHeight: 0 }}
+          style={{
+            flex: 1,
+            overflowY: "auto",
+            minHeight: 0,
+            display: "flex",
+            flexDirection: "column",
+          }}
         >
           {loadingContent ? (
             <Box p="md">
@@ -172,12 +154,33 @@ export function CodeTab({ onNavigateTab }: CodeTabProps) {
                 <Skeleton height={14} width="85%" radius="sm" />
                 <Skeleton height={14} width="60%" radius="sm" />
                 <Skeleton height={14} width="75%" radius="sm" />
-                <Skeleton height={14} width="45%" radius="sm" />
-                <Skeleton height={14} width="90%" radius="sm" />
               </Stack>
             </Box>
           ) : activeFile ? (
-            isMarkdown ? (
+            isEditing ? (
+              <Box p="md" style={{ flex: 1, display: "flex" }}>
+                <Textarea
+                  value={editContent}
+                  onChange={(e) => setEditContent(e.currentTarget.value)}
+                  style={{ flex: 1, display: "flex", flexDirection: "column" }}
+                  styles={{
+                    wrapper: { flex: 1, display: "flex" },
+                    input: {
+                      flex: 1,
+                      fontFamily: "var(--font-geist-mono), monospace",
+                      fontSize: 13,
+                      lineHeight: 1.6,
+                      backgroundColor: "#0f172a",
+                      color: "#f8fafc",
+                      borderColor: "#334155",
+                      borderRadius: 8,
+                      resize: "none",
+                      padding: 16,
+                    },
+                  }}
+                />
+              </Box>
+            ) : isMarkdown ? (
               <Box
                 p="xl"
                 style={{ maxWidth: 880, margin: "0 auto", color: "#1f1c19" }}
@@ -194,7 +197,7 @@ export function CodeTab({ onNavigateTab }: CodeTabProps) {
                 color="#94a3b8"
                 style={{ margin: "0 auto 10px" }}
               />
-              <Text fz="sm" fw={500} c="#1f1c19" mb={4}>
+              <Text fz={12} fw={500} c="#1f1c19" mb={4}>
                 Chọn một file từ Explorer để xem mã nguồn
               </Text>
               <Text fz="xs" c="#6e675f" mb="md">
@@ -215,6 +218,20 @@ export function CodeTab({ onNavigateTab }: CodeTabProps) {
           )}
         </Box>
       </Box>
+
+      {/* Modal tạo file mới */}
+      {selectedRepo && (
+        <CreateFileModal
+          opened={createFileOpen}
+          onClose={() => setCreateFileOpen(false)}
+          owner={selectedRepo.owner.login}
+          repo={selectedRepo.name}
+          branch={currentBranch}
+          onSuccess={(newPath) => {
+            selectRepo(selectedRepo, newPath, currentBranch);
+          }}
+        />
+      )}
     </Box>
   );
 }

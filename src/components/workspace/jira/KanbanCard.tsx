@@ -1,7 +1,16 @@
 "use client";
 
-import { Avatar, Badge, Box, Group, Text, Tooltip } from "@mantine/core";
-import { IconGitPullRequest } from "@tabler/icons-react";
+import {
+  ActionIcon,
+  Avatar,
+  Badge,
+  Box,
+  Group,
+  Text,
+  Tooltip,
+} from "@mantine/core";
+import { IconGitPullRequest, IconSparkles } from "@tabler/icons-react";
+import { copyTaskAIPrompt } from "@/lib/ai-prompt";
 import { getGitHubAvatarUrl } from "@/lib/avatar";
 import { getStoryPointsForTask } from "@/lib/jira-priority";
 import type { JiraTask, TaskPriority } from "@/interfaces/jira";
@@ -120,21 +129,37 @@ export function KanbanCard({
           )}
         </Group>
 
-        <Badge
-          size="xs"
-          variant="light"
-          color="gray"
-          styles={{
-            root: {
-              fontWeight: 600,
-              fontSize: 10,
-              padding: "2px 6px",
-              height: 18,
-            },
-          }}
-        >
-          {getStoryPointsForTask(task)} SP
-        </Badge>
+        <Group gap={4} wrap="nowrap">
+          <Tooltip label="1-Click Copy Prompt AI cho Cursor/Claude" withArrow>
+            <ActionIcon
+              size="xs"
+              variant="subtle"
+              color="grape"
+              onClick={(e) => {
+                e.stopPropagation();
+                copyTaskAIPrompt(task);
+              }}
+            >
+              <IconSparkles size={13} />
+            </ActionIcon>
+          </Tooltip>
+
+          <Badge
+            size="xs"
+            variant="light"
+            color="gray"
+            styles={{
+              root: {
+                fontWeight: 600,
+                fontSize: 10,
+                padding: "2px 6px",
+                height: 18,
+              },
+            }}
+          >
+            {getStoryPointsForTask(task)} SP
+          </Badge>
+        </Group>
       </Group>
 
       {/* Title */}

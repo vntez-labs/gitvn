@@ -4,28 +4,40 @@ import {
   ActionIcon,
   Badge,
   Box,
+  Button,
   CopyButton,
   Group,
   Text,
   Tooltip,
 } from "@mantine/core";
-import { IconCheck, IconCopy } from "@tabler/icons-react";
-import { ICON_BASE_URL } from "../constants";
+import {
+  IconCheck,
+  IconCopy,
+  IconDeviceFloppy,
+  IconEdit,
+  IconX,
+} from "@tabler/icons-react";
 
 interface FileEditorHeaderProps {
   activeFile: string;
-  activeFileIcon?: string;
   lineCount: number;
   isMarkdown?: boolean;
   fileContent: string;
+  isEditing?: boolean;
+  onToggleEdit?: () => void;
+  onSave?: () => void;
+  saving?: boolean;
 }
 
 export function FileEditorHeader({
   activeFile,
-  activeFileIcon = "default_file.svg",
   lineCount,
   isMarkdown = false,
   fileContent,
+  isEditing = false,
+  onToggleEdit,
+  onSave,
+  saving = false,
 }: FileEditorHeaderProps) {
   return (
     <Box
@@ -33,7 +45,7 @@ export function FileEditorHeader({
       py={6}
       style={{
         borderBottom: "1px solid #e8e5de",
-        backgroundColor: "#faf8f6",
+        backgroundColor: "#ffffff",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
@@ -41,75 +53,105 @@ export function FileEditorHeader({
         minHeight: 38,
       }}
     >
-      {/* File Tab Chip */}
+      {/* File Meta info (Line count, format) - Removed redundant file name chip */}
       <Group gap="xs" align="center">
-        <Box
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 8,
-            backgroundColor: "#ffffff",
-            padding: "4px 10px",
-            borderRadius: 6,
-            border: "1px solid #e8e5de",
-            boxShadow: "0 1px 2px rgba(31, 28, 25, 0.04)",
-          }}
-        >
-          <img
-            src={`${ICON_BASE_URL}/${activeFileIcon}`}
-            alt=""
-            width={14}
-            height={14}
-            style={{ display: "block" }}
-            onError={(e) => {
-              (e.target as HTMLImageElement).src =
-                `${ICON_BASE_URL}/default_file.svg`;
-            }}
-          />
-          <Text fz={12} c="#1f1c19" fw={600} ff="monospace">
-            {activeFile}
-          </Text>
-        </Box>
-
         {lineCount > 0 && !isMarkdown && (
           <Badge
             size="xs"
             variant="outline"
             color="gray"
             style={{
-              borderColor: "#e8e5de",
-              color: "#6e675f",
-              backgroundColor: "#ffffff",
+              borderColor: "#e2e8f0",
+              color: "#64748b",
+              backgroundColor: "#f8fafc",
+              fontFamily: "monospace",
             }}
           >
             {lineCount.toLocaleString()} dòng
           </Badge>
         )}
+        {isMarkdown && (
+          <Badge
+            size="xs"
+            variant="light"
+            color="blue"
+            style={{ fontFamily: "monospace" }}
+          >
+            Markdown Preview
+          </Badge>
+        )}
+        {isEditing && (
+          <Badge size="xs" color="orange" variant="filled">
+            Đang chỉnh sửa
+          </Badge>
+        )}
       </Group>
 
-      {/* Hành động sao chép mã */}
-      <CopyButton value={fileContent}>
-        {({ copied, copy }) => (
-          <Tooltip
-            label={copied ? "Đã sao chép mã!" : "Sao chép mã nguồn"}
-            withArrow
-          >
-            <ActionIcon
-              size="sm"
+      {/* Hành động: Chỉnh sửa & Sao chép mã */}
+      <Group gap="xs" align="center">
+        {isEditing ? (
+          <>
+            <Button
+              size="xs"
               variant="default"
-              color={copied ? "teal" : "gray"}
-              onClick={copy}
-              style={{
-                backgroundColor: "#ffffff",
-                borderColor: "#e8e5de",
-                color: copied ? "#0d9488" : "#6e675f",
-              }}
+              leftSection={<IconX size={13} />}
+              onClick={onToggleEdit}
+              disabled={saving}
             >
-              {copied ? <IconCheck size={14} /> : <IconCopy size={14} />}
-            </ActionIcon>
-          </Tooltip>
+              Hủy
+            </Button>
+            <Button
+              size="xs"
+              color="vntez"
+              leftSection={<IconDeviceFloppy size={13} />}
+              onClick={onSave}
+              loading={saving}
+            >
+              Lưu & Commit
+            </Button>
+          </>
+        ) : (
+          <>
+            {onToggleEdit && (
+              <Tooltip label="Chỉnh sửa file trực tiếp" withArrow>
+                <Button
+                  size="xs"
+                  variant="subtle"
+                  color="gray"
+                  leftSection={<IconEdit size={14} />}
+                  onClick={onToggleEdit}
+                  style={{ color: "#334155" }}
+                >
+                  Chỉnh sửa
+                </Button>
+              </Tooltip>
+            )}
+
+            <CopyButton value={fileContent}>
+              {({ copied, copy }) => (
+                <Tooltip
+                  label={copied ? "Đã sao chép mã!" : "Sao chép mã nguồn"}
+                  withArrow
+                >
+                  <ActionIcon
+                    size="sm"
+                    variant="default"
+                    color={copied ? "teal" : "gray"}
+                    onClick={copy}
+                    style={{
+                      backgroundColor: "#ffffff",
+                      borderColor: "#e2e8f0",
+                      color: copied ? "#0d9488" : "#64748b",
+                    }}
+                  >
+                    {copied ? <IconCheck size={14} /> : <IconCopy size={14} />}
+                  </ActionIcon>
+                </Tooltip>
+              )}
+            </CopyButton>
+          </>
         )}
-      </CopyButton>
+      </Group>
     </Box>
   );
 }

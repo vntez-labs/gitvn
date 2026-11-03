@@ -48,8 +48,8 @@ export function DashboardSidebar() {
     <Box
       w={270}
       style={{
-        borderRight: "1px solid #e8e5de",
-        backgroundColor: "#f5f3ee",
+        borderRight: "1px solid #27272a",
+        backgroundColor: "#18181b",
         display: "flex",
         flexDirection: "column",
         minHeight: 0,
@@ -68,7 +68,7 @@ export function DashboardSidebar() {
         <Text
           fz={11}
           fw={700}
-          c="#78716c"
+          c="#a1a1aa"
           mb={8}
           px="xs"
           style={{ letterSpacing: "0.08em", fontFamily: "monospace" }}
@@ -108,7 +108,7 @@ export function DashboardSidebar() {
                 );
               })
             ) : (
-              <Text fz={12} c="#64748b" px="xs">
+              <Text fz={12} c="#71717a" px="xs">
                 Không có organization nào.
               </Text>
             )}
@@ -120,7 +120,7 @@ export function DashboardSidebar() {
           <Text
             fz={11}
             fw={700}
-            c="#78716c"
+            c="#a1a1aa"
             style={{ letterSpacing: "0.08em", fontFamily: "monospace" }}
           >
             {selectedOrg
@@ -136,7 +136,7 @@ export function DashboardSidebar() {
                   color="gray"
                   onClick={() => selectOrg(null)}
                 >
-                  <IconArrowLeft size={14} />
+                  <IconArrowLeft size={14} color="#a1a1aa" />
                 </ActionIcon>
               </Tooltip>
             )}
@@ -147,7 +147,7 @@ export function DashboardSidebar() {
                 color="blue"
                 onClick={() => setCreateModalOpen(true)}
               >
-                <IconPlus size={15} />
+                <IconPlus size={15} color="#60a5fa" />
               </ActionIcon>
             </Tooltip>
           </Group>
@@ -172,7 +172,7 @@ export function DashboardSidebar() {
                 />
               ))
             ) : (
-              <Text fz={12} c="#64748b" px="xs">
+              <Text fz={12} c="#71717a" px="xs">
                 Không có repository nào.
               </Text>
             )}
@@ -184,8 +184,8 @@ export function DashboardSidebar() {
       <Box
         p="xs"
         style={{
-          borderTop: "1px solid #e8e5de",
-          backgroundColor: "#f5f3ee",
+          borderTop: "1px solid #27272a",
+          backgroundColor: "#141417",
           flexShrink: 0,
         }}
       >
@@ -193,13 +193,13 @@ export function DashboardSidebar() {
           <Box style={{ minWidth: 0 }}>
             <Text
               fz={10}
-              c="#78716c"
+              c="#71717a"
               fw={700}
               style={{ letterSpacing: "0.05em", fontFamily: "monospace" }}
             >
               TÁC GIẢ
             </Text>
-            <Text fz={12} fw={600} c="#1e293b" truncate>
+            <Text fz={12} fw={600} c="#f4f4f5" truncate>
               Nguyễn Hoàng Nam
             </Text>
           </Box>
@@ -214,7 +214,7 @@ export function DashboardSidebar() {
                 variant="subtle"
                 color="gray"
               >
-                <IconBrandGithub size={15} />
+                <IconBrandGithub size={15} color="#d4d4d8" />
               </ActionIcon>
             </Tooltip>
             <Tooltip label="facebook/hnamhocit" withArrow>
@@ -227,7 +227,7 @@ export function DashboardSidebar() {
                 variant="subtle"
                 color="blue"
               >
-                <IconBrandFacebook size={15} />
+                <IconBrandFacebook size={15} color="#60a5fa" />
               </ActionIcon>
             </Tooltip>
           </Group>

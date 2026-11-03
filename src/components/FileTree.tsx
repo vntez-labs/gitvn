@@ -120,12 +120,13 @@ function TreeItem({
           width: "100%",
           padding: "4px 8px",
           paddingLeft: depth * 12 + 6,
-          backgroundColor: isActive ? "rgba(37, 99, 235, 0.1)" : "transparent",
-          borderLeft: isActive ? "2px solid #2563eb" : "2px solid transparent",
+          backgroundColor: isActive ? "rgba(59, 130, 246, 0.2)" : "transparent",
+          borderLeft: isActive ? "2px solid #3b82f6" : "2px solid transparent",
           transition: "background 0.1s ease",
         }}
         onMouseEnter={(e) => {
-          if (!isActive) e.currentTarget.style.backgroundColor = "#f1f5f9";
+          if (!isActive)
+            e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.06)";
         }}
         onMouseLeave={(e) => {
           if (!isActive) e.currentTarget.style.backgroundColor = "transparent";
@@ -144,9 +145,9 @@ function TreeItem({
           >
             {isFolder &&
               (isOpen ? (
-                <IconChevronDown size={12} color="#64748b" />
+                <IconChevronDown size={12} color="#71717a" />
               ) : (
-                <IconChevronRight size={12} color="#64748b" />
+                <IconChevronRight size={12} color="#71717a" />
               ))}
           </Box>
 
@@ -161,7 +162,7 @@ function TreeItem({
           <Text
             fz={13}
             ff="monospace"
-            c={isActive ? "#1d4ed8" : isFolder ? "#0f172a" : "#475569"}
+            c={isActive ? "#60a5fa" : isFolder ? "#f4f4f5" : "#d4d4d8"}
             fw={isActive ? 600 : 400}
             truncate
           >
@@ -175,7 +176,7 @@ function TreeItem({
         <Collapse expanded={isOpen}>
           <Box
             style={{
-              borderLeft: "1px solid #e2e8f0",
+              borderLeft: "1px solid #27272a",
               marginLeft: depth * 12 + 11,
             }}
           >

@@ -75,6 +75,12 @@ export async function GET(request: Request) {
       total_commits: data.total_commits || 0,
       base,
       head,
+      commits: (data.commits || []).slice(0, 30).map((c: any) => ({
+        sha: c.sha,
+        message: c.commit?.message,
+        author: c.commit?.author,
+      })),
+      files: data.files || [],
       compare_url:
         data.html_url ||
         `https://github.com/${owner}/${repo}/compare/${encodeURIComponent(base)}...${encodeURIComponent(head)}?expand=1`,

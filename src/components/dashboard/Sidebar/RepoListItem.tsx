@@ -29,14 +29,19 @@ export function RepoListItem({
         justifyContent: "space-between",
         padding: "6px 10px 6px 12px",
         borderRadius: 6,
-        backgroundColor: isSelected ? "#ffffff" : "transparent",
-        border: isSelected ? "1px solid #e8e5de" : "1px solid transparent",
-        boxShadow: isSelected ? "0 1px 2px rgba(31, 28, 25, 0.05)" : "none",
+        backgroundColor: isSelected
+          ? "rgba(255, 255, 255, 0.1)"
+          : "transparent",
+        border: isSelected
+          ? "1px solid rgba(255, 255, 255, 0.12)"
+          : "1px solid transparent",
         transition: "all 0.15s ease",
         width: "100%",
       }}
       onMouseEnter={(e) => {
-        if (!isSelected) e.currentTarget.style.backgroundColor = "#eae5dc";
+        if (!isSelected) {
+          e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.06)";
+        }
       }}
       onMouseLeave={(e) => {
         if (!isSelected) e.currentTarget.style.backgroundColor = "transparent";
@@ -65,8 +70,8 @@ export function RepoListItem({
         <Text
           fz={13}
           ff="monospace"
-          fw={isSelected ? 600 : 500}
-          c={isSelected ? "#0f172a" : "#334155"}
+          fw={isSelected ? 600 : 400}
+          c={isSelected ? "#ffffff" : "#e4e4e7"}
           truncate
         >
           {repo.name}
@@ -77,15 +82,14 @@ export function RepoListItem({
         {repo.private && (
           <Tooltip label="Private repo" withArrow>
             <Box style={{ display: "flex", alignItems: "center" }}>
-              <IconLock size={13} color="#94a3b8" />
+              <IconLock size={13} color="#71717a" />
             </Box>
           </Tooltip>
         )}
-
         {starCount > 0 && (
-          <Group gap={3} wrap="nowrap">
-            <IconStar size={12} color="#ca8a04" fill="#ca8a04" />
-            <Text fz={11} c="#64748b" ff="monospace" fw={600}>
+          <Group gap={2} wrap="nowrap">
+            <IconStar size={11} color="#eab308" fill="#eab308" />
+            <Text fz={11} c="#a1a1aa" ff="monospace">
               {formatCompactNumber(starCount)}
             </Text>
           </Group>
