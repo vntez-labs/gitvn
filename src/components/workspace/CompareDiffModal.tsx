@@ -65,10 +65,10 @@ export function CompareDiffModal({
       size="xl"
       title={
         <Group gap="xs">
-          <IconGitCompare size={18} color="#fb291a" />
-          <Text fw={700} fz={15} c="#0f172a">
-            So sánh Diff: <span style={{ color: "#2563eb" }}>{baseBranch}</span>{" "}
-            ← <span style={{ color: "#fb291a" }}>{headBranch}</span>
+          <IconGitCompare size={18} color="#6366f1" />
+          <Text fw={700} fz={15} c="#18181b">
+            So sánh Diff: <span style={{ color: "#4f46e5" }}>{baseBranch}</span>{" "}
+            ← <span style={{ color: "#18181b" }}>{headBranch}</span>
           </Text>
         </Group>
       }
@@ -76,7 +76,7 @@ export function CompareDiffModal({
         content: { borderRadius: 12 },
         header: {
           backgroundColor: "#f8fafc",
-          borderBottom: "1px solid #e2e8f0",
+          borderBottom: "1px solid #e4e4e7",
           padding: "14px 20px",
         },
         body: { padding: 20 },

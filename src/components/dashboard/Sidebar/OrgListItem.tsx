@@ -18,18 +18,17 @@ export function OrgListItem({ org, isSelected, onSelect }: OrgListItemProps) {
         display: "flex",
         alignItems: "center",
         padding: "6px 10px 6px 12px",
-        borderRadius: 6,
-        backgroundColor: isSelected
-          ? "rgba(255, 255, 255, 0.1)"
-          : "transparent",
+        borderRadius: 8,
+        backgroundColor: isSelected ? "#ffffff" : "transparent",
         border: isSelected
-          ? "1px solid rgba(255, 255, 255, 0.12)"
+          ? "1px solid rgba(228, 228, 231, 0.9)"
           : "1px solid transparent",
+        boxShadow: isSelected ? "0 1px 2px rgba(0, 0, 0, 0.05)" : "none",
         transition: "all 0.15s ease",
       }}
       onMouseEnter={(e) => {
         if (!isSelected) {
-          e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.06)";
+          e.currentTarget.style.backgroundColor = "rgba(228, 228, 231, 0.6)";
         }
       }}
       onMouseLeave={(e) => {
@@ -45,7 +44,7 @@ export function OrgListItem({ org, isSelected, onSelect }: OrgListItemProps) {
             top: 6,
             bottom: 6,
             width: 3,
-            backgroundColor: "#fb291a",
+            backgroundColor: "#6366f1",
             borderRadius: "0 3px 3px 0",
           }}
         />
@@ -55,14 +54,14 @@ export function OrgListItem({ org, isSelected, onSelect }: OrgListItemProps) {
         <Text
           fz={13}
           fw={isSelected ? 600 : 500}
-          c={isSelected ? "#ffffff" : "#d4d4d8"}
+          c={isSelected ? "#18181b" : "#52525b"}
           truncate
           style={{ flex: 1 }}
         >
           {org.login}
         </Text>
         {(org as any).isUser && (
-          <Text fz={10} c="#71717a" fw={500} style={{ flexShrink: 0 }}>
+          <Text fz={10} c="#a1a1aa" fw={500} style={{ flexShrink: 0 }}>
             You
           </Text>
         )}

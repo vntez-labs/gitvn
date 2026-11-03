@@ -8,16 +8,16 @@ export function MarkdownViewer({ content }: { content: string }) {
     <Box
       style={{
         width: "100%",
-        color: "#0f172a",
+        color: "#18181b",
       }}
     >
       <MarkdownPreview
         source={content}
         style={{
           backgroundColor: "transparent",
-          color: "#0f172a",
+          color: "#18181b",
           fontSize: "14px",
-          lineHeight: "1.7",
+          lineHeight: "1.75",
         }}
         wrapperElement={{
           "data-color-mode": "light",

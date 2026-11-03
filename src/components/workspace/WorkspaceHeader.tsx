@@ -78,44 +78,71 @@ export function WorkspaceHeader({
     { id: "settings", label: "Settings", icon: IconSettings },
   ];
 
+  const btnStyles = {
+    root: {
+      backgroundColor: "#ffffff",
+      borderColor: "#e4e4e7",
+      color: "#3f3f46",
+      fontWeight: 500,
+      boxShadow: "0 1px 2px rgba(0, 0, 0, 0.05)",
+      borderRadius: 6,
+    },
+  };
+
   return (
     <Box
       px="lg"
       pt="sm"
       pb={0}
       style={{
-        borderBottom: "1px solid #e8e5de",
-        backgroundColor: "#ffffff",
+        borderBottom: "1px solid #e4e4e7",
+        backgroundColor: "rgba(255, 255, 255, 0.9)",
+        backdropFilter: "blur(12px)",
+        WebkitBackdropFilter: "blur(12px)",
         flexShrink: 0,
+        position: "sticky",
+        top: 0,
+        zIndex: 10,
       }}
     >
       <Group justify="space-between" align="center" wrap="nowrap" mb={12}>
         <Group gap="xs" wrap="nowrap">
-          <IconBook size={20} color="#fb291a" />
-          <Text fw={600} fz={16} c="#0f172a" ff="monospace">
+          <IconBook size={19} color="#6366f1" />
+          <Text fw={600} fz={15} c="#18181b" ff="monospace">
             {selectedRepo.owner.login} /{" "}
-            <span style={{ color: "#fb291a", fontWeight: 700 }}>
+            <span style={{ color: "#18181b", fontWeight: 700 }}>
               {selectedRepo.name}
             </span>
           </Text>
 
           <Badge
-            size="sm"
-            variant="light"
-            color={selectedRepo.private ? "gray" : "teal"}
-            radius="sm"
+            size="xs"
+            variant="outline"
+            style={{
+              backgroundColor: selectedRepo.private ? "#f4f4f5" : "#ecfdf5",
+              color: selectedRepo.private ? "#52525b" : "#047857",
+              borderColor: selectedRepo.private ? "#e4e4e7" : "#a7f3d0",
+              borderRadius: 9999,
+              fontWeight: 500,
+              padding: "2px 8px",
+            }}
           >
             {selectedRepo.private ? "Private" : "Public"}
           </Badge>
 
-          {/* Indicator trạng thái cấu trúc chuẩn .gitvn */}
           {hasGitvn ? (
             <Badge
-              size="sm"
-              variant="light"
-              color="vntez"
-              radius="sm"
-              leftSection={<IconCheck size={12} />}
+              size="xs"
+              variant="outline"
+              leftSection={<IconCheck size={11} />}
+              style={{
+                backgroundColor: "#eef2ff",
+                color: "#4338ca",
+                borderColor: "#c7d2fe",
+                borderRadius: 9999,
+                fontWeight: 500,
+                padding: "2px 8px",
+              }}
             >
               .gitvn Active
             </Badge>
@@ -123,11 +150,18 @@ export function WorkspaceHeader({
             onInitializeGitvn && (
               <Button
                 size="compact-xs"
-                variant="light"
-                color="vntez"
+                variant="subtle"
+                color="indigo"
                 loading={initializingGitvn}
                 onClick={onInitializeGitvn}
                 leftSection={<IconSparkles size={12} />}
+                style={{
+                  backgroundColor: "#eef2ff",
+                  color: "#4338ca",
+                  borderColor: "#c7d2fe",
+                  borderRadius: 6,
+                  fontWeight: 500,
+                }}
               >
                 Khởi tạo .gitvn
               </Button>
@@ -141,16 +175,9 @@ export function WorkspaceHeader({
           <Button
             size="compact-sm"
             variant="default"
-            leftSection={<IconUserPlus size={14} color="#fb291a" />}
+            leftSection={<IconUserPlus size={14} color="#6366f1" />}
             onClick={() => setInviteModalOpen(true)}
-            styles={{
-              root: {
-                backgroundColor: "#ffffff",
-                borderColor: "#e5e1da",
-                color: "#1f1c19",
-                fontWeight: 500,
-              },
-            }}
+            styles={btnStyles}
           >
             Mời thành viên
           </Button>
@@ -162,15 +189,8 @@ export function WorkspaceHeader({
             component="a"
             href={selectedRepo.html_url}
             target="_blank"
-            rightSection={<IconExternalLink size={13} />}
-            styles={{
-              root: {
-                backgroundColor: "#f8fafc",
-                borderColor: "#e2e8f0",
-                color: "#334155",
-                fontWeight: 500,
-              },
-            }}
+            rightSection={<IconExternalLink size={13} color="#71717a" />}
+            styles={btnStyles}
           >
             GitHub
           </Button>
@@ -204,32 +224,47 @@ export function WorkspaceHeader({
                 display: "flex",
                 alignItems: "center",
                 gap: 6,
-                padding: "9px 14px 11px",
-                fontSize: 14,
+                padding: "8px 12px 10px",
+                fontSize: 13,
                 fontWeight: isActive ? 600 : 500,
-                color: isActive ? "#fb291a" : "#475569",
+                color: isActive ? "#18181b" : "#71717a",
                 borderBottom: isActive
-                  ? "2px solid #fb291a"
+                  ? "2px solid #18181b"
                   : "2px solid transparent",
                 cursor: "pointer",
                 transition: "all 0.15s ease",
                 userSelect: "none",
+                borderRadius: "6px 6px 0 0",
               }}
               onMouseEnter={(e) => {
-                if (!isActive) e.currentTarget.style.color = "#0f172a";
+                if (!isActive) {
+                  e.currentTarget.style.color = "#18181b";
+                  e.currentTarget.style.backgroundColor =
+                    "rgba(244, 244, 245, 0.6)";
+                }
               }}
               onMouseLeave={(e) => {
-                if (!isActive) e.currentTarget.style.color = "#475569";
+                if (!isActive) {
+                  e.currentTarget.style.color = "#71717a";
+                  e.currentTarget.style.backgroundColor = "transparent";
+                }
               }}
             >
-              <Icon size={16} color={isActive ? "#fb291a" : "#64748b"} />
+              <Icon size={15} color={isActive ? "#18181b" : "#71717a"} />
               <span>{tab.label}</span>
               {typeof tab.count === "number" && tab.count > 0 && (
                 <Badge
                   size="xs"
-                  variant={isActive ? "filled" : "light"}
-                  color={isActive ? "vntez" : "gray"}
-                  circle
+                  variant="outline"
+                  style={{
+                    backgroundColor: isActive ? "#e4e4e7" : "#f4f4f5",
+                    borderColor: isActive ? "#d4d4d8" : "#e4e4e7",
+                    color: isActive ? "#18181b" : "#71717a",
+                    fontWeight: 600,
+                    fontSize: 11,
+                    padding: "0 6px",
+                    height: 18,
+                  }}
                 >
                   {tab.count}
                 </Badge>

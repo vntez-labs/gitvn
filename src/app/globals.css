@@ -2,19 +2,19 @@
 @plugin "@tailwindcss/typography";
 
 :root {
-  --primary-color: #fb291a;
-  --primary-gradient: linear-gradient(135deg, #fb291a 0%, #f77241 100%);
-  --mantine-primary-color: #fb291a;
-  --bg-canvas: #faf8f6;
-  --bg-secondary: #f5f3ee;
-  --border-subtle: #e8e5de;
-  --text-primary: #1f1c19;
-  --text-secondary: #6e675f;
+  --primary-color: #6366f1;
+  --primary-gradient: linear-gradient(135deg, #6366f1 0%, #818cf8 100%);
+  --mantine-primary-color: #6366f1;
+  --bg-canvas: #ffffff;
+  --bg-secondary: #f4f4f5;
+  --border-subtle: #e4e4e7;
+  --text-primary: #18181b;
+  --text-secondary: #52525b;
 }
 
 ::selection {
-  background-color: #ffc5be;
-  color: #7a0c04;
+  background-color: #e0e7ff;
+  color: #3730a3;
 }
 
 /* Custom scrollbars */
@@ -26,9 +26,106 @@
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #d8d3c9;
+  background: #e4e4e7;
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #b8b2a5;
+  background: #d4d4d8;
+}
+
+/* Linear / GitHub Modern Markdown Viewer Styling */
+.wmde-markdown {
+  background-color: transparent !important;
+  color: #18181b !important;
+  font-family: inherit !important;
+}
+
+.wmde-markdown h1,
+.wmde-markdown h2 {
+  color: #18181b !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.025em !important;
+  padding-bottom: 8px !important;
+  border-bottom: 1px solid #f4f4f5 !important;
+  margin-top: 24px !important;
+  margin-bottom: 12px !important;
+}
+
+.wmde-markdown h3,
+.wmde-markdown h4 {
+  color: #27272a !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.02em !important;
+  margin-top: 20px !important;
+  margin-bottom: 8px !important;
+}
+
+.wmde-markdown p,
+.wmde-markdown li {
+  color: #3f3f46 !important;
+  line-height: 1.7 !important;
+}
+
+.wmde-markdown pre {
+  background-color: #fafafa !important;
+  border: 1px solid #e4e4e7 !important;
+  border-radius: 12px !important;
+  padding: 16px !important;
+  font-size: 13px !important;
+  line-height: 1.625 !important;
+  color: #27272a !important;
+  overflow-x: auto !important;
+}
+
+.wmde-markdown code {
+  font-family:
+    var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco,
+    Consolas, monospace !important;
+}
+
+.wmde-markdown :not(pre) > code {
+  background-color: #f4f4f5 !important;
+  border: 1px solid #e4e4e7 !important;
+  color: #18181b !important;
+  border-radius: 4px !important;
+  padding: 2px 6px !important;
+  font-size: 12px !important;
+}
+
+.wmde-markdown blockquote {
+  border-left: 4px solid #6366f1 !important;
+  background-color: rgba(238, 242, 255, 0.4) !important;
+  color: #3f3f46 !important;
+  padding: 12px 16px !important;
+  border-radius: 0 8px 8px 0 !important;
+  margin: 16px 0 !important;
+}
+
+.wmde-markdown table {
+  border-collapse: collapse !important;
+  width: 100% !important;
+  margin: 16px 0 !important;
+  border: 1px solid #e4e4e7 !important;
+  border-radius: 8px !important;
+  overflow: hidden !important;
+}
+
+.wmde-markdown th {
+  background-color: #fafafa !important;
+  color: #18181b !important;
+  font-weight: 600 !important;
+  border: 1px solid #e4e4e7 !important;
+  padding: 8px 12px !important;
+}
+
+.wmde-markdown td {
+  border: 1px solid #e4e4e7 !important;
+  padding: 8px 12px !important;
+  color: #3f3f46 !important;
+}
+
+.wmde-markdown hr {
+  border: none !important;
+  border-top: 1px solid #e4e4e7 !important;
+  margin: 24px 0 !important;
 }

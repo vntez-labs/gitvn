@@ -120,13 +120,16 @@ function TreeItem({
           width: "100%",
           padding: "4px 8px",
           paddingLeft: depth * 12 + 6,
-          backgroundColor: isActive ? "rgba(59, 130, 246, 0.2)" : "transparent",
-          borderLeft: isActive ? "2px solid #3b82f6" : "2px solid transparent",
+          backgroundColor: isActive
+            ? "rgba(238, 242, 255, 0.85)"
+            : "transparent",
+          borderLeft: isActive ? "2px solid #6366f1" : "2px solid transparent",
+          borderRadius: isActive ? "0 4px 4px 0" : "0",
           transition: "background 0.1s ease",
         }}
         onMouseEnter={(e) => {
           if (!isActive)
-            e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.06)";
+            e.currentTarget.style.backgroundColor = "rgba(244, 244, 245, 0.9)";
         }}
         onMouseLeave={(e) => {
           if (!isActive) e.currentTarget.style.backgroundColor = "transparent";
@@ -145,9 +148,9 @@ function TreeItem({
           >
             {isFolder &&
               (isOpen ? (
-                <IconChevronDown size={12} color="#71717a" />
+                <IconChevronDown size={12} color="#a1a1aa" />
               ) : (
-                <IconChevronRight size={12} color="#71717a" />
+                <IconChevronRight size={12} color="#a1a1aa" />
               ))}
           </Box>
 
@@ -162,8 +165,8 @@ function TreeItem({
           <Text
             fz={13}
             ff="monospace"
-            c={isActive ? "#60a5fa" : isFolder ? "#f4f4f5" : "#d4d4d8"}
-            fw={isActive ? 600 : 400}
+            c={isActive ? "#4338ca" : isFolder ? "#27272a" : "#52525b"}
+            fw={isActive ? 600 : isFolder ? 500 : 400}
             truncate
           >
             {node.name}
@@ -176,7 +179,7 @@ function TreeItem({
         <Collapse expanded={isOpen}>
           <Box
             style={{
-              borderLeft: "1px solid #27272a",
+              borderLeft: "1px solid #e4e4e7",
               marginLeft: depth * 12 + 11,
             }}
           >

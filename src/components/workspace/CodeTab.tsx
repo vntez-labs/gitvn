@@ -170,9 +170,9 @@ export function CodeTab({ onNavigateTab }: CodeTabProps) {
                       fontFamily: "var(--font-geist-mono), monospace",
                       fontSize: 13,
                       lineHeight: 1.6,
-                      backgroundColor: "#0f172a",
-                      color: "#f8fafc",
-                      borderColor: "#334155",
+                      backgroundColor: "#ffffff",
+                      color: "#18181b",
+                      borderColor: "#e4e4e7",
                       borderRadius: 8,
                       resize: "none",
                       padding: 16,
@@ -182,8 +182,8 @@ export function CodeTab({ onNavigateTab }: CodeTabProps) {
               </Box>
             ) : isMarkdown ? (
               <Box
-                p="xl"
-                style={{ maxWidth: 880, margin: "0 auto", color: "#1f1c19" }}
+                className="max-w-4xl mx-auto py-8 px-10"
+                style={{ width: "100%", color: "#18181b" }}
               >
                 <MarkdownViewer content={fileContent} />
               </Box>
@@ -194,22 +194,31 @@ export function CodeTab({ onNavigateTab }: CodeTabProps) {
             <Box ta="center" mt={120} px="md">
               <IconFileCode
                 size={38}
-                color="#94a3b8"
+                color="#a1a1aa"
                 style={{ margin: "0 auto 10px" }}
               />
-              <Text fz={12} fw={500} c="#1f1c19" mb={4}>
+              <Text fz={13} fw={500} c="#18181b" mb={4}>
                 Chọn một file từ Explorer để xem mã nguồn
               </Text>
-              <Text fz="xs" c="#6e675f" mb="md">
+              <Text fz="xs" c="#71717a" mb="md">
                 Hoặc xem lịch sử các lần thay đổi code của repository.
               </Text>
               {onNavigateTab && (
                 <Button
                   size="xs"
-                  variant="light"
-                  color="vntez"
-                  leftSection={<IconGitCommit size={14} />}
+                  variant="default"
+                  leftSection={<IconGitCommit size={14} color="#6366f1" />}
                   onClick={() => onNavigateTab("commits")}
+                  styles={{
+                    root: {
+                      backgroundColor: "#ffffff",
+                      borderColor: "#e4e4e7",
+                      color: "#3f3f46",
+                      fontWeight: 500,
+                      boxShadow: "0 1px 2px rgba(0, 0, 0, 0.05)",
+                      borderRadius: 6,
+                    },
+                  }}
                 >
                   Xem lịch sử Commits ({currentBranch})
                 </Button>

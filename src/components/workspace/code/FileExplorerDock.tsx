@@ -21,8 +21,8 @@ export const FileExplorerDock: FC<FileExplorerDockProps> = ({
   return (
     <Box
       style={{
-        borderRight: "1px solid #27272a",
-        backgroundColor: "#18181b",
+        borderRight: "1px solid #e4e4e7",
+        backgroundColor: "#fafafa",
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
@@ -33,8 +33,8 @@ export const FileExplorerDock: FC<FileExplorerDockProps> = ({
         p="xs"
         px="md"
         style={{
-          borderBottom: "1px solid #27272a",
-          backgroundColor: "#18181b",
+          borderBottom: "1px solid #e4e4e7",
+          backgroundColor: "#fafafa",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
@@ -43,7 +43,7 @@ export const FileExplorerDock: FC<FileExplorerDockProps> = ({
         <Text
           fz={11}
           fw={700}
-          c="#a1a1aa"
+          c="#71717a"
           style={{
             textTransform: "uppercase",
             letterSpacing: "0.08em",
@@ -56,11 +56,13 @@ export const FileExplorerDock: FC<FileExplorerDockProps> = ({
           <Badge
             size="xs"
             variant="outline"
-            color="gray"
             style={{
-              borderColor: "#3f3f46",
-              color: "#a1a1aa",
+              backgroundColor: "#f4f4f5",
+              borderColor: "#e4e4e7",
+              color: "#52525b",
               fontFamily: "monospace",
+              fontSize: 11,
+              padding: "2px 6px",
             }}
           >
             {tree.length} files
@@ -69,10 +71,10 @@ export const FileExplorerDock: FC<FileExplorerDockProps> = ({
             <ActionIcon
               size="xs"
               variant="subtle"
-              color="blue"
+              color="indigo"
               onClick={onCreateFileClick}
             >
-              <IconFilePlus size={15} color="#60a5fa" />
+              <IconFilePlus size={15} color="#4f46e5" />
             </ActionIcon>
           </Tooltip>
         </Group>
@@ -88,7 +90,7 @@ export const FileExplorerDock: FC<FileExplorerDockProps> = ({
         }}
       >
         {tree.length === 0 ? (
-          <Text fz="xs" c="#71717a" ta="center" mt="xl">
+          <Text fz="xs" c="#a1a1aa" ta="center" mt="xl">
             Không có file nào trong thư mục này
           </Text>
         ) : (

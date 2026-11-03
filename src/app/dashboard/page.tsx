@@ -63,18 +63,23 @@ export default function DashboardPage() {
       <style>{`
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .user-profile-btn:hover { background-color: #f5f3ee; }
+        .user-profile-btn:hover { background-color: #f4f4f5; }
       `}</style>
 
-      {/* HEADER */}
+      {/* TOP HEADER */}
       <Box
         component="header"
         py="xs"
         px="lg"
         style={{
-          borderBottom: "1px solid #e8e5de",
-          backgroundColor: "#ffffff",
+          borderBottom: "1px solid #e4e4e7",
+          backgroundColor: "rgba(255, 255, 255, 0.9)",
+          backdropFilter: "blur(12px)",
+          WebkitBackdropFilter: "blur(12px)",
           flexShrink: 0,
+          position: "sticky",
+          top: 0,
+          zIndex: 10,
         }}
       >
         <Group justify="space-between">
@@ -84,9 +89,9 @@ export default function DashboardPage() {
             onClick={() => router.push("/")}
           >
             <GitVNLogo size={28} />
-            <Text fw={700} fz={15} c="#0f172a" ff="monospace">
-              Git<span style={{ color: "#fb291a" }}>VN</span>{" "}
-              <span style={{ color: "#64748b", fontWeight: 500, fontSize: 13 }}>
+            <Text fw={700} fz={15} c="#18181b" ff="monospace">
+              Git<span style={{ color: "#6366f1" }}>VN</span>{" "}
+              <span style={{ color: "#71717a", fontWeight: 500, fontSize: 13 }}>
                 Workspace
               </span>
             </Text>
@@ -103,15 +108,15 @@ export default function DashboardPage() {
                   display: "inline-flex",
                   alignItems: "center",
                   textDecoration: "none",
-                  backgroundColor: "#f8fafc",
+                  backgroundColor: "#f4f4f5",
                   padding: "4px 10px",
                   borderRadius: 20,
-                  border: "1px solid #e2e8f0",
+                  border: "1px solid #e4e4e7",
                 }}
               >
-                <Text fz={11} fw={600} c="#64748b">
+                <Text fz={11} fw={600} c="#52525b">
                   by{" "}
-                  <Text span c="#fb291a" fw={700}>
+                  <Text span c="#4f46e5" fw={700}>
                     @hnamhocit
                   </Text>
                 </Text>
@@ -136,21 +141,21 @@ export default function DashboardPage() {
                     radius="xl"
                     size="sm"
                   />
-                  <Text fz={14} fw={600} c="#1e293b">
+                  <Text fz={14} fw={600} c="#18181b">
                     {user.login}
                   </Text>
                 </Group>
               </Menu.Target>
-              <Menu.Dropdown bg="#ffffff" style={{ borderColor: "#e2e8f0" }}>
-                <Menu.Label c="#64748b" fz={12}>
+              <Menu.Dropdown bg="#ffffff" style={{ borderColor: "#e4e4e7" }}>
+                <Menu.Label c="#71717a" fz={12}>
                   Tài khoản {user.name || user.login}
                 </Menu.Label>
                 <Menu.Item
-                  leftSection={<IconUser size={15} color="#fb291a" />}
+                  leftSection={<IconUser size={15} color="#6366f1" />}
                   component="a"
                   href={`/u/${user.login}`}
                   target="_blank"
-                  c="#1e293b"
+                  c="#18181b"
                   fz={13}
                   fw={600}
                 >
@@ -161,7 +166,7 @@ export default function DashboardPage() {
                   component="a"
                   href={user.html_url}
                   target="_blank"
-                  c="#1e293b"
+                  c="#18181b"
                   fz={13}
                 >
                   GitHub Profile
@@ -170,14 +175,14 @@ export default function DashboardPage() {
                   leftSection={<IconRefresh size={15} />}
                   component="a"
                   href="/api/integrations/github?reconnect=true"
-                  c="#1e293b"
+                  c="#18181b"
                   fz={13}
                 >
                   Cập nhật quyền GitHub
                 </Menu.Item>
 
-                <Menu.Divider style={{ borderColor: "#e2e8f0" }} />
-                <Menu.Label c="#64748b" fz={12}>
+                <Menu.Divider style={{ borderColor: "#e4e4e7" }} />
+                <Menu.Label c="#71717a" fz={12}>
                   Tác giả / Creator
                 </Menu.Label>
                 <Menu.Item
@@ -186,7 +191,7 @@ export default function DashboardPage() {
                   href="https://github.com/hnamhocit"
                   target="_blank"
                   rel="noopener noreferrer"
-                  c="#1e293b"
+                  c="#18181b"
                   fz={13}
                 >
                   github/hnamhocit
@@ -197,13 +202,13 @@ export default function DashboardPage() {
                   href="https://facebook.com/hnamhocit"
                   target="_blank"
                   rel="noopener noreferrer"
-                  c="#1e293b"
+                  c="#18181b"
                   fz={13}
                 >
                   facebook/hnamhocit
                 </Menu.Item>
 
-                <Menu.Divider style={{ borderColor: "#e2e8f0" }} />
+                <Menu.Divider style={{ borderColor: "#e4e4e7" }} />
                 <Menu.Item
                   color="red"
                   leftSection={<IconLogout size={15} />}

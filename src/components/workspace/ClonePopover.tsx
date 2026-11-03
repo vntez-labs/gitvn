@@ -39,14 +39,16 @@ export function ClonePopover() {
         <Button
           size="compact-sm"
           variant="default"
-          leftSection={<IconTerminal2 size={13} color="#fb291a" />}
-          rightSection={<IconChevronDown size={11} />}
+          leftSection={<IconTerminal2 size={13} color="#4f46e5" />}
+          rightSection={<IconChevronDown size={11} color="#71717a" />}
           styles={{
             root: {
               backgroundColor: "#ffffff",
-              borderColor: "#e5e1da",
-              color: "#1f1c19",
+              borderColor: "#e4e4e7",
+              color: "#3f3f46",
               fontWeight: 500,
+              boxShadow: "0 1px 2px rgba(0, 0, 0, 0.05)",
+              borderRadius: 6,
             },
           }}
         >
@@ -56,9 +58,9 @@ export function ClonePopover() {
 
       <Popover.Dropdown
         bg="#ffffff"
-        style={{ borderColor: "#e2e8f0", padding: 14 }}
+        style={{ borderColor: "#e4e4e7", padding: 14, borderRadius: 10 }}
       >
-        <Text fz={12} fw={700} c="#0f172a" mb={8}>
+        <Text fz={12} fw={700} c="#18181b" mb={8}>
           Clone repository ({currentBranch})
         </Text>
 
@@ -72,12 +74,12 @@ export function ClonePopover() {
             { label: "SSH", value: "ssh" },
           ]}
           styles={{
-            root: { backgroundColor: "#f1f5f9" },
+            root: { backgroundColor: "#f4f4f5" },
             indicator: {
               backgroundColor: "#ffffff",
               boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
             },
-            label: { color: "#334155", fontSize: 11, fontWeight: 600 },
+            label: { color: "#3f3f46", fontSize: 11, fontWeight: 600 },
           }}
           mb="xs"
         />
@@ -88,9 +90,9 @@ export function ClonePopover() {
           size="xs"
           styles={{
             input: {
-              backgroundColor: "#f8fafc",
-              borderColor: "#cbd5e1",
-              color: "#0f172a",
+              backgroundColor: "#f4f4f5",
+              borderColor: "#e4e4e7",
+              color: "#18181b",
               fontFamily: "monospace",
               fontSize: 11,
             },

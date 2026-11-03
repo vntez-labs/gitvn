@@ -28,19 +28,18 @@ export function RepoListItem({
         alignItems: "center",
         justifyContent: "space-between",
         padding: "6px 10px 6px 12px",
-        borderRadius: 6,
-        backgroundColor: isSelected
-          ? "rgba(255, 255, 255, 0.1)"
-          : "transparent",
+        borderRadius: 8,
+        backgroundColor: isSelected ? "#ffffff" : "transparent",
         border: isSelected
-          ? "1px solid rgba(255, 255, 255, 0.12)"
+          ? "1px solid rgba(228, 228, 231, 0.9)"
           : "1px solid transparent",
+        boxShadow: isSelected ? "0 1px 2px rgba(0, 0, 0, 0.05)" : "none",
         transition: "all 0.15s ease",
         width: "100%",
       }}
       onMouseEnter={(e) => {
         if (!isSelected) {
-          e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.06)";
+          e.currentTarget.style.backgroundColor = "rgba(228, 228, 231, 0.6)";
         }
       }}
       onMouseLeave={(e) => {
@@ -56,7 +55,7 @@ export function RepoListItem({
             top: 6,
             bottom: 6,
             width: 3,
-            backgroundColor: "#fb291a",
+            backgroundColor: "#6366f1",
             borderRadius: "0 3px 3px 0",
           }}
         />
@@ -71,7 +70,7 @@ export function RepoListItem({
           fz={13}
           ff="monospace"
           fw={isSelected ? 600 : 400}
-          c={isSelected ? "#ffffff" : "#e4e4e7"}
+          c={isSelected ? "#18181b" : "#52525b"}
           truncate
         >
           {repo.name}
@@ -82,7 +81,7 @@ export function RepoListItem({
         {repo.private && (
           <Tooltip label="Private repo" withArrow>
             <Box style={{ display: "flex", alignItems: "center" }}>
-              <IconLock size={13} color="#71717a" />
+              <IconLock size={13} color="#a1a1aa" />
             </Box>
           </Tooltip>
         )}

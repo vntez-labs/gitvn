@@ -11,15 +11,15 @@ export function CodeTreeSkeleton() {
         gridTemplateColumns: "280px 1fr",
         overflow: "hidden",
         minHeight: 0,
-        backgroundColor: "#faf8f6",
+        backgroundColor: "#ffffff",
       }}
     >
       {/* Left Explorer Skeleton */}
       <Box
         p="md"
         style={{
-          borderRight: "1px solid #e8e5de",
-          backgroundColor: "#f5f3ee",
+          borderRight: "1px solid #e4e4e7",
+          backgroundColor: "#fafafa",
         }}
       >
         <Skeleton height={28} radius="sm" mb="md" />
@@ -35,7 +35,7 @@ export function CodeTreeSkeleton() {
       </Box>
 
       {/* Right Code Pane Skeleton */}
-      <Box p="md" style={{ backgroundColor: "#faf8f6" }}>
+      <Box p="md" style={{ backgroundColor: "#ffffff" }}>
         <Group justify="space-between" mb="lg">
           <Skeleton height={24} width={200} radius="sm" />
           <Skeleton height={24} width={120} radius="sm" />

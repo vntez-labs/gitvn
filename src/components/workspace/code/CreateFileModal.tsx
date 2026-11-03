@@ -89,8 +89,8 @@ export function CreateFileModal({
       onClose={onClose}
       title={
         <Group gap="xs">
-          <IconFilePlus size={18} color="#fb291a" />
-          <Text fw={700} fz={15} c="#0f172a">
+          <IconFilePlus size={18} color="#6366f1" />
+          <Text fw={700} fz={15} c="#18181b">
             Tạo file mới vào branch {branch}
           </Text>
         </Group>
@@ -98,8 +98,8 @@ export function CreateFileModal({
       styles={{
         content: { borderRadius: 12 },
         header: {
-          backgroundColor: "#f8fafc",
-          borderBottom: "1px solid #e2e8f0",
+          backgroundColor: "#fafafa",
+          borderBottom: "1px solid #e4e4e7",
           padding: "14px 20px",
         },
         body: { padding: 20 },
@@ -143,15 +143,39 @@ export function CreateFileModal({
         />
 
         <Group justify="flex-end" mt="sm">
-          <Button variant="default" size="xs" onClick={onClose}>
+          <Button
+            variant="default"
+            size="xs"
+            onClick={onClose}
+            styles={{
+              root: {
+                backgroundColor: "#ffffff",
+                borderColor: "#d4d4d8",
+                color: "#3f3f46",
+                fontWeight: 500,
+                borderRadius: 6,
+              },
+            }}
+          >
             Hủy
           </Button>
           <Button
-            color="vntez"
             size="xs"
             leftSection={<IconFilePlus size={14} />}
             onClick={handleCreate}
             loading={loading}
+            styles={{
+              root: {
+                backgroundColor: "#18181b",
+                color: "#ffffff",
+                fontWeight: 500,
+                boxShadow: "0 1px 2px rgba(0, 0, 0, 0.1)",
+                borderRadius: 6,
+                "&:hover": {
+                  backgroundColor: "#27272a",
+                },
+              },
+            }}
           >
             Tạo file & Commit
           </Button>

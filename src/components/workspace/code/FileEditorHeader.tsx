@@ -44,7 +44,7 @@ export function FileEditorHeader({
       px="md"
       py={6}
       style={{
-        borderBottom: "1px solid #e8e5de",
+        borderBottom: "1px solid #e4e4e7",
         backgroundColor: "#ffffff",
         display: "flex",
         alignItems: "center",
@@ -53,18 +53,19 @@ export function FileEditorHeader({
         minHeight: 38,
       }}
     >
-      {/* File Meta info (Line count, format) - Removed redundant file name chip */}
+      {/* File Meta info (Line count, format) */}
       <Group gap="xs" align="center">
         {lineCount > 0 && !isMarkdown && (
           <Badge
             size="xs"
             variant="outline"
-            color="gray"
             style={{
-              borderColor: "#e2e8f0",
-              color: "#64748b",
-              backgroundColor: "#f8fafc",
+              borderColor: "#e4e4e7",
+              color: "#52525b",
+              backgroundColor: "#f4f4f5",
               fontFamily: "monospace",
+              fontSize: 11,
+              padding: "2px 6px",
             }}
           >
             {lineCount.toLocaleString()} dòng
@@ -73,15 +74,31 @@ export function FileEditorHeader({
         {isMarkdown && (
           <Badge
             size="xs"
-            variant="light"
-            color="blue"
-            style={{ fontFamily: "monospace" }}
+            variant="outline"
+            style={{
+              borderColor: "#e4e4e7",
+              color: "#52525b",
+              backgroundColor: "#f4f4f5",
+              fontFamily: "monospace",
+              fontSize: 11,
+              padding: "2px 6px",
+            }}
           >
-            Markdown Preview
+            MARKDOWN PREVIEW
           </Badge>
         )}
         {isEditing && (
-          <Badge size="xs" color="orange" variant="filled">
+          <Badge
+            size="xs"
+            variant="outline"
+            style={{
+              backgroundColor: "#fff7ed",
+              borderColor: "#fed7aa",
+              color: "#c2410c",
+              fontSize: 11,
+              fontWeight: 600,
+            }}
+          >
             Đang chỉnh sửa
           </Badge>
         )}
@@ -97,15 +114,36 @@ export function FileEditorHeader({
               leftSection={<IconX size={13} />}
               onClick={onToggleEdit}
               disabled={saving}
+              styles={{
+                root: {
+                  backgroundColor: "#ffffff",
+                  borderColor: "#d4d4d8",
+                  color: "#3f3f46",
+                  fontWeight: 500,
+                  boxShadow: "0 1px 2px rgba(0, 0, 0, 0.05)",
+                  borderRadius: 6,
+                },
+              }}
             >
               Hủy
             </Button>
             <Button
               size="xs"
-              color="vntez"
               leftSection={<IconDeviceFloppy size={13} />}
               onClick={onSave}
               loading={saving}
+              styles={{
+                root: {
+                  backgroundColor: "#18181b",
+                  color: "#ffffff",
+                  fontWeight: 500,
+                  boxShadow: "0 1px 2px rgba(0, 0, 0, 0.1)",
+                  borderRadius: 6,
+                  "&:hover": {
+                    backgroundColor: "#27272a",
+                  },
+                },
+              }}
             >
               Lưu & Commit
             </Button>
@@ -116,11 +154,19 @@ export function FileEditorHeader({
               <Tooltip label="Chỉnh sửa file trực tiếp" withArrow>
                 <Button
                   size="xs"
-                  variant="subtle"
-                  color="gray"
-                  leftSection={<IconEdit size={14} />}
+                  variant="default"
+                  leftSection={<IconEdit size={14} color="#71717a" />}
                   onClick={onToggleEdit}
-                  style={{ color: "#334155" }}
+                  styles={{
+                    root: {
+                      backgroundColor: "#ffffff",
+                      borderColor: "#d4d4d8",
+                      color: "#3f3f46",
+                      fontWeight: 500,
+                      boxShadow: "0 1px 2px rgba(0, 0, 0, 0.05)",
+                      borderRadius: 6,
+                    },
+                  }}
                 >
                   Chỉnh sửa
                 </Button>
@@ -140,8 +186,10 @@ export function FileEditorHeader({
                     onClick={copy}
                     style={{
                       backgroundColor: "#ffffff",
-                      borderColor: "#e2e8f0",
-                      color: copied ? "#0d9488" : "#64748b",
+                      borderColor: "#e4e4e7",
+                      color: copied ? "#059669" : "#71717a",
+                      boxShadow: "0 1px 2px rgba(0, 0, 0, 0.05)",
+                      borderRadius: 6,
                     }}
                   >
                     {copied ? <IconCheck size={14} /> : <IconCopy size={14} />}

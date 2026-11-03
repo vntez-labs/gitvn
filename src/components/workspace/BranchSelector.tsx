@@ -35,21 +35,23 @@ export function BranchSelector() {
         <Button
           size="compact-sm"
           variant="default"
-          leftSection={<IconGitBranch size={14} color="#64748b" />}
+          leftSection={<IconGitBranch size={14} color="#71717a" />}
           rightSection={
             loading ? (
               <Loader size={12} color="gray" />
             ) : (
-              <IconChevronDown size={13} color="#64748b" />
+              <IconChevronDown size={13} color="#71717a" />
             )
           }
           styles={{
             root: {
-              backgroundColor: "#f8fafc",
-              borderColor: "#e2e8f0",
-              color: "#1e293b",
+              backgroundColor: "#ffffff",
+              borderColor: "#e4e4e7",
+              color: "#18181b",
+              boxShadow: "0 1px 2px rgba(0, 0, 0, 0.05)",
+              borderRadius: 6,
               fontFamily: "monospace",
-              fontSize: 13,
+              fontSize: 12,
               fontWeight: 500,
             },
           }}
@@ -60,9 +62,9 @@ export function BranchSelector() {
 
       <Menu.Dropdown
         bg="#ffffff"
-        style={{ borderColor: "#e2e8f0", maxHeight: 300, overflowY: "auto" }}
+        style={{ borderColor: "#e4e4e7", maxHeight: 300, overflowY: "auto" }}
       >
-        <Menu.Label c="#64748b" fz={12}>
+        <Menu.Label c="#71717a" fz={12}>
           Select Branch ({branches.length || 1})
         </Menu.Label>
         {branches.length > 0 ? (
@@ -71,16 +73,24 @@ export function BranchSelector() {
               key={b.name}
               leftSection={<IconGitBranch size={14} />}
               onClick={() => changeBranch(b.name)}
-              c={currentBranch === b.name ? "#fb291a" : "#1e293b"}
-              style={{ fontSize: 13, fontFamily: "monospace" }}
+              c={currentBranch === b.name ? "#4f46e5" : "#18181b"}
+              style={{
+                fontSize: 13,
+                fontFamily: "monospace",
+                fontWeight: currentBranch === b.name ? 600 : 400,
+                backgroundColor:
+                  currentBranch === b.name
+                    ? "rgba(238, 242, 255, 0.7)"
+                    : "transparent",
+              }}
             >
               {b.name} {b.name === defaultBranch && "(default)"}
             </Menu.Item>
           ))
         ) : (
           <Menu.Item
-            c="#fb291a"
-            style={{ fontSize: 13, fontFamily: "monospace" }}
+            c="#4f46e5"
+            style={{ fontSize: 13, fontFamily: "monospace", fontWeight: 600 }}
           >
             {defaultBranch} (default)
           </Menu.Item>
