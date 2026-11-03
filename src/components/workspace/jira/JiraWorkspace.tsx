@@ -55,7 +55,11 @@ const DEFAULT_KANBAN_COLUMNS: {
   { status: "done", title: "Done", color: "#22c55e" },
 ];
 
-export function JiraWorkspace() {
+interface JiraWorkspaceProps {
+  isTabActive?: boolean;
+}
+
+export function JiraWorkspace({ isTabActive = true }: JiraWorkspaceProps) {
   const { user } = useAuthStore();
   const { selectedRepo } = useDashboardStore();
   const {
@@ -100,7 +104,7 @@ export function JiraWorkspace() {
     bulkMoveTasks,
     bulkDeleteTasks,
     savePermissions,
-  } = useJiraBoard();
+  } = useJiraBoard({ isTabActive });
 
   // Modals state
   const [selectedTask, setSelectedTask] = useState<JiraTask | null>(null);

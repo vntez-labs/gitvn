@@ -65,6 +65,7 @@ export const jiraService = {
       branch,
       data,
       syncToGitHub,
+      forceGitHubSync: syncToGitHub,
     });
   },
 

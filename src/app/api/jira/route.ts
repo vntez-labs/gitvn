@@ -143,13 +143,15 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const {
-      owner,
-      repo,
-      branch,
-      data,
-      forceGitHubSync = true,
-    } = await request.json();
+    const body = await request.json();
+    const { owner, repo, branch, data } = body;
+
+    const forceGitHubSync =
+      body.forceGitHubSync !== undefined
+        ? Boolean(body.forceGitHubSync)
+        : body.syncToGitHub !== undefined
+          ? Boolean(body.syncToGitHub)
+          : true;
 
     if (!owner || !repo || !data) {
       return NextResponse.json(

@@ -198,7 +198,16 @@ export function RepoWorkspace() {
       {activeTab === "commits" && (
         <CommitsTab onCommitsLoaded={setCommitsCount} />
       )}
-      {activeTab === "kanban" && <JiraWorkspace />}
+      <Box
+        style={{
+          display: activeTab === "kanban" ? "flex" : "none",
+          flex: 1,
+          minHeight: 0,
+          flexDirection: "column",
+        }}
+      >
+        <JiraWorkspace isTabActive={activeTab === "kanban"} />
+      </Box>
       {activeTab === "docs" && (
         <DocsTab
           onInitializeGitvn={handleInitializeGitvn}

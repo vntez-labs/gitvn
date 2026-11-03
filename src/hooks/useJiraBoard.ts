@@ -23,7 +23,12 @@ import { jiraService } from "@/services/jira.service";
 import { useAuthStore } from "@/store/auth.store";
 import { useDashboardStore } from "@/store/dashboard.store";
 
-export function useJiraBoard() {
+export interface UseJiraBoardOptions {
+  isTabActive?: boolean;
+}
+
+export function useJiraBoard(options?: UseJiraBoardOptions) {
+  const isTabActive = options?.isTabActive ?? true;
   const { user } = useAuthStore();
   const { selectedRepo, currentBranch } = useDashboardStore();
 
@@ -170,73 +175,184 @@ export function useJiraBoard() {
   const canManageSprint = userRole === "admin" || userRole === "pm";
   const canCreateBacklog = canEdit;
 
-  // Quản lý debounce đồng bộ Git
+  // Quản lý debounce & tự động đồng bộ Git
+  const repoRef = useRef(selectedRepo);
+  const branchRef = useRef(currentBranch);
+  const isMountedRef = useRef(true);
+  const isSyncingRef = useRef(false);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const pendingDataRef = useRef<JiraBoardData | null>(null);
+  const prevRepoKeyRef = useRef<string>("");
   const [gitSyncStatus, setGitSyncStatus] = useState<
     "synced" | "pending" | "syncing" | "error"
   >("synced");
+
+  useEffect(() => {
+    repoRef.current = selectedRepo;
+  }, [selectedRepo]);
+
+  useEffect(() => {
+    branchRef.current = currentBranch;
+  }, [currentBranch]);
 
   const flushGitSync = useCallback(async () => {
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
       debounceTimerRef.current = null;
     }
-    const dataToSync = pendingDataRef.current;
-    if (!dataToSync || !selectedRepo) return;
 
-    setGitSyncStatus("syncing");
-    setSyncing(true);
+    const currentRepo = repoRef.current;
+    const currentTargetBranch = branchRef.current;
+    const dataToSync = pendingDataRef.current;
+
+    if (!dataToSync || !currentRepo) return;
+
+    if (isSyncingRef.current) {
+      // Đang có tiến trình sync đang chạy, pendingDataRef.current vẫn giữ dữ liệu mới nhất
+      return;
+    }
+
+    pendingDataRef.current = null;
+    isSyncingRef.current = true;
+
+    if (isMountedRef.current) {
+      setGitSyncStatus("syncing");
+      setSyncing(true);
+    }
 
     try {
       await jiraService.saveBoardData(
-        selectedRepo.owner.login,
-        selectedRepo.name,
-        currentBranch,
+        currentRepo.owner.login,
+        currentRepo.name,
+        currentTargetBranch,
         dataToSync,
         true,
       );
-      setSyncedToGitHub(true);
-      setGitSyncStatus("synced");
-      pendingDataRef.current = null;
+      if (isMountedRef.current) {
+        setSyncedToGitHub(true);
+        setGitSyncStatus("synced");
+      }
     } catch (err: any) {
       console.error("Lỗi đồng bộ Git:", err);
-      setGitSyncStatus("error");
-      notifications.show({
-        title: "Lỗi đồng bộ GitHub",
-        message: err.response?.data?.error || "Không thể đồng bộ lên GitHub",
-        color: "red",
-      });
+      // Nếu lỗi và chưa có bản cập nhật mới đè lên, khôi phục lại pendingData để retry
+      if (!pendingDataRef.current) {
+        pendingDataRef.current = dataToSync;
+      }
+      if (isMountedRef.current) {
+        setGitSyncStatus("error");
+        notifications.show({
+          title: "Lỗi đồng bộ GitHub",
+          message: err.response?.data?.error || "Không thể đồng bộ lên GitHub",
+          color: "red",
+        });
+      }
     } finally {
-      setSyncing(false);
+      isSyncingRef.current = false;
+      if (isMountedRef.current) {
+        setSyncing(false);
+      }
+      // Nếu có thay đổi mới phát sinh trong lúc đang sync (ví dụ kéo thả liên tục)
+      if (pendingDataRef.current) {
+        flushGitSync();
+      }
     }
-  }, [selectedRepo, currentBranch]);
+  }, []);
 
-  // Dọn dẹp timer khi component unmount
+  // 1. Tự động sync ngay khi người dùng chuyển sang tab khác trong workspace (Code, Commits, Pulls, ...)
   useEffect(() => {
-    return () => {
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
+    if (!isTabActive && pendingDataRef.current) {
+      flushGitSync();
+    }
+  }, [isTabActive, flushGitSync]);
+
+  // 2. Tự động sync nếu repo hoặc branch thay đổi trước khi tải dữ liệu mới
+  const currentRepoKey = selectedRepo
+    ? `${selectedRepo.owner.login}/${selectedRepo.name}@${currentBranch}`
+    : "";
+
+  useEffect(() => {
+    if (
+      prevRepoKeyRef.current &&
+      prevRepoKeyRef.current !== currentRepoKey &&
+      pendingDataRef.current
+    ) {
+      flushGitSync();
+    }
+    prevRepoKeyRef.current = currentRepoKey;
+  }, [currentRepoKey, flushGitSync]);
+
+  // 3. Tự động sync khi ẩn/chuyển tab trình duyệt (visibilitychange), tắt trang (beforeunload, pagehide) hoặc unmount
+  useEffect(() => {
+    isMountedRef.current = true;
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden" && pendingDataRef.current) {
+        flushGitSync();
       }
     };
-  }, []);
+
+    const handleBeforeUnload = () => {
+      if (pendingDataRef.current && repoRef.current) {
+        const dataToSync = pendingDataRef.current;
+        const owner = repoRef.current.owner.login;
+        const repo = repoRef.current.name;
+        const branch = branchRef.current;
+        pendingDataRef.current = null;
+
+        try {
+          if (typeof fetch === "function") {
+            fetch("/api/jira", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                owner,
+                repo,
+                branch,
+                data: dataToSync,
+                syncToGitHub: true,
+                forceGitHubSync: true,
+              }),
+              keepalive: true,
+            }).catch(() => {});
+          }
+        } catch {}
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("pagehide", handleBeforeUnload);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      isMountedRef.current = false;
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("pagehide", handleBeforeUnload);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+        debounceTimerRef.current = null;
+      }
+      // Unmount component -> lập tức flush dữ liệu còn pending
+      if (pendingDataRef.current) {
+        flushGitSync();
+      }
+    };
+  }, [flushGitSync]);
 
   // Lưu Board Data ngầm có debounce (không tạo commit rác liên tục khi kéo thả)
   const saveTasks = useCallback(
     (newData: JiraBoardData, immediateSync = false) => {
-      if (!selectedRepo) return;
+      const repo = repoRef.current;
+      const branch = branchRef.current;
+      if (!repo) return;
+
       setBoardData(newData);
       pendingDataRef.current = newData;
 
       // 1. Lưu local cache ngay lập tức (0ms delay, không sync GitHub)
       jiraService
-        .saveBoardData(
-          selectedRepo.owner.login,
-          selectedRepo.name,
-          currentBranch,
-          newData,
-          false,
-        )
+        .saveBoardData(repo.owner.login, repo.name, branch, newData, false)
         .catch((err) => console.warn("Lỗi lưu local cache:", err));
 
       if (immediateSync) {
@@ -252,7 +368,7 @@ export function useJiraBoard() {
         }, 2500);
       }
     },
-    [selectedRepo, currentBranch, flushGitSync],
+    [flushGitSync],
   );
 
   const initializeGitvn = useCallback(async () => {
