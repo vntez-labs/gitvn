@@ -444,16 +444,43 @@ function UserProfileContent() {
               GitVN Insights • Trích xuất trực tiếp từ GitHub GraphQL Engine
             </Text>
           </Group>
-          <Text
-            component="a"
-            href={`https://github.com/${username}`}
-            target="_blank"
-            fz={11}
-            c="#fb291a"
-            style={{ textDecoration: "none" }}
-          >
-            @{username} trên GitHub ↗
-          </Text>
+          <Group gap="md">
+            <Text fz={11} c="#64748b">
+              Phát triển bởi{" "}
+              <Text
+                component="a"
+                href="https://github.com/hnamhocit"
+                target="_blank"
+                rel="noopener noreferrer"
+                fw={600}
+                c="#0f172a"
+              >
+                @hnamhocit
+              </Text>{" "}
+              (
+              <Text
+                component="a"
+                href="https://facebook.com/hnamhocit"
+                target="_blank"
+                rel="noopener noreferrer"
+                c="#1877f2"
+                fw={500}
+              >
+                fb
+              </Text>
+              )
+            </Text>
+            <Text
+              component="a"
+              href={`https://github.com/${username}`}
+              target="_blank"
+              fz={11}
+              c="#fb291a"
+              style={{ textDecoration: "none" }}
+            >
+              @{username} trên GitHub ↗
+            </Text>
+          </Group>
         </Group>
       </Box>
     </Box>

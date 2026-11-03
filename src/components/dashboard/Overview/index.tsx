@@ -1,7 +1,9 @@
 "use client";
 
 import {
+  Avatar,
   Box,
+  Button,
   Divider,
   Group,
   Paper,
@@ -12,6 +14,7 @@ import {
 } from "@mantine/core";
 import {
   IconBookmark,
+  IconBrandFacebook,
   IconBrandGithub,
   IconFolderOpen,
   IconUsers,
@@ -128,6 +131,63 @@ export function DashboardOverview() {
           <Text c="#64748b" mt="xs">
             Nhấp vào một repository ở thanh bên trái để bắt đầu xem mã nguồn.
           </Text>
+
+          <Paper
+            p="md"
+            radius="md"
+            mt={50}
+            style={{
+              maxWidth: 460,
+              margin: "50px auto 0",
+              backgroundColor: "#ffffff",
+              border: "1px solid #e8e5de",
+              boxShadow: "0 1px 3px rgba(31, 28, 25, 0.04)",
+            }}
+          >
+            <Group justify="space-between" align="center" wrap="nowrap">
+              <Group gap="sm" wrap="nowrap" style={{ minWidth: 0 }}>
+                <Avatar
+                  src="https://github.com/hnamhocit.png"
+                  alt="hnamhocit"
+                  radius="xl"
+                  size="md"
+                />
+                <Box style={{ textAlign: "left", minWidth: 0 }}>
+                  <Text fz={13} fw={600} c="#1e293b" truncate>
+                    Nguyễn Hoàng Nam
+                  </Text>
+                  <Text fz={11} c="#64748b" truncate>
+                    Creator of GitVN Workspace
+                  </Text>
+                </Box>
+              </Group>
+              <Group gap={6} wrap="nowrap">
+                <Button
+                  component="a"
+                  href="https://github.com/hnamhocit"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  size="xs"
+                  variant="default"
+                  leftSection={<IconBrandGithub size={13} />}
+                >
+                  GitHub
+                </Button>
+                <Button
+                  component="a"
+                  href="https://facebook.com/hnamhocit"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  size="xs"
+                  color="blue"
+                  variant="light"
+                  leftSection={<IconBrandFacebook size={13} />}
+                >
+                  Facebook
+                </Button>
+              </Group>
+            </Group>
+          </Paper>
         </Box>
       </Box>
     </Box>

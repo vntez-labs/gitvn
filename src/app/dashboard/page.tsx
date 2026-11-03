@@ -1,7 +1,20 @@
 "use client";
 
-import { Avatar, Box, Group, Menu, Skeleton, Text } from "@mantine/core";
-import { IconBrandGithub, IconLogout, IconRefresh } from "@tabler/icons-react";
+import {
+  Avatar,
+  Box,
+  Group,
+  Menu,
+  Skeleton,
+  Text,
+  Tooltip,
+} from "@mantine/core";
+import {
+  IconBrandFacebook,
+  IconBrandGithub,
+  IconLogout,
+  IconRefresh,
+} from "@tabler/icons-react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { GitVNLogo } from "@/components/brand/GitVNLogo";
@@ -78,64 +91,119 @@ export default function DashboardPage() {
             </Text>
           </Group>
 
-          <Menu shadow="md" width={220} position="bottom-end">
-            <Menu.Target>
-              <Group
-                gap="xs"
-                style={{
-                  cursor: "pointer",
-                  padding: "5px 10px",
-                  borderRadius: 6,
-                  transition: "background 0.15s ease",
-                }}
-                className="user-profile-btn"
-              >
-                <Avatar
-                  src={user.avatar_url}
-                  alt={user.login}
-                  radius="xl"
-                  size="sm"
-                />
-                <Text fz={14} fw={600} c="#1e293b">
-                  {user.login}
-                </Text>
-              </Group>
-            </Menu.Target>
-            <Menu.Dropdown bg="#ffffff" style={{ borderColor: "#e2e8f0" }}>
-              <Menu.Label c="#64748b" fz={12}>
-                Tài khoản {user.name || user.login}
-              </Menu.Label>
-              <Menu.Item
-                leftSection={<IconBrandGithub size={15} />}
+          <Group gap="sm">
+            <Tooltip label="Tác giả: Nguyễn Hoàng Nam (@hnamhocit)" withArrow>
+              <Box
                 component="a"
-                href={user.html_url}
+                href="https://github.com/hnamhocit"
                 target="_blank"
-                c="#1e293b"
-                fz={13}
+                rel="noopener noreferrer"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  textDecoration: "none",
+                  backgroundColor: "#f8fafc",
+                  padding: "4px 10px",
+                  borderRadius: 20,
+                  border: "1px solid #e2e8f0",
+                }}
               >
-                GitHub Profile
-              </Menu.Item>
-              <Menu.Item
-                leftSection={<IconRefresh size={15} />}
-                component="a"
-                href="/api/integrations/github?reconnect=true"
-                c="#1e293b"
-                fz={13}
-              >
-                Cập nhật quyền GitHub
-              </Menu.Item>
-              <Menu.Divider style={{ borderColor: "#e2e8f0" }} />
-              <Menu.Item
-                color="red"
-                leftSection={<IconLogout size={15} />}
-                component="a"
-                href="/api/auth/logout"
-                fz={13}
-              >
-                Đăng xuất
-              </Menu.Item>
-            </Menu.Dropdown>
-          </Menu>
+                <Text fz={11} fw={600} c="#64748b">
+                  by{" "}
+                  <Text span c="#fb291a" fw={700}>
+                    @hnamhocit
+                  </Text>
+                </Text>
+              </Box>
+            </Tooltip>
+
+            <Menu shadow="md" width={220} position="bottom-end">
+              <Menu.Target>
+                <Group
+                  gap="xs"
+                  style={{
+                    cursor: "pointer",
+                    padding: "5px 10px",
+                    borderRadius: 6,
+                    transition: "background 0.15s ease",
+                  }}
+                  className="user-profile-btn"
+                >
+                  <Avatar
+                    src={user.avatar_url}
+                    alt={user.login}
+                    radius="xl"
+                    size="sm"
+                  />
+                  <Text fz={14} fw={600} c="#1e293b">
+                    {user.login}
+                  </Text>
+                </Group>
+              </Menu.Target>
+              <Menu.Dropdown bg="#ffffff" style={{ borderColor: "#e2e8f0" }}>
+                <Menu.Label c="#64748b" fz={12}>
+                  Tài khoản {user.name || user.login}
+                </Menu.Label>
+                <Menu.Item
+                  leftSection={<IconBrandGithub size={15} />}
+                  component="a"
+                  href={user.html_url}
+                  target="_blank"
+                  c="#1e293b"
+                  fz={13}
+                >
+                  GitHub Profile
+                </Menu.Item>
+                <Menu.Item
+                  leftSection={<IconRefresh size={15} />}
+                  component="a"
+                  href="/api/integrations/github?reconnect=true"
+                  c="#1e293b"
+                  fz={13}
+                >
+                  Cập nhật quyền GitHub
+                </Menu.Item>
+
+                <Menu.Divider style={{ borderColor: "#e2e8f0" }} />
+                <Menu.Label c="#64748b" fz={12}>
+                  Tác giả / Creator
+                </Menu.Label>
+                <Menu.Item
+                  leftSection={<IconBrandGithub size={15} />}
+                  component="a"
+                  href="https://github.com/hnamhocit"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  c="#1e293b"
+                  fz={13}
+                >
+                  github/hnamhocit
+                </Menu.Item>
+                <Menu.Item
+                  leftSection={<IconBrandFacebook size={15} color="#1877f2" />}
+                  component="a"
+                  href="https://facebook.com/hnamhocit"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  c="#1e293b"
+                  fz={13}
+                >
+                  facebook/hnamhocit
+                </Menu.Item>
+
+                <Menu.Divider style={{ borderColor: "#e2e8f0" }} />
+                <Menu.Item
+                  color="red"
+                  leftSection={<IconLogout size={15} />}
+                  component="a"
+                  href="/api/auth/logout"
+                  fz={13}
+                >
+                  Đăng xuất
+                </Menu.Item>
+              </Menu.Dropdown>
+            </Menu>
+          </Group>
         </Group>
       </Box>
 
