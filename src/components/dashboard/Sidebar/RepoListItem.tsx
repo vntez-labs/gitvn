@@ -10,12 +10,14 @@ interface RepoListItemProps {
   repo: GitHubRepo;
   isSelected: boolean;
   onSelect: () => void;
+  showOwner?: boolean;
 }
 
 export function RepoListItem({
   repo,
   isSelected,
   onSelect,
+  showOwner = false,
 }: RepoListItemProps) {
   const starCount = repo.stargazers_count ?? 0;
 
@@ -66,18 +68,30 @@ export function RepoListItem({
         style={{ overflow: "hidden", flex: 1, minWidth: 0 }}
       >
         <RepoLangIcon repo={repo} />
-        <Text
-          fz={13}
-          ff="monospace"
-          fw={isSelected ? 600 : 400}
-          c={isSelected ? "#18181b" : "#52525b"}
-          truncate
-        >
-          {repo.name}
-        </Text>
+        <Box style={{ overflow: "hidden", flex: 1, minWidth: 0 }}>
+          <Text
+            fz={13}
+            ff="monospace"
+            fw={isSelected ? 600 : 400}
+            c={isSelected ? "#18181b" : "#52525b"}
+            truncate
+          >
+            {repo.name}
+          </Text>
+          {showOwner && repo.owner?.login && (
+            <Text
+              fz={10}
+              c="#71717a"
+              truncate
+              style={{ lineHeight: 1.2, marginTop: 1 }}
+            >
+              @{repo.owner.login}
+            </Text>
+          )}
+        </Box>
       </Group>
 
-      <Group gap={6} wrap="nowrap" style={{ flexShrink: 0 }}>
+      <Group gap={6} wrap="nowrap" style={{ flexShrink: 0, marginLeft: 6 }}>
         {repo.private && (
           <Tooltip label="Private repo" withArrow>
             <Box style={{ display: "flex", alignItems: "center" }}>

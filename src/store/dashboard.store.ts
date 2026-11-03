@@ -7,6 +7,7 @@ import type { GitHubOrg, GitHubRepo } from "@/interfaces/github";
 interface DashboardState {
   repos: GitHubRepo[];
   orgs: GitHubOrg[];
+  invitations: any[];
   dataLoading: boolean;
 
   selectedOrg: string | null;
@@ -20,6 +21,7 @@ interface DashboardState {
   loadingContent: boolean;
 
   fetchInitialData: () => Promise<void>;
+  acceptInvitation: (invitationId: number) => Promise<boolean>;
   selectOrg: (org: string | null) => void;
   selectRepo: (
     repo: GitHubRepo | null,
@@ -37,6 +39,7 @@ export const useDashboardStore = create<DashboardState>()(
     (set, get) => ({
       repos: [],
       orgs: [],
+      invitations: [],
       dataLoading: true,
       selectedOrg: null,
       selectedRepo: null,
@@ -54,6 +57,7 @@ export const useDashboardStore = create<DashboardState>()(
           set({
             repos: data.repos || [],
             orgs: data.orgs || [],
+            invitations: data.invitations || [],
             dataLoading: false,
           });
 
@@ -67,6 +71,17 @@ export const useDashboardStore = create<DashboardState>()(
         } catch (error) {
           console.error("Lỗi lấy dữ liệu:", error);
           set({ dataLoading: false });
+        }
+      },
+
+      acceptInvitation: async (invitationId: number) => {
+        try {
+          await axios.patch("/api/github/invitations", { invitationId });
+          await get().fetchInitialData();
+          return true;
+        } catch (error) {
+          console.error("Lỗi chấp nhận lời mời repo:", error);
+          return false;
         }
       },
 

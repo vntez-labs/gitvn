@@ -22,8 +22,21 @@ export async function GET() {
     "X-GitHub-Api-Version": "2022-11-28",
   });
 
+  const safeFetchJson = async (url: string, t: string | null) => {
+    try {
+      const res = await fetch(url, {
+        headers: getHeaders(t),
+        cache: "no-store",
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  };
+
   try {
-    // 1. Gọi song song thông tin User, danh sách Organizations và Repositories (Page 1)
+    // 1. Gọi song song thông tin User, Organizations, Memberships, Invitations và Repositories (Page 1)
     let [userRes, orgsRes, reposRes1] = await Promise.all([
       fetch("https://api.github.com/user", {
         headers: getHeaders(token),
@@ -82,21 +95,35 @@ export async function GET() {
     const directOrgs = orgsRes.ok ? await orgsRes.json() : [];
     let repos: any[] = reposRes1.ok ? await reposRes1.json() : [];
 
-    // Nếu trang 1 đủ 100 repo, lấy thêm trang 2 để không bỏ sót repo
+    // Gọi thêm memberships (hỗ trợ cả các org mà membership là private) và repository invitations (lời mời repo chưa accept)
+    const [membershipsData, invitationsData] = await Promise.all([
+      safeFetchJson(
+        "https://api.github.com/user/memberships/orgs?state=active&per_page=100",
+        token,
+      ),
+      safeFetchJson(
+        "https://api.github.com/user/repository_invitations?per_page=100",
+        token,
+      ),
+    ]);
+
+    // Nếu trang 1 đủ 100 repo, lấy thêm trang 2 & 3 để không bỏ sót repo
     if (repos.length >= 100) {
       try {
-        const reposRes2 = await fetch(
-          "https://api.github.com/user/repos?affiliation=owner,collaborator,organization_member&sort=updated&per_page=100&page=2",
-          { headers: getHeaders(token) },
-        );
-        if (reposRes2.ok) {
-          const page2 = await reposRes2.json();
-          if (Array.isArray(page2)) {
-            repos = repos.concat(page2);
-          }
-        }
+        const [p2, p3] = await Promise.all([
+          safeFetchJson(
+            "https://api.github.com/user/repos?affiliation=owner,collaborator,organization_member&sort=updated&per_page=100&page=2",
+            token,
+          ),
+          safeFetchJson(
+            "https://api.github.com/user/repos?affiliation=owner,collaborator,organization_member&sort=updated&per_page=100&page=3",
+            token,
+          ),
+        ]);
+        if (Array.isArray(p2)) repos = repos.concat(p2);
+        if (Array.isArray(p3)) repos = repos.concat(p3);
       } catch (err) {
-        console.warn("Lỗi lấy repo trang 2:", err);
+        console.warn("Lỗi lấy repo trang bổ sung:", err);
       }
     }
 
@@ -105,19 +132,45 @@ export async function GET() {
     // 2. Thêm các Organizations chính thức từ /user/orgs
     if (Array.isArray(directOrgs)) {
       directOrgs.forEach((org: any) => {
-        orgsMap.set(org.login.toLowerCase(), {
-          login: org.login,
-          id: org.id,
-          avatar_url: org.avatar_url,
-          description: org.description || null,
-          isUser: false,
-        });
+        if (org && org.login) {
+          orgsMap.set(org.login.toLowerCase(), {
+            login: org.login,
+            id: org.id,
+            avatar_url: org.avatar_url,
+            description: org.description || null,
+            isUser: false,
+          });
+        }
       });
     }
 
-    // 3. Quét thêm các Organization từ owner của repo (trường hợp có org ngoài khác)
+    // 3. Thêm các Organizations từ memberships (bắt được cả org có private membership)
+    if (Array.isArray(membershipsData)) {
+      membershipsData.forEach((m: any) => {
+        const org = m?.organization;
+        if (org && org.login) {
+          const key = org.login.toLowerCase();
+          if (!orgsMap.has(key)) {
+            orgsMap.set(key, {
+              login: org.login,
+              id: org.id,
+              avatar_url: org.avatar_url,
+              description: org.description || null,
+              role: m.role || "member",
+              isUser: false,
+            });
+          }
+        }
+      });
+    }
+
+    // 4. Quét thêm các Organization từ owner của repo
     repos.forEach((repo: any) => {
-      if (repo.owner && repo.owner.type === "Organization") {
+      if (
+        repo.owner &&
+        repo.owner.type &&
+        repo.owner.type.toLowerCase() === "organization"
+      ) {
         const key = repo.owner.login.toLowerCase();
         if (!orgsMap.has(key)) {
           orgsMap.set(key, {
@@ -131,30 +184,20 @@ export async function GET() {
       }
     });
 
-    // 4. Nếu có org trong /user/orgs mà chưa có repo nào xuất hiện trong danh sách repos, gọi bổ sung repos của org đó
-    const orgsMissingRepos = Array.from(orgsMap.values()).filter(
-      (org) =>
-        !repos.some(
-          (r) => r.owner?.login?.toLowerCase() === org.login.toLowerCase(),
-        ),
-    );
-
-    if (orgsMissingRepos.length > 0) {
-      const extraReposPromises = orgsMissingRepos
-        .slice(0, 5)
-        .map(async (org) => {
-          try {
-            const res = await fetch(
-              `https://api.github.com/orgs/${org.login}/repos?per_page=100&type=all`,
-              {
-                headers: getHeaders(token),
-              },
-            );
-            return res.ok ? await res.json() : [];
-          } catch {
-            return [];
-          }
-        });
+    // 5. Quét toàn bộ repo của các Organization để không bỏ sót repo mới tạo của thành viên khác trong org
+    const orgsList = Array.from(orgsMap.values());
+    if (orgsList.length > 0) {
+      const extraReposPromises = orgsList.slice(0, 10).map(async (org) => {
+        try {
+          const orgRepos = await safeFetchJson(
+            `https://api.github.com/orgs/${org.login}/repos?per_page=100&type=all&sort=updated`,
+            token,
+          );
+          return Array.isArray(orgRepos) ? orgRepos : [];
+        } catch {
+          return [];
+        }
+      });
 
       const extraReposNested = await Promise.all(extraReposPromises);
       extraReposNested.forEach((orgRepos) => {
@@ -168,7 +211,7 @@ export async function GET() {
       });
     }
 
-    // 5. User cá nhân cũng là 1 orgs (đứng đầu danh sách)
+    // 6. User cá nhân cũng là 1 org context (đứng đầu danh sách)
     const finalOrgs: any[] = [];
     if (userObj) {
       finalOrgs.push({
@@ -189,10 +232,14 @@ export async function GET() {
     });
 
     return NextResponse.json(
-      { repos, orgs: finalOrgs },
+      {
+        repos,
+        orgs: finalOrgs,
+        invitations: Array.isArray(invitationsData) ? invitationsData : [],
+      },
       {
         headers: {
-          "Cache-Control": "private, max-age=30, stale-while-revalidate=120",
+          "Cache-Control": "private, max-age=15, stale-while-revalidate=60",
         },
       },
     );
