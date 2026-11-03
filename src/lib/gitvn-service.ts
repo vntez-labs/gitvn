@@ -8,6 +8,7 @@ import type {
 import type { JiraBoardData, JiraTask } from "@/interfaces/jira";
 import {
   commitFileToGitHub,
+  commitMultipleFilesToGitHub,
   fetchFileFromGitHub,
   fetchFolderContents,
 } from "./github-api";
@@ -254,38 +255,25 @@ export async function upgradeGitvnRepo(
     }
   } catch {}
 
-  // 4. Commit lên GitHub
+  // 4. Commit lên GitHub thành 1 commit duy nhất (tránh spam hàng chục commit rác)
   if (token) {
-    const msg = `chore(gitvn): upgrade to v${LATEST_GITVN_VERSION} decoupled task architecture`;
-    await commitFileToGitHub(
+    const filesToCommit = [
+      { path: ".gitvn/config.yml", content: configYamlStr },
+      { path: ".gitvn/README.md", content: readmeStr },
+      ...tasksList.map((task) => ({
+        path: `.gitvn/tasks/${task.id}.md`,
+        content: taskToMarkdown(task),
+      })),
+    ];
+
+    await commitMultipleFilesToGitHub(
       owner,
       repo,
-      ".gitvn/config.yml",
-      configYamlStr,
+      filesToCommit,
       token,
-      `${msg} - config.yml`,
+      `chore(gitvn): upgrade to v${LATEST_GITVN_VERSION} decoupled task architecture (${tasksList.length} tasks)`,
       branch,
     );
-    await commitFileToGitHub(
-      owner,
-      repo,
-      ".gitvn/README.md",
-      readmeStr,
-      token,
-      `${msg} - AI guide README.md`,
-      branch,
-    );
-    for (const task of tasksList) {
-      await commitFileToGitHub(
-        owner,
-        repo,
-        `.gitvn/tasks/${task.id}.md`,
-        taskToMarkdown(task),
-        token,
-        `${msg} - task ${task.id}`,
-        branch,
-      );
-    }
   }
 
   return { success: true, migratedTasksCount: tasksList.length };

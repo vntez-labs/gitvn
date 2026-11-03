@@ -157,3 +157,168 @@ export async function commitFileToGitHub(
     return { ok: false, error: err.message };
   }
 }
+
+export interface GitFileChange {
+  path: string;
+  content: string;
+}
+
+/**
+ * Commit nhiều file cùng lúc trong 1 commit duy nhất (Git Data API: Trees & Commits)
+ */
+export async function commitMultipleFilesToGitHub(
+  owner: string,
+  repo: string,
+  files: GitFileChange[],
+  token: string,
+  message: string,
+  branch = "main",
+): Promise<{ ok: boolean; commitSha?: string; error?: string }> {
+  if (!files || files.length === 0) {
+    return { ok: true };
+  }
+
+  // Nếu chỉ có 1 file, dùng commitFileToGitHub cho nhanh và nhẹ
+  if (files.length === 1) {
+    const single = files[0];
+    const res = await commitFileToGitHub(
+      owner,
+      repo,
+      single.path,
+      single.content,
+      token,
+      message,
+      branch,
+    );
+    return { ok: res.ok, commitSha: res.sha, error: res.error };
+  }
+
+  try {
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${token}`,
+      Accept: "application/vnd.github+json",
+      "User-Agent": "GitVN-App",
+      "X-GitHub-Api-Version": "2022-11-28",
+      "Content-Type": "application/json",
+    };
+
+    // 1. Lấy latest commit SHA của nhánh
+    const refRes = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/git/ref/heads/${encodeURIComponent(branch)}`,
+      { headers, cache: "no-store" },
+    );
+
+    if (!refRes.ok) {
+      // Fallback nếu không đọc được Git Ref: commit từng file
+      for (const f of files) {
+        await commitFileToGitHub(
+          owner,
+          repo,
+          f.path,
+          f.content,
+          token,
+          message,
+          branch,
+        );
+      }
+      return { ok: true };
+    }
+
+    const refData = await refRes.json();
+    const latestCommitSha = refData.object.sha;
+
+    // 2. Lấy base tree SHA từ latest commit
+    const commitRes = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/git/commits/${latestCommitSha}`,
+      { headers, cache: "no-store" },
+    );
+    if (!commitRes.ok) {
+      return { ok: false, error: "Không thể lấy thông tin commit gốc" };
+    }
+    const commitData = await commitRes.json();
+    const baseTreeSha = commitData.tree.sha;
+
+    // 3. Tạo Git Tree mới chứa toàn bộ files
+    const treeItems = files.map((f) => ({
+      path: f.path,
+      mode: "100644" as const,
+      type: "blob" as const,
+      content: f.content,
+    }));
+
+    const treeRes = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/git/trees`,
+      {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          base_tree: baseTreeSha,
+          tree: treeItems,
+        }),
+      },
+    );
+
+    if (!treeRes.ok) {
+      // Fallback nếu Git Tree API lỗi
+      for (const f of files) {
+        await commitFileToGitHub(
+          owner,
+          repo,
+          f.path,
+          f.content,
+          token,
+          message,
+          branch,
+        );
+      }
+      return { ok: true };
+    }
+
+    const treeData = await treeRes.json();
+    const newTreeSha = treeData.sha;
+
+    // 4. Tạo Commit mới duy nhất
+    const newCommitRes = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/git/commits`,
+      {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          message,
+          tree: newTreeSha,
+          parents: [latestCommitSha],
+        }),
+      },
+    );
+
+    if (!newCommitRes.ok) {
+      const err = await newCommitRes.json().catch(() => ({}));
+      return { ok: false, error: err.message || "Lỗi tạo Git Commit" };
+    }
+
+    const newCommitData = await newCommitRes.json();
+    const newCommitSha = newCommitData.sha;
+
+    // 5. Cập nhật nhánh Git trỏ tới commit mới
+    const updateRefRes = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/git/refs/heads/${encodeURIComponent(branch)}`,
+      {
+        method: "PATCH",
+        headers,
+        body: JSON.stringify({
+          sha: newCommitSha,
+          force: false,
+        }),
+      },
+    );
+
+    if (!updateRefRes.ok) {
+      const err = await updateRefRes.json().catch(() => ({}));
+      return { ok: false, error: err.message || "Lỗi cập nhật nhánh Git" };
+    }
+
+    return { ok: true, commitSha: newCommitSha };
+  } catch (err: any) {
+    return { ok: false, error: err.message };
+  }
+}

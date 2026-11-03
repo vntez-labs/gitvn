@@ -1,7 +1,7 @@
 import fs from "fs/promises";
 import path from "path";
 import type { JiraBoardData, JiraSprint, JiraTask } from "@/interfaces/jira";
-import { commitFileToGitHub } from "./github-api";
+import { commitFileToGitHub, commitMultipleFilesToGitHub } from "./github-api";
 import { parseTaskMarkdown, taskToMarkdown } from "./task-file";
 
 const GITVN_DIR = path.join(process.cwd(), ".gitvn");
@@ -182,6 +182,7 @@ export async function fetchBoardFromGitHub(
 
 /**
  * Đồng bộ dữ liệu Board lên GitHub (ghi tasks.json và các file rời .gitvn/tasks/*.md)
+ * Gộp tất cả thay đổi trong 1 commit duy nhất qua Git Data Tree API để tránh commit rác
  */
 export async function syncBoardToGitHub(
   owner: string,
@@ -190,31 +191,30 @@ export async function syncBoardToGitHub(
   token: string,
   branch?: string | null,
 ): Promise<{ ok: boolean; error?: string }> {
-  // Commit tasks.json
-  const resTasksJson = await commitFileToGitHub(
+  const filesToCommit = [
+    {
+      path: ".gitvn/tasks.json",
+      content: JSON.stringify(data, null, 2),
+    },
+  ];
+
+  if (Array.isArray(data.tasks)) {
+    data.tasks.forEach((t) => {
+      filesToCommit.push({
+        path: `.gitvn/tasks/${t.id}.md`,
+        content: taskToMarkdown(t),
+      });
+    });
+  }
+
+  const res = await commitMultipleFilesToGitHub(
     owner,
     repo,
-    ".gitvn/tasks.json",
-    JSON.stringify(data, null, 2),
+    filesToCommit,
     token,
-    "chore(gitvn): update tasks.json board",
+    `chore(gitvn): sync tasks board (${data.tasks?.length || 0} tasks)`,
     branch || undefined,
   );
 
-  // Commit individual task markdown files
-  if (Array.isArray(data.tasks)) {
-    for (const t of data.tasks) {
-      await commitFileToGitHub(
-        owner,
-        repo,
-        `.gitvn/tasks/${t.id}.md`,
-        taskToMarkdown(t),
-        token,
-        `chore(gitvn): sync task ${t.id}`,
-        branch || undefined,
-      );
-    }
-  }
-
-  return { ok: resTasksJson.ok, error: resTasksJson.error };
+  return { ok: res.ok, error: res.error };
 }

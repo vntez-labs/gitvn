@@ -10,6 +10,7 @@ import {
   Tooltip,
 } from "@mantine/core";
 import { IconGitPullRequest, IconSparkles } from "@tabler/icons-react";
+import { useState } from "react";
 import { copyTaskAIPrompt } from "@/lib/ai-prompt";
 import { getGitHubAvatarUrl } from "@/lib/avatar";
 import { getStoryPointsForTask } from "@/lib/jira-priority";
@@ -17,8 +18,10 @@ import type { JiraTask, TaskPriority } from "@/interfaces/jira";
 
 interface KanbanCardProps {
   task: JiraTask;
+  index: number;
   onClick: (task: JiraTask) => void;
   onDragStart: (e: React.DragEvent, taskId: string) => void;
+  onDropOnCard?: (e: React.DragEvent, targetIndex: number) => void;
   canDrag: boolean;
 }
 
@@ -54,20 +57,53 @@ const PRIORITY_CONFIG: Record<
 
 export function KanbanCard({
   task,
+  index,
   onClick,
   onDragStart,
+  onDropOnCard,
   canDrag,
 }: KanbanCardProps) {
+  const [dropPos, setDropPos] = useState<"top" | "bottom" | null>(null);
   const prio = PRIORITY_CONFIG[task.priority] || PRIORITY_CONFIG.medium;
   const assigneeName = task.assignee?.name || task.assignee?.login;
+
+  const handleDragOver = (e: React.DragEvent) => {
+    if (!canDrag || !onDropOnCard) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const rect = e.currentTarget.getBoundingClientRect();
+    const midY = rect.top + rect.height / 2;
+    const pos = e.clientY < midY ? "top" : "bottom";
+    if (dropPos !== pos) {
+      setDropPos(pos);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.stopPropagation();
+    setDropPos(null);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    if (!canDrag || !onDropOnCard) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const targetIdx = dropPos === "bottom" ? index + 1 : index;
+    setDropPos(null);
+    onDropOnCard(e, targetIdx);
+  };
 
   return (
     <Box
       draggable={canDrag}
       onDragStart={(e) => onDragStart(e, task.id)}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
       onClick={() => onClick(task)}
       p={12}
       style={{
+        position: "relative",
         backgroundColor: "#ffffff",
         border: "1px solid #e4e4e7",
         borderRadius: 8,
@@ -87,6 +123,37 @@ export function KanbanCard({
         e.currentTarget.style.boxShadow = "0 1px 2px rgba(0, 0, 0, 0.04)";
       }}
     >
+      {/* Vị trí hiển thị Drop Indicator khi kéo thả để chọn chính xác thứ tự */}
+      {dropPos === "top" && (
+        <Box
+          style={{
+            position: "absolute",
+            top: -5,
+            left: 2,
+            right: 2,
+            height: 3,
+            backgroundColor: "#dc2626",
+            borderRadius: 2,
+            zIndex: 10,
+            pointerEvents: "none",
+          }}
+        />
+      )}
+      {dropPos === "bottom" && (
+        <Box
+          style={{
+            position: "absolute",
+            bottom: -5,
+            left: 2,
+            right: 2,
+            height: 3,
+            backgroundColor: "#dc2626",
+            borderRadius: 2,
+            zIndex: 10,
+            pointerEvents: "none",
+          }}
+        />
+      )}
       {/* Header: Key & Story Points */}
       <Group justify="space-between" mb={8} wrap="nowrap">
         <Group gap={6} align="center" wrap="nowrap">

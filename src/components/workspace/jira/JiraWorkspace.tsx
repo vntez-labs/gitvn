@@ -6,6 +6,7 @@ import {
   Box,
   Button,
   Group,
+  Loader,
   Menu,
   Paper,
   SegmentedControl,
@@ -65,6 +66,8 @@ export function JiraWorkspace() {
     initializing,
     loading,
     syncedToGitHub,
+    gitSyncStatus,
+    flushGitSync,
     view,
     setView,
     selectedSprintId,
@@ -279,25 +282,66 @@ export function JiraWorkspace() {
           </Group>
 
           <Group gap="xs" wrap="nowrap" align="center">
-            {/* Sync Status Badge */}
-            <Tooltip
-              label={
-                syncedToGitHub
-                  ? "Đã đồng bộ với .gitvn/tasks.json trên GitHub"
-                  : "Đang lưu cục bộ trong hệ thống"
-              }
-              withArrow
-            >
+            {/* Sync Status Badge (Tối ưu hóa: Debounced Git Sync & Gom 1 commit) */}
+            {gitSyncStatus === "syncing" ? (
               <Badge
                 size="sm"
                 variant="light"
-                color={syncedToGitHub ? "teal" : "yellow"}
-                style={{ cursor: "pointer" }}
-                onClick={fetchBoardData}
+                color="blue"
+                leftSection={<Loader size={10} color="blue" />}
               >
-                ● {syncedToGitHub ? "GITHUB SYNCED" : "LOCAL CACHED"}
+                ĐANG LƯU GITHUB...
               </Badge>
-            </Tooltip>
+            ) : gitSyncStatus === "pending" ? (
+              <Tooltip
+                label="Đang gom các thao tác kéo thả (debounce 2.5s) để chỉ tạo 1 commit duy nhất. Nhấp để lưu ngay!"
+                withArrow
+              >
+                <Badge
+                  size="sm"
+                  variant="light"
+                  color="orange"
+                  style={{ cursor: "pointer" }}
+                  onClick={flushGitSync}
+                >
+                  ⏳ CHỜ LƯU GIT (BẤM LƯU NGAY)
+                </Badge>
+              </Tooltip>
+            ) : gitSyncStatus === "error" ? (
+              <Tooltip
+                label="Đồng bộ GitHub gặp lỗi. Nhấp để thử lại ngay!"
+                withArrow
+              >
+                <Badge
+                  size="sm"
+                  variant="light"
+                  color="red"
+                  style={{ cursor: "pointer" }}
+                  onClick={flushGitSync}
+                >
+                  ⚠️ LỖI SYNC (BẤM THỬ LẠI)
+                </Badge>
+              </Tooltip>
+            ) : (
+              <Tooltip
+                label={
+                  syncedToGitHub
+                    ? "Đã đồng bộ an toàn với GitHub repo (1 commit sạch)"
+                    : "Đang lưu cục bộ trong hệ thống"
+                }
+                withArrow
+              >
+                <Badge
+                  size="sm"
+                  variant="light"
+                  color={syncedToGitHub ? "teal" : "yellow"}
+                  style={{ cursor: "pointer" }}
+                  onClick={fetchBoardData}
+                >
+                  ● {syncedToGitHub ? "GITHUB SYNCED" : "LOCAL CACHED"}
+                </Badge>
+              </Tooltip>
+            )}
 
             {/* Nút Đồng bộ trạng thái Pull Requests */}
             <Tooltip

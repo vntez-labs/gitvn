@@ -20,7 +20,11 @@ interface KanbanColumnProps {
   title: string;
   color: string;
   tasks: JiraTask[];
-  onDropTask: (taskId: string, targetStatus: TaskStatus) => void;
+  onDropTask: (
+    taskId: string,
+    targetStatus: TaskStatus,
+    targetIndex?: number,
+  ) => void;
   onCardClick: (task: JiraTask) => void;
   onDragStart: (e: React.DragEvent, taskId: string) => void;
   onQuickAdd: (status: TaskStatus) => void;
@@ -58,7 +62,15 @@ export function KanbanColumn({
     setIsDragOver(false);
     const taskId = e.dataTransfer.getData("text/plain");
     if (taskId) {
-      onDropTask(taskId, status);
+      onDropTask(taskId, status, tasks.length);
+    }
+  };
+
+  const handleDropOnCard = (e: React.DragEvent, targetIndex: number) => {
+    setIsDragOver(false);
+    const taskId = e.dataTransfer.getData("text/plain");
+    if (taskId) {
+      onDropTask(taskId, status, targetIndex);
     }
   };
 
@@ -155,12 +167,14 @@ export function KanbanColumn({
       >
         {tasks.length > 0 ? (
           <Stack gap={8}>
-            {tasks.map((task) => (
+            {tasks.map((task, idx) => (
               <KanbanCard
                 key={task.id}
                 task={task}
+                index={idx}
                 onClick={onCardClick}
                 onDragStart={onDragStart}
+                onDropOnCard={handleDropOnCard}
                 canDrag={canEdit}
               />
             ))}

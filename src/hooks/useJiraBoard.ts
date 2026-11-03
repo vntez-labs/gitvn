@@ -1,7 +1,7 @@
 "use client";
 
 import { notifications } from "@mantine/notifications";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { GitvnConfig } from "@/interfaces/gitvn";
 import type {
   JiraBoardData,
@@ -170,34 +170,89 @@ export function useJiraBoard() {
   const canManageSprint = userRole === "admin" || userRole === "pm";
   const canCreateBacklog = canEdit;
 
-  // Lưu Board Data ngầm
+  // Quản lý debounce đồng bộ Git
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const pendingDataRef = useRef<JiraBoardData | null>(null);
+  const [gitSyncStatus, setGitSyncStatus] = useState<
+    "synced" | "pending" | "syncing" | "error"
+  >("synced");
+
+  const flushGitSync = useCallback(async () => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
+    }
+    const dataToSync = pendingDataRef.current;
+    if (!dataToSync || !selectedRepo) return;
+
+    setGitSyncStatus("syncing");
+    setSyncing(true);
+
+    try {
+      await jiraService.saveBoardData(
+        selectedRepo.owner.login,
+        selectedRepo.name,
+        currentBranch,
+        dataToSync,
+        true,
+      );
+      setSyncedToGitHub(true);
+      setGitSyncStatus("synced");
+      pendingDataRef.current = null;
+    } catch (err: any) {
+      console.error("Lỗi đồng bộ Git:", err);
+      setGitSyncStatus("error");
+      notifications.show({
+        title: "Lỗi đồng bộ GitHub",
+        message: err.response?.data?.error || "Không thể đồng bộ lên GitHub",
+        color: "red",
+      });
+    } finally {
+      setSyncing(false);
+    }
+  }, [selectedRepo, currentBranch]);
+
+  // Dọn dẹp timer khi component unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
+
+  // Lưu Board Data ngầm có debounce (không tạo commit rác liên tục khi kéo thả)
   const saveTasks = useCallback(
-    async (newData: JiraBoardData) => {
+    (newData: JiraBoardData, immediateSync = false) => {
       if (!selectedRepo) return;
       setBoardData(newData);
-      setSyncing(true);
+      pendingDataRef.current = newData;
 
-      try {
-        await jiraService.saveBoardData(
+      // 1. Lưu local cache ngay lập tức (0ms delay, không sync GitHub)
+      jiraService
+        .saveBoardData(
           selectedRepo.owner.login,
           selectedRepo.name,
           currentBranch,
           newData,
-          true,
-        );
-        setSyncedToGitHub(true);
-      } catch (err: any) {
-        console.error("Lỗi lưu tasks:", err);
-        notifications.show({
-          title: "Lưu thất bại",
-          message: err.response?.data?.error || "Không thể lưu dữ liệu",
-          color: "red",
-        });
-      } finally {
-        setSyncing(false);
+          false,
+        )
+        .catch((err) => console.warn("Lỗi lưu local cache:", err));
+
+      if (immediateSync) {
+        flushGitSync();
+      } else {
+        // 2. Debounce 2500ms trước khi gom thành 1 commit duy nhất lên GitHub
+        setGitSyncStatus("pending");
+        if (debounceTimerRef.current) {
+          clearTimeout(debounceTimerRef.current);
+        }
+        debounceTimerRef.current = setTimeout(() => {
+          flushGitSync();
+        }, 2500);
       }
     },
-    [selectedRepo, currentBranch],
+    [selectedRepo, currentBranch, flushGitSync],
   );
 
   const initializeGitvn = useCallback(async () => {
@@ -232,7 +287,7 @@ export function useJiraBoard() {
       if (!boardData) return;
       const tasks = [...boardData.tasks, newTask];
       const taskSeq = (boardData.taskSeq || 0) + 1;
-      saveTasks({ ...boardData, tasks, taskSeq });
+      saveTasks({ ...boardData, tasks, taskSeq }, true); // Tạo task mới thì sync ngay
     },
     [boardData, saveTasks],
   );
@@ -252,24 +307,68 @@ export function useJiraBoard() {
     (taskId: string) => {
       if (!boardData) return;
       const tasks = boardData.tasks.filter((t) => t.id !== taskId);
-      saveTasks({ ...boardData, tasks });
+      saveTasks({ ...boardData, tasks }, true);
     },
     [boardData, saveTasks],
   );
 
+  // Kéo thả Task có hỗ trợ vị trí (targetIndex) và reorder trong cùng cột
   const dropTask = useCallback(
-    (taskId: string, targetStatus: TaskStatus) => {
+    (taskId: string, targetStatus: TaskStatus, targetIndex?: number) => {
       if (!boardData) return;
-      const task = boardData.tasks.find((t) => t.id === taskId);
-      if (!task || task.status === targetStatus) return;
+      const currentTask = boardData.tasks.find((t) => t.id === taskId);
+      if (!currentTask) return;
 
-      const updated = {
-        ...task,
+      const updatedTask: JiraTask = {
+        ...currentTask,
         status: targetStatus,
         updatedAt: new Date().toISOString(),
       };
-      const tasks = boardData.tasks.map((t) => (t.id === taskId ? updated : t));
-      saveTasks({ ...boardData, tasks });
+
+      // Tách task cần di chuyển ra khỏi mảng
+      const remainingTasks = boardData.tasks.filter((t) => t.id !== taskId);
+
+      // Lấy danh sách các task hiện có trong cột đích
+      const targetColTasks = remainingTasks.filter(
+        (t) => t.status === targetStatus,
+      );
+
+      let insertAtOverallIndex: number;
+
+      if (
+        targetIndex !== undefined &&
+        targetIndex >= 0 &&
+        targetIndex < targetColTasks.length
+      ) {
+        // Chèn trước task tại vị trí targetIndex trong cột đích
+        const pivotTask = targetColTasks[targetIndex];
+        insertAtOverallIndex = remainingTasks.findIndex(
+          (t) => t.id === pivotTask.id,
+        );
+      } else if (targetColTasks.length > 0) {
+        // Chèn sau task cuối cùng của cột đích
+        const lastColTask = targetColTasks[targetColTasks.length - 1];
+        const lastIdx = remainingTasks.findIndex(
+          (t) => t.id === lastColTask.id,
+        );
+        insertAtOverallIndex = lastIdx + 1;
+      } else {
+        // Cột đích đang trống -> chèn vào cuối
+        insertAtOverallIndex = remainingTasks.length;
+      }
+
+      if (insertAtOverallIndex < 0) {
+        insertAtOverallIndex = remainingTasks.length;
+      }
+
+      const newTasks = [
+        ...remainingTasks.slice(0, insertAtOverallIndex),
+        updatedTask,
+        ...remainingTasks.slice(insertAtOverallIndex),
+      ];
+
+      // Lưu với cơ chế debounce 2.5s (không tạo commit rác liên tục)
+      saveTasks({ ...boardData, tasks: newTasks }, false);
     },
     [boardData, saveTasks],
   );
@@ -505,6 +604,8 @@ export function useJiraBoard() {
     loading,
     syncing,
     syncedToGitHub,
+    gitSyncStatus,
+    flushGitSync,
     view,
     setView,
     selectedSprintId,
