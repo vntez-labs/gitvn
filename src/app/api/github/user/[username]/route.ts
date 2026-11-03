@@ -1,5 +1,5 @@
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { getValidAuthToken } from "@/lib/auth-token";
 
 function parseProfileBadges(html: string) {
   const achievements: { name: string; iconUrl: string; tier?: string }[] = [];
@@ -39,8 +39,7 @@ export async function GET(
     return NextResponse.json({ error: "Thiếu username" }, { status: 400 });
   }
 
-  const cookieStore = await cookies();
-  const token = cookieStore.get("github_access_token")?.value;
+  const token = await getValidAuthToken();
 
   if (!token) {
     return NextResponse.json(

@@ -1,5 +1,5 @@
-import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
+import { getValidAuthToken } from "@/lib/auth-token";
 
 interface RawGitHubUser {
   id?: number;
@@ -19,8 +19,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ users: [] });
   }
 
-  const cookieStore = await cookies();
-  const token = cookieStore.get("github_access_token")?.value;
+  const token = await getValidAuthToken();
 
   const headers: Record<string, string> = {
     Accept: "application/vnd.github+json",

@@ -1,9 +1,8 @@
-import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
+import { getValidAuthToken } from "@/lib/auth-token";
 
 export async function POST(request: NextRequest) {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("github_access_token")?.value;
+  const token = await getValidAuthToken();
 
   if (!token) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

@@ -15,12 +15,13 @@ import {
   createDefaultReadme,
   createDefaultTasks,
 } from "@/lib/gitvn-templates";
+import { getValidAuthToken } from "@/lib/auth-token";
 
 const LOCAL_GITVN_DIR = path.join(process.cwd(), ".gitvn");
 
 async function getAuthToken(): Promise<string | undefined> {
-  const cookieStore = await cookies();
-  return cookieStore.get("github_access_token")?.value;
+  const token = await getValidAuthToken();
+  return token || undefined;
 }
 
 async function getAuthUser(): Promise<{

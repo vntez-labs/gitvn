@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
+import { setAuthCookies } from "@/lib/auth-token";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -17,6 +18,7 @@ export async function GET(request: NextRequest) {
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json",
+          "User-Agent": "GitVN-App",
         },
         body: JSON.stringify({
           client_id: process.env.GITHUB_CLIENT_ID,
@@ -35,16 +37,9 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const accessToken = tokenData.access_token;
-
-    // Set httpOnly cookie to store token
+    // Lưu toàn bộ access token, refresh token và thời hạn sống vào HTTP-only cookies
     const cookieStore = await cookies();
-    cookieStore.set("github_access_token", accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      path: "/",
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-    });
+    await setAuthCookies(cookieStore, tokenData);
 
     // Redirect to home or dashboard
     return NextResponse.redirect(new URL("/dashboard", request.url));

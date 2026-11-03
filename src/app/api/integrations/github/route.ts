@@ -1,15 +1,14 @@
-import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
+import { getValidAuthToken } from "@/lib/auth-token";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const reconnect = searchParams.get("reconnect") === "true";
 
-  // Nếu đã đăng nhập và không yêu cầu kết nối lại, chuyển thẳng vào Dashboard
+  // Nếu đã đăng nhập với token hợp lệ (hoặc vừa được auto-refresh thành công), chuyển thẳng vào Dashboard
   if (!reconnect) {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("github_access_token")?.value;
-    if (token) {
+    const validToken = await getValidAuthToken();
+    if (validToken) {
       return NextResponse.redirect(new URL("/dashboard", request.url));
     }
   }

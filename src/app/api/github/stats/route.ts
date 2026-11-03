@@ -1,5 +1,5 @@
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { getValidAuthToken } from "@/lib/auth-token";
 
 // In-Memory Cache lưu kết quả thống kê từng repo
 interface CacheEntry {
@@ -73,8 +73,7 @@ export async function GET(request: Request) {
     return NextResponse.json(cached.data);
   }
 
-  const cookieStore = await cookies();
-  const token = cookieStore.get("github_access_token")?.value;
+  const token = await getValidAuthToken();
 
   if (!token) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

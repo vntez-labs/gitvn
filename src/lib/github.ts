@@ -1,16 +1,15 @@
-import { cookies } from "next/headers";
 import type { GitHubUser } from "@/interfaces/github";
+import { fetchGitHubWithAuth, getValidAuthToken } from "@/lib/auth-token";
 
 export async function getGitHubUser(): Promise<GitHubUser | null> {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("github_access_token")?.value;
+  const token = await getValidAuthToken();
   if (!token) return null;
 
-  const res = await fetch("https://api.github.com/user", {
-    headers: { Authorization: `Bearer ${token}` },
-    next: { revalidate: 3600 }, // Cache 1 tiếng
-  });
-
-  if (!res.ok) return null;
-  return res.json();
+  try {
+    const res = await fetchGitHubWithAuth("https://api.github.com/user");
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
 }

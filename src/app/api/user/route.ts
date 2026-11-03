@@ -1,23 +1,16 @@
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { fetchGitHubWithAuth, getValidAuthToken } from "@/lib/auth-token";
 
 export async function GET() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("github_access_token")?.value;
+  const token = await getValidAuthToken();
 
   if (!token) {
-    // Không đăng nhập -> Trả về user: null với 200 OK thay vì 401
+    // Không đăng nhập hoặc token đã hết hạn không thể refresh -> Trả về user: null với 200 OK
     return NextResponse.json({ user: null }, { status: 200 });
   }
 
   try {
-    const res = await fetch("https://api.github.com/user", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: "application/vnd.github+json",
-      },
-      next: { revalidate: 3600 },
-    });
+    const res = await fetchGitHubWithAuth("https://api.github.com/user");
 
     if (!res.ok) {
       return NextResponse.json({ user: null }, { status: 200 });

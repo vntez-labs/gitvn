@@ -1,5 +1,5 @@
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { getValidAuthToken } from "@/lib/auth-token";
 
 // Hàm bóc tách tổng số trang từ header 'link' chuẩn RFC 5988 của GitHub
 function parseTotalPages(
@@ -40,8 +40,7 @@ export async function GET(request: Request) {
     );
   }
 
-  const cookieStore = await cookies();
-  const token = cookieStore.get("github_access_token")?.value;
+  const token = await getValidAuthToken();
 
   if (!token) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -121,8 +120,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("github_access_token")?.value;
+  const token = await getValidAuthToken();
 
   if (!token) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

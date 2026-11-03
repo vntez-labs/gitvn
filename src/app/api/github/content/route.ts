@@ -1,5 +1,5 @@
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { getValidAuthToken } from "@/lib/auth-token";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -15,8 +15,7 @@ export async function GET(request: Request) {
     );
   }
 
-  const cookieStore = await cookies();
-  const token = cookieStore.get("github_access_token")?.value;
+  const token = await getValidAuthToken();
 
   if (!token) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

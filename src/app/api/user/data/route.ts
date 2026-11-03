@@ -1,35 +1,82 @@
 // app/api/user/data/route.ts
 
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import {
+  getValidAuthToken,
+  refreshGitHubToken,
+  setAuthCookies,
+} from "@/lib/auth-token";
+import { cookies } from "next/headers";
 
 export async function GET() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("github_access_token")?.value;
+  let token = await getValidAuthToken();
 
   if (!token) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const authHeaders = {
-    Authorization: `Bearer ${token}`,
+  const getHeaders = (t: string | null) => ({
+    ...(t ? { Authorization: `Bearer ${t}` } : {}),
     Accept: "application/vnd.github.v3+json",
-  };
+    "User-Agent": "GitVN-App",
+    "X-GitHub-Api-Version": "2022-11-28",
+  });
 
   try {
     // 1. Gọi song song thông tin User, danh sách Organizations và Repositories (Page 1)
-    const [userRes, orgsRes, reposRes1] = await Promise.all([
-      fetch("https://api.github.com/user", { headers: authHeaders }),
+    let [userRes, orgsRes, reposRes1] = await Promise.all([
+      fetch("https://api.github.com/user", {
+        headers: getHeaders(token),
+        cache: "no-store",
+      }),
       fetch("https://api.github.com/user/orgs?per_page=100", {
-        headers: authHeaders,
+        headers: getHeaders(token),
+        cache: "no-store",
       }),
       fetch(
         "https://api.github.com/user/repos?affiliation=owner,collaborator,organization_member&sort=updated&per_page=100",
         {
-          headers: authHeaders,
+          headers: getHeaders(token),
+          cache: "no-store",
         },
       ),
     ]);
+
+    // Nếu gặp 401 (token bị revoke hoặc hết hạn đột ngột), thử auto-refresh 1 lần
+    if (userRes.status === 401 || reposRes1.status === 401) {
+      const cookieStore = await cookies();
+      const refreshToken = cookieStore.get("github_refresh_token")?.value;
+      if (refreshToken) {
+        const refreshResult = await refreshGitHubToken(refreshToken);
+        if (refreshResult.ok && refreshResult.data) {
+          await setAuthCookies(cookieStore, refreshResult.data);
+          token = refreshResult.data.access_token;
+
+          // Thử lại với token mới
+          [userRes, orgsRes, reposRes1] = await Promise.all([
+            fetch("https://api.github.com/user", {
+              headers: getHeaders(token),
+              cache: "no-store",
+            }),
+            fetch("https://api.github.com/user/orgs?per_page=100", {
+              headers: getHeaders(token),
+              cache: "no-store",
+            }),
+            fetch(
+              "https://api.github.com/user/repos?affiliation=owner,collaborator,organization_member&sort=updated&per_page=100",
+              {
+                headers: getHeaders(token),
+                cache: "no-store",
+              },
+            ),
+          ]);
+        }
+      }
+    }
+
+    if (!userRes.ok && !reposRes1.ok) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     const userObj = userRes.ok ? await userRes.json() : null;
     const directOrgs = orgsRes.ok ? await orgsRes.json() : [];
@@ -40,7 +87,7 @@ export async function GET() {
       try {
         const reposRes2 = await fetch(
           "https://api.github.com/user/repos?affiliation=owner,collaborator,organization_member&sort=updated&per_page=100&page=2",
-          { headers: authHeaders },
+          { headers: getHeaders(token) },
         );
         if (reposRes2.ok) {
           const page2 = await reposRes2.json();
@@ -100,7 +147,7 @@ export async function GET() {
             const res = await fetch(
               `https://api.github.com/orgs/${org.login}/repos?per_page=100&type=all`,
               {
-                headers: authHeaders,
+                headers: getHeaders(token),
               },
             );
             return res.ok ? await res.json() : [];

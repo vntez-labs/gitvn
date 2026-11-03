@@ -1,6 +1,6 @@
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import type { TaskAssignee } from "@/interfaces/jira";
+import { getValidAuthToken } from "@/lib/auth-token";
 
 interface CacheEntry {
   members: TaskAssignee[];
@@ -11,8 +11,8 @@ const membersCache = new Map<string, CacheEntry>();
 const CACHE_TTL_MS = 60 * 1000; // 60s cache
 
 async function getAuthToken(): Promise<string | undefined> {
-  const cookieStore = await cookies();
-  return cookieStore.get("github_access_token")?.value;
+  const token = await getValidAuthToken();
+  return token || undefined;
 }
 
 export async function GET(request: Request) {

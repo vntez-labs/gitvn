@@ -56,12 +56,32 @@ export function GlobalNavigationProgress() {
         }
         return response;
       },
-      (error) => {
+      async (error) => {
         activeRequests--;
         if (activeRequests <= 0) {
           activeRequests = 0;
           nprogress.complete();
         }
+
+        // Tự động thử làm mới token nếu gặp 401 Unauthorized
+        const originalRequest = error.config;
+        if (
+          error.response?.status === 401 &&
+          originalRequest &&
+          !originalRequest._retry &&
+          !originalRequest.url?.includes("/api/auth/")
+        ) {
+          originalRequest._retry = true;
+          try {
+            const refreshRes = await axios.post("/api/auth/refresh");
+            if (refreshRes.status === 200 && refreshRes.data?.success) {
+              return axios(originalRequest);
+            }
+          } catch {
+            // Không thể refresh (token bị revoke hoặc hết hạn 6 tháng)
+          }
+        }
+
         return Promise.reject(error);
       },
     );

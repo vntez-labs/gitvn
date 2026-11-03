@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import path from "path";
 import type { JiraBoardData, JiraSprint, JiraTask } from "@/interfaces/jira";
+import { getValidAuthToken } from "@/lib/auth-token";
 
 // Lưu trữ chính tại thư mục .gitvn trong repo (hoặc local cache)
 const GITVN_DIR = path.join(process.cwd(), ".gitvn");
@@ -60,8 +61,8 @@ async function safeReadFile(filePath: string): Promise<string | null> {
 }
 
 async function getAuthToken(): Promise<string | undefined> {
-  const cookieStore = await cookies();
-  return cookieStore.get("github_access_token")?.value;
+  const token = await getValidAuthToken();
+  return token || undefined;
 }
 
 async function getAuthUser(): Promise<{
