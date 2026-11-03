@@ -27,11 +27,11 @@ export function TaskAssigneeMeta({
 }: TaskAssigneeMetaProps) {
   return (
     <Box
-      p="sm"
+      py="xs"
+      px={4}
       style={{
-        backgroundColor: "#f8fafc",
-        border: "1px solid #e2e8f0",
-        borderRadius: 8,
+        backgroundColor: "transparent",
+        border: "none",
       }}
     >
       <Group justify="space-between" wrap="wrap" gap="sm">

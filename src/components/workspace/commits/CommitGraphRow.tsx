@@ -30,8 +30,8 @@ interface CommitGraphRowProps {
 
 const LANE_STEP = 18;
 const getX = (lane: number) => 16 + lane * LANE_STEP;
-const cy = 24;
-const ROW_HEIGHT = 48;
+const ROW_HEIGHT = 52;
+const cy = 26;
 
 export function CommitGraphRow({
   item,
@@ -98,7 +98,12 @@ export function CommitGraphRow({
                 variant="filled"
                 color="red"
                 radius="sm"
-                style={{ fontSize: 10, height: 18, padding: "0 6px" }}
+                style={{
+                  fontSize: 10.5,
+                  height: 19,
+                  padding: "0 7px",
+                  fontWeight: 700,
+                }}
               >
                 HEAD
               </Badge>
@@ -110,39 +115,44 @@ export function CommitGraphRow({
                 variant="light"
                 color="violet"
                 radius="sm"
-                leftSection={<IconGitMerge size={10} />}
-                style={{ fontSize: 10, height: 18, padding: "0 6px" }}
+                leftSection={<IconGitMerge size={11} />}
+                style={{
+                  fontSize: 10.5,
+                  height: 19,
+                  padding: "0 7px",
+                  fontWeight: 600,
+                }}
               >
                 MERGE
               </Badge>
             )}
 
             <Text
-              fz="xs"
+              fz={13.5}
               fw={600}
               c="#1f1c19"
               truncate
               title={title}
-              style={{ flex: 1 }}
+              style={{ flex: 1, letterSpacing: "-0.01em" }}
             >
               {title}
             </Text>
           </Group>
 
-          <Group gap={6} mt={2} align="center">
+          <Group gap={6} mt={3} align="center">
             <Avatar
               src={getGitHubAvatarUrl(
                 author || {
                   login: commit?.author?.name,
                   avatar_url: author?.avatar_url,
                 },
-                32,
+                36,
               )}
               alt={commit?.author?.name}
-              size={15}
+              size={17}
               radius="xl"
             />
-            <Text fz={11} c="#6e675f">
+            <Text fz={12} c="#6e675f">
               <span style={{ fontWeight: 600, color: "#1f1c19" }}>
                 {commit?.author?.name || author?.login || "Vô danh"}
               </span>{" "}
@@ -170,15 +180,18 @@ export function CommitGraphRow({
                     copy();
                   }}
                   leftSection={
-                    copied ? <IconCheck size={10} /> : <IconCopy size={10} />
+                    copied ? <IconCheck size={11} /> : <IconCopy size={11} />
                   }
                   style={{
                     cursor: "pointer",
-                    fontFamily: "monospace",
+                    fontFamily: "var(--font-jetbrains-mono), monospace",
                     borderColor: "#e5e1da",
                     color: copied ? "#0d9488" : "#6e675f",
                     backgroundColor: "#faf8f6",
-                    fontSize: 11,
+                    fontSize: 12,
+                    height: 24,
+                    padding: "0 8px",
+                    fontWeight: 500,
                   }}
                 >
                   {shaShort}
@@ -198,7 +211,7 @@ export function CommitGraphRow({
               }}
               style={{ color: "#8c827a" }}
             >
-              <IconGitCommit size={14} />
+              <IconGitCommit size={15} />
             </ActionIcon>
           </Tooltip>
         </Group>

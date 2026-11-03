@@ -146,7 +146,7 @@ export function TaskDetailModal({
                 backgroundColor: "#fff1f0",
                 color: "#fb291a",
                 fontWeight: 700,
-                fontFamily: "var(--font-geist-mono), monospace",
+                fontFamily: "var(--font-jetbrains-mono), monospace",
                 borderRadius: 6,
               },
             }}
@@ -227,6 +227,8 @@ export function TaskDetailModal({
           setDescription={setDescription}
           canEdit={canEdit}
         />
+
+        <Divider color="#f1f5f9" my={4} />
 
         {/* Thông tin Meta: Người báo cáo, Người nhận, Thời gian */}
         <TaskAssigneeMeta

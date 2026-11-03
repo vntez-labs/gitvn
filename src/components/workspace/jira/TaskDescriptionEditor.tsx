@@ -62,7 +62,7 @@ export function TaskDescriptionEditor({
               backgroundColor: "#ffffff",
               borderColor: "#cbd5e1",
               color: "#0f172a",
-              fontFamily: "var(--font-geist-mono), monospace",
+              fontFamily: "var(--font-jetbrains-mono), monospace",
               fontSize: 13,
               lineHeight: 1.6,
               borderRadius: 8,
@@ -71,12 +71,12 @@ export function TaskDescriptionEditor({
         />
       ) : (
         <Box
-          p="md"
+          py="xs"
+          px={4}
           style={{
-            backgroundColor: "#f8fafc",
-            border: "1px solid #e2e8f0",
-            borderRadius: 8,
-            minHeight: 120,
+            backgroundColor: "transparent",
+            border: "none",
+            minHeight: 80,
           }}
         >
           {description ? (
