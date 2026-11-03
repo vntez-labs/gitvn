@@ -32,7 +32,8 @@ ${task.description?.trim() || "Thực hiện theo tiêu đề công việc nêu 
 1. Phân tích kỹ yêu cầu và cấu trúc codebase hiện tại trước khi sinh mã.
 2. Viết mã nguồn sạch (clean code), chuẩn TypeScript/type-safe, tuân thủ các quy tắc hiện có trong repo.
 3. Không làm ảnh hưởng đến các module khác ngoài phạm vi của task ${task.id}.
-4. Bổ sung unit test hoặc kiểm tra các trường hợp biên (edge cases) nếu cần thiết.`;
+4. Bổ sung unit test hoặc kiểm tra các trường hợp biên (edge cases) nếu cần thiết.
+5. Để tránh xung đột Git (Merge Conflicts) khi làm việc đa nhánh (multi-branch team), hãy cập nhật thông tin task tại file rời \`.gitvn/tasks/${task.id}.md\` (hoặc \`.gitvn/tasks.json\`), không can thiệp vào file của các task khác.`;
 }
 
 /**

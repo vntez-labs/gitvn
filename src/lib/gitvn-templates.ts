@@ -136,7 +136,11 @@ export function createDefaultReadme(): string {
 .gitvn/
 ├── README.md           # Tài liệu quy chuẩn này (dành cho AI & Developers)
 ├── config.json         # Cấu hình tính năng & danh sách các cột Kanban
-├── tasks.json          # Toàn bộ Task, Sprint và Phân quyền thành viên (SSOT)
+├── tasks/              # Kiến trúc File rời chống xung đột Git Merge Conflicts (SSOT)
+│   ├── PROJ-1.md       # Task chi tiết dạng Markdown + Frontmatter (hoặc PROJ-1.json)
+│   ├── PROJ-2.md
+│   └── ...
+├── tasks.json          # File cache tổng hợp (tương thích ngược)
 └── docs/               # Thư mục chứa tài liệu dự án (.md / .mdx)
     ├── index.mdx       # Tổng quan dự án
     └── architecture.mdx# Kiến trúc kỹ thuật
@@ -144,7 +148,39 @@ export function createDefaultReadme(): string {
 
 ---
 
-## 2. Quy chuẩn Schema File \`.gitvn/tasks.json\`
+## 2. Giải pháp chống Xung đột Git (Merge Conflicts) với Kiến trúc File Rời
+
+* **Vấn đề**: Khi team 4–5 người hoặc nhiều AI Agents cùng làm việc trên các branch khác nhau, cùng kéo thả task hoặc cập nhật mô tả task, việc merge branch sẽ gây ra conflict JSON liên tục nếu dùng 1 file \`tasks.json\` tập trung.
+* **Cách khắc phục**: Lưu trữ dạng file rời (tương tự Astro / Docusaurus content collections). Mỗi task là 1 file riêng biệt \`.gitvn/tasks/{TASK_ID}.md\` hoặc \`.gitvn/tasks/{TASK_ID}.json\`. Khi đó mỗi người sửa một task sẽ **không bao giờ chạm vào file của nhau**, merge branch hoàn toàn an toàn và trơn tru.
+
+### Quy chuẩn Task File dạng Markdown (\`.gitvn/tasks/PROJ-1.md\`):
+
+\`\`\`markdown
+---
+id: PROJ-1
+title: "Khởi tạo dự án & cấu hình môi trường"
+status: in_progress
+priority: high
+assignee: octocat
+reporter: admin
+sprintId: sprint-1
+storyPoints: 3
+createdAt: 2026-11-03T00:00:00.000Z
+updatedAt: 2026-11-03T00:00:00.000Z
+---
+
+### Mục tiêu
+- Thiết lập thư mục \`.gitvn/\` theo chuẩn Git-Native.
+- Phân chia công việc và kết nối CI/CD.
+
+### Acceptance Criteria
+- [x] Cấu hình file rời trong \`.gitvn/tasks/\`
+- [ ] Build dự án thành công không lỗi
+\`\`\`
+
+---
+
+## 3. Quy chuẩn Schema File \`.gitvn/tasks.json\` (Tổng hợp)
 
 \`\`\`json
 {
@@ -153,9 +189,9 @@ export function createDefaultReadme(): string {
   "taskSeq": 10,
   "tasks": [
     {
-      "id": "TASK-1",
+      "id": "PROJ-1",
       "title": "Tiêu đề công việc ngắn gọn",
-      "description": "Mô tả chi tiết bằng Markdown, bao gồm mục tiêu và Acceptance Criteria.",
+      "description": "Mô tả chi tiết bằng Markdown...",
       "status": "todo",
       "priority": "high",
       "assignee": { "login": "octocat", "name": "The Octocat" },
@@ -194,8 +230,8 @@ export function createDefaultReadme(): string {
 
 // Mẫu prompt chuẩn cho người dùng copy gửi AI sinh Task Kanban
 export const AI_TASKS_PROMPT_TEMPLATE = `Bạn là một Technical Product Manager và Agile Scrum Master chuyên nghiệp.
-Hãy phân tích yêu cầu phần mềm / tài liệu PRD dưới đây và sinh file JSON cấu trúc cho GitVN theo đúng quy chuẩn sau:
-1. Đầu ra CHỈ TRẢ VỀ DUY NHẤT 1 JSON object hợp lệ, không bọc markdown hay chú thích thừa.
+Hãy phân tích yêu cầu phần mềm / tài liệu PRD dưới đây và sinh cấu trúc Task Kanban cho GitVN theo đúng quy chuẩn sau:
+1. Đầu ra CHỈ TRẢ VỀ DUY NHẤT 1 JSON object hợp lệ (dùng để import hoặc lưu vào .gitvn/tasks/ và .gitvn/tasks.json).
 2. Cấu trúc JSON phải chứa đầy đủ 2 mảng: "tasks" và "sprints":
 {
   "tasks": [
@@ -223,6 +259,7 @@ Hãy phân tích yêu cầu phần mềm / tài liệu PRD dưới đây và sin
 3. "status" của task CHỈ ĐƯỢC LÀ: "todo", "in_progress", "review", "done", "backlog".
 4. "priority" của task CHỈ ĐƯỢC LÀ: "low", "medium", "high", "urgent".
 5. Mỗi task có storyPoints (1, 2, 3, 5, 8).
+6. Khi làm việc đa nhánh (multi-branch), ưu tiên lưu từng task thành file rời .gitvn/tasks/{ID}.md để tránh Git Merge Conflicts.
 
 [DÁN YÊU CẦU DỰ ÁN / TÍNH NĂNG TẠI ĐÂY]`;
 

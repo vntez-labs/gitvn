@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import path from "path";
 import type { JiraBoardData, JiraSprint, JiraTask } from "@/interfaces/jira";
 import { getValidAuthToken } from "@/lib/auth-token";
+import { parseTaskMarkdown } from "@/lib/task-file";
 
 // Lưu trữ chính tại thư mục .gitvn trong repo (hoặc local cache)
 const GITVN_DIR = path.join(process.cwd(), ".gitvn");
@@ -179,6 +180,67 @@ async function fetchFromGitHub(
     } catch (err) {
       console.warn(`[fetchFromGitHub error for ${filePath}]:`, err);
     }
+  }
+
+  // 3. Fallback: Hỗ trợ kiến trúc file rời (.gitvn/tasks/*.md hoặc .gitvn/tasks/*.json)
+  try {
+    const tasksFolderRes = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/contents/.gitvn/tasks${refQuery}`,
+      {
+        headers: {
+          "User-Agent": "GitVN-App",
+          "X-GitHub-Api-Version": "2022-11-28",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        cache: "no-store",
+      },
+    );
+
+    if (tasksFolderRes.ok) {
+      const items = await tasksFolderRes.json();
+      if (Array.isArray(items) && items.length > 0) {
+        const individualTasks: JiraTask[] = [];
+        for (const item of items) {
+          if (
+            item.type === "file" &&
+            (item.name.endsWith(".md") || item.name.endsWith(".json"))
+          ) {
+            try {
+              const fileRes = await fetch(item.download_url, {
+                cache: "no-store",
+              });
+              if (fileRes.ok) {
+                const text = await fileRes.text();
+                const taskId = item.name.replace(/\.(md|json)$/, "");
+                if (item.name.endsWith(".json")) {
+                  individualTasks.push(JSON.parse(text));
+                } else {
+                  individualTasks.push(parseTaskMarkdown(text, taskId));
+                }
+              }
+            } catch {}
+          }
+        }
+
+        if (individualTasks.length > 0) {
+          return {
+            owner,
+            repo,
+            taskSeq: individualTasks.length + 1,
+            tasks: individualTasks,
+            sprints: [],
+            permissions: {
+              userRoles: { [owner]: "admin" },
+              defaultRole: "member",
+              canManageSprint: ["admin", "pm"],
+              canCreateBacklog: ["admin", "pm", "member"],
+            },
+          };
+        }
+      }
+    }
+  } catch (err) {
+    console.warn("[fetchFromGitHub .gitvn/tasks error]:", err);
   }
 
   return null;

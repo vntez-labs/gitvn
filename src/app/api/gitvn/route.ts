@@ -15,6 +15,7 @@ import {
   createDefaultReadme,
   createDefaultTasks,
 } from "@/lib/gitvn-templates";
+import { taskToMarkdown } from "@/lib/task-file";
 import { getValidAuthToken } from "@/lib/auth-token";
 
 const LOCAL_GITVN_DIR = path.join(process.cwd(), ".gitvn");
@@ -138,7 +139,10 @@ export async function GET(request: Request) {
         const items = Array.isArray(contents) ? contents : [contents];
         const hasConfig = items.some((item) => item.name === "config.json");
         const hasTasks = items.some(
-          (item) => item.name === "tasks.json" || item.name === "jira.json",
+          (item) =>
+            item.name === "tasks.json" ||
+            item.name === "jira.json" ||
+            item.name === "tasks",
         );
 
         // Đọc nội dung config.json nếu có
@@ -332,6 +336,9 @@ export async function POST(request: Request) {
       try {
         await fs.mkdir(LOCAL_GITVN_DIR, { recursive: true });
         await fs.mkdir(path.join(LOCAL_GITVN_DIR, "docs"), { recursive: true });
+        await fs.mkdir(path.join(LOCAL_GITVN_DIR, "tasks"), {
+          recursive: true,
+        });
 
         await fs.writeFile(
           path.join(LOCAL_GITVN_DIR, "README.md"),
@@ -348,6 +355,13 @@ export async function POST(request: Request) {
           JSON.stringify(defaultTasks, null, 2),
           "utf-8",
         );
+        for (const t of defaultTasks.tasks) {
+          await fs.writeFile(
+            path.join(LOCAL_GITVN_DIR, "tasks", `${t.id}.md`),
+            taskToMarkdown(t),
+            "utf-8",
+          );
+        }
         await fs.writeFile(
           path.join(LOCAL_GITVN_DIR, "docs", "index.mdx"),
           defaultIndexDoc,
@@ -413,6 +427,18 @@ export async function POST(request: Request) {
           `${commitMsg} docs architecture`,
           branch,
         );
+
+        for (const t of defaultTasks.tasks) {
+          await commitFileToGitHub(
+            owner,
+            repo,
+            `.gitvn/tasks/${t.id}.md`,
+            taskToMarkdown(t),
+            token,
+            `${commitMsg} task ${t.id}`,
+            branch,
+          );
+        }
 
         syncedToGitHub =
           resReadme.ok &&
