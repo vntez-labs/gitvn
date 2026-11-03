@@ -9,12 +9,7 @@ import {
   Text,
   Tooltip,
 } from "@mantine/core";
-import {
-  IconArrowLeft,
-  IconBrandFacebook,
-  IconBrandGithub,
-  IconPlus,
-} from "@tabler/icons-react";
+import { IconArrowLeft, IconPlus } from "@tabler/icons-react";
 import { useState } from "react";
 import { CreateRepoModal } from "@/components/dashboard/CreateRepoModal";
 import { useAuthStore } from "@/store/auth.store";
@@ -178,60 +173,6 @@ export function DashboardSidebar() {
             )}
           </Stack>
         )}
-      </Box>
-
-      {/* AUTHOR / CREATOR FOOTER */}
-      <Box
-        p="xs"
-        style={{
-          borderTop: "1px solid #e4e4e7",
-          backgroundColor: "#f4f4f5",
-          flexShrink: 0,
-        }}
-      >
-        <Group justify="space-between" align="center" wrap="nowrap">
-          <Box style={{ minWidth: 0 }}>
-            <Text
-              fz={10}
-              c="#71717a"
-              fw={700}
-              style={{ letterSpacing: "0.05em", fontFamily: "monospace" }}
-            >
-              TÁC GIẢ
-            </Text>
-            <Text fz={12} fw={600} c="#18181b" truncate>
-              Nguyễn Hoàng Nam
-            </Text>
-          </Box>
-          <Group gap={4} wrap="nowrap">
-            <Tooltip label="github/hnamhocit" withArrow>
-              <ActionIcon
-                component="a"
-                href="https://github.com/hnamhocit"
-                target="_blank"
-                rel="noopener noreferrer"
-                size="sm"
-                variant="subtle"
-                color="gray"
-              >
-                <IconBrandGithub size={15} color="#52525b" />
-              </ActionIcon>
-            </Tooltip>
-            <Tooltip label="facebook/hnamhocit" withArrow>
-              <ActionIcon
-                component="a"
-                href="https://facebook.com/hnamhocit"
-                target="_blank"
-                rel="noopener noreferrer"
-                size="sm"
-                variant="subtle"
-                color="indigo"
-              >
-                <IconBrandFacebook size={15} color="#4f46e5" />
-              </ActionIcon>
-            </Tooltip>
-          </Group>
-        </Group>
       </Box>
 
       <CreateRepoModal

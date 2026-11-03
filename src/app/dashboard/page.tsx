@@ -10,7 +10,6 @@ import {
   Tooltip,
 } from "@mantine/core";
 import {
-  IconBrandFacebook,
   IconBrandGithub,
   IconLogout,
   IconRefresh,
@@ -98,31 +97,6 @@ export default function DashboardPage() {
           </Group>
 
           <Group gap="sm">
-            <Tooltip label="Tác giả: Nguyễn Hoàng Nam (@hnamhocit)" withArrow>
-              <Box
-                component="a"
-                href="https://github.com/hnamhocit"
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  textDecoration: "none",
-                  backgroundColor: "#f4f4f5",
-                  padding: "4px 10px",
-                  borderRadius: 20,
-                  border: "1px solid #e4e4e7",
-                }}
-              >
-                <Text fz={11} fw={600} c="#52525b">
-                  by{" "}
-                  <Text span c="#dc2626" fw={700}>
-                    @hnamhocit
-                  </Text>
-                </Text>
-              </Box>
-            </Tooltip>
-
             <Menu shadow="md" width={220} position="bottom-end">
               <Menu.Target>
                 <Group
@@ -179,33 +153,6 @@ export default function DashboardPage() {
                   fz={13}
                 >
                   Cập nhật quyền GitHub
-                </Menu.Item>
-
-                <Menu.Divider style={{ borderColor: "#e4e4e7" }} />
-                <Menu.Label c="#71717a" fz={12}>
-                  Tác giả / Creator
-                </Menu.Label>
-                <Menu.Item
-                  leftSection={<IconBrandGithub size={15} />}
-                  component="a"
-                  href="https://github.com/hnamhocit"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  c="#18181b"
-                  fz={13}
-                >
-                  github/hnamhocit
-                </Menu.Item>
-                <Menu.Item
-                  leftSection={<IconBrandFacebook size={15} color="#1877f2" />}
-                  component="a"
-                  href="https://facebook.com/hnamhocit"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  c="#18181b"
-                  fz={13}
-                >
-                  facebook/hnamhocit
                 </Menu.Item>
 
                 <Menu.Divider style={{ borderColor: "#e4e4e7" }} />

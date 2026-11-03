@@ -44,13 +44,11 @@ export function FileEditorHeader({
       px="md"
       py={6}
       style={{
-        borderBottom: "1px solid #e4e4e7",
         backgroundColor: "#ffffff",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
         flexShrink: 0,
-        minHeight: 38,
       }}
     >
       {/* File Meta info (Line count, format) */}
@@ -71,22 +69,6 @@ export function FileEditorHeader({
             {lineCount.toLocaleString()} dòng
           </Badge>
         )}
-        {isMarkdown && (
-          <Badge
-            size="xs"
-            variant="outline"
-            style={{
-              borderColor: "#e4e4e7",
-              color: "#52525b",
-              backgroundColor: "#f4f4f5",
-              fontFamily: "monospace",
-              fontSize: 11,
-              padding: "2px 6px",
-            }}
-          >
-            MARKDOWN PREVIEW
-          </Badge>
-        )}
         {isEditing && (
           <Badge
             size="xs"
@@ -105,7 +87,7 @@ export function FileEditorHeader({
       </Group>
 
       {/* Hành động: Chỉnh sửa & Sao chép mã */}
-      <Group gap="xs" align="center">
+      <Group gap="xs" align="center" ml="auto">
         {isEditing ? (
           <>
             <Button
