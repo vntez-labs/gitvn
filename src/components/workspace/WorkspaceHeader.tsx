@@ -186,69 +186,99 @@ export function WorkspaceHeader({
       />
 
       {/* Tabs */}
+      <style>{`
+        .ws-tab-btn {
+          position: relative;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 8px 12px 10px 12px;
+          font-size: 13px;
+          font-weight: 500;
+          color: #71717a;
+          cursor: pointer;
+          border-radius: 6px 6px 0 0;
+          transition: color 0.15s ease, background-color 0.15s ease;
+          user-select: none;
+          background: transparent;
+          border: none;
+          outline: none;
+          white-space: nowrap;
+        }
+
+        .ws-tab-btn:hover:not(.ws-tab-active) {
+          color: #18181b;
+          background-color: #f4f4f5;
+        }
+
+        .ws-tab-active {
+          color: #18181b !important;
+          font-weight: 600 !important;
+          background: transparent !important;
+        }
+
+        .ws-tab-active::after {
+          content: "";
+          position: absolute;
+          left: 4px;
+          right: 4px;
+          bottom: 0;
+          height: 2px;
+          background-color: #dc2626;
+          border-radius: 2px;
+          z-index: 2;
+        }
+      `}</style>
       <Group
-        gap={4}
+        gap={2}
         wrap="nowrap"
         className="hide-scrollbar"
-        style={{ overflowX: "auto" }}
+        style={{
+          overflowX: "auto",
+          marginBottom: -1,
+        }}
       >
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
           const Icon = tab.icon;
 
           return (
-            <Box
+            <button
+              type="button"
               key={tab.id}
               onClick={() => onTabChange(tab.id as WorkspaceTab)}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                padding: "8px 12px 10px",
-                fontSize: 13,
-                fontWeight: isActive ? 600 : 500,
-                color: isActive ? "#18181b" : "#71717a",
-                borderBottom: isActive
-                  ? "2px solid #dc2626"
-                  : "2px solid transparent",
-                cursor: "pointer",
-                transition: "all 0.15s ease",
-                userSelect: "none",
-                borderRadius: "6px 6px 0 0",
-              }}
-              onMouseEnter={(e) => {
-                if (!isActive) {
-                  e.currentTarget.style.color = "#18181b";
-                  e.currentTarget.style.backgroundColor = "#f4f4f5";
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isActive) {
-                  e.currentTarget.style.color = "#71717a";
-                  e.currentTarget.style.backgroundColor = "transparent";
-                }
-              }}
+              className={`ws-tab-btn ${isActive ? "ws-tab-active" : ""}`}
             >
-              <Icon size={15} color={isActive ? "#18181b" : "#71717a"} />
+              <Icon
+                size={15}
+                color={isActive ? "#dc2626" : "#71717a"}
+                style={{ transition: "color 0.15s ease" }}
+              />
               <span>{tab.label}</span>
               {typeof tab.count === "number" && tab.count > 0 && (
-                <Badge
-                  size="xs"
-                  variant="outline"
+                <span
                   style={{
-                    backgroundColor: isActive ? "#fef2f2" : "#f4f4f5",
-                    borderColor: isActive ? "#fecaca" : "#e4e4e7",
-                    color: isActive ? "#b91c1c" : "#71717a",
-                    fontWeight: 600,
-                    fontSize: 11,
-                    padding: "0 6px",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    minWidth: 18,
                     height: 18,
+                    padding: "0 6px",
+                    borderRadius: 9999,
+                    fontSize: 11,
+                    fontWeight: 600,
+                    backgroundColor: isActive ? "#fef2f2" : "#f4f4f5",
+                    color: isActive ? "#dc2626" : "#71717a",
+                    border: isActive
+                      ? "1px solid #fecaca"
+                      : "1px solid #e4e4e7",
+                    lineHeight: 1,
                   }}
                 >
                   {tab.count}
-                </Badge>
+                </span>
               )}
-            </Box>
+            </button>
           );
         })}
       </Group>
