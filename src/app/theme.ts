@@ -15,10 +15,12 @@ export const vntezColors: MantineColorsTuple = [
 ];
 
 export const theme = createTheme({
-  fontFamily: "var(--font-geist-sans), sans-serif",
-  fontFamilyMonospace: "var(--font-geist-mono), monospace",
+  fontFamily:
+    "var(--font-plus-jakarta-sans), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+  fontFamilyMonospace: "var(--font-jetbrains-mono), monospace",
   headings: {
-    fontFamily: "var(--font-geist-sans), sans-serif",
+    fontFamily:
+      "var(--font-plus-jakarta-sans), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
     fontWeight: "700",
   },
   colors: {

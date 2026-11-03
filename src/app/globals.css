@@ -2,6 +2,14 @@
 @plugin "@tailwindcss/typography";
 
 :root {
+  --font-plus-jakarta-sans:
+    "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    sans-serif;
+  --font-jetbrains-mono:
+    "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    monospace;
+  --font-geist-sans: var(--font-plus-jakarta-sans);
+  --font-geist-mono: var(--font-jetbrains-mono);
   --primary-color: #dc2626;
   --primary-gradient: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
   --mantine-primary-color: #dc2626;
@@ -79,7 +87,7 @@
 
 .wmde-markdown code {
   font-family:
-    var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco,
+    var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, Monaco,
     Consolas, monospace !important;
 }
 

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { JetBrains_Mono, Plus_Jakarta_Sans } from "next/font/google";
 
 // 1. Core styles bắt buộc phải import đầu tiên
 import "@mantine/core/styles.css";
@@ -27,14 +27,16 @@ import { AuthProvider } from "../components/providers/AuthProvider";
 import { GlobalNavigationProgress } from "../components/providers/GlobalNavigationProgress";
 import { theme } from "./theme";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+const plusJakartaSans = Plus_Jakarta_Sans({
+  variable: "--font-plus-jakarta-sans",
+  subsets: ["vietnamese", "latin"],
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-jetbrains-mono",
+  subsets: ["vietnamese", "latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -107,9 +109,9 @@ export default function RootLayout({
 }) {
   return (
     <html
-      lang="en"
+      lang="vi"
       {...mantineHtmlProps}
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${plusJakartaSans.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
       <head>
         <ColorSchemeScript defaultColorScheme="light" />
