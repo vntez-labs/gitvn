@@ -3,7 +3,6 @@
 import {
   Anchor,
   Avatar,
-  Badge,
   Box,
   Button,
   Container,
@@ -12,7 +11,7 @@ import {
   Text,
   Title,
 } from "@mantine/core";
-import { IconArrowRight, IconSparkles } from "@tabler/icons-react";
+import { IconArrowRight } from "@tabler/icons-react";
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { GitVNLogo } from "@/components/brand/GitVNLogo";
@@ -70,7 +69,7 @@ export default function GitVNLanding() {
                 underline="never"
                 fw={500}
               >
-                Features
+                Tính năng
               </Anchor>
               <Anchor
                 href="https://github.com/hnamhocit"
@@ -81,7 +80,7 @@ export default function GitVNLanding() {
                 underline="never"
                 fw={500}
               >
-                Creator
+                Tác giả
               </Anchor>
               <Group gap="xs" ml="md">
                 <Button
@@ -95,7 +94,7 @@ export default function GitVNLanding() {
                     boxShadow: "0 2px 8px rgba(251, 41, 26, 0.25)",
                   }}
                 >
-                  {isLoggedIn ? "Vào Workspace →" : "Connect GitHub"}
+                  {isLoggedIn ? "Vào Workspace →" : "Kết nối GitHub"}
                 </Button>
               </Group>
             </Group>
@@ -104,48 +103,27 @@ export default function GitVNLanding() {
       </Box>
 
       {/* ================= HERO ================= */}
-      <Container size="md" pt={{ base: 70, md: 100 }} pb={{ base: 60, md: 90 }}>
+      <Container size="md" pt={{ base: 80, md: 120 }} pb={{ base: 60, md: 90 }}>
         <Stack align="center" gap="xl" ta="center">
-          <Badge
-            variant="light"
-            color="vntez"
-            size="lg"
-            radius="xl"
-            leftSection={<IconSparkles size={14} />}
-            style={{
-              textTransform: "none",
-              fontWeight: 500,
-              letterSpacing: "0.2px",
-            }}
-          >
-            Next-gen Git Workspace & AI Prompt Pipeline
-          </Badge>
-
           <Title
             order={1}
-            fz={{ base: 40, sm: 56, md: 72 }}
+            fz={{ base: 42, sm: 60, md: 76 }}
             fw={800}
-            lh={1.1}
+            lh={1.15}
             style={{ letterSpacing: "-0.04em", color: "#0f172a" }}
           >
-            Git, but simpler. <br />
+            Git, nhưng tinh gọn hơn. <br />
             <Text
               component="span"
               inherit
               variant="gradient"
               gradient={{ from: "#fb291a", to: "#f77241", deg: 90 }}
             >
-              Built for pure velocity.
+              Tối ưu cho tốc độ vượt trội.
             </Text>
           </Title>
 
-          <Text c="gray.6" maw={620} fz={{ base: "lg", sm: "xl" }} lh={1.6}>
-            Browse large repositories instantly with a visual tree. Skip Jira
-            ceremonies. Turn your live sprint state into perfect LLM prompts
-            with one click.
-          </Text>
-
-          <Group mt="xs" gap="md">
+          <Group mt="md" gap="md">
             <Button
               component="a"
               href={isLoggedIn ? "/dashboard" : "/api/integrations/github"}
@@ -158,7 +136,7 @@ export default function GitVNLanding() {
                 boxShadow: "0 6px 20px rgba(251, 41, 26, 0.28)",
               }}
             >
-              {isLoggedIn ? "Vào Workspace ngay" : "Start Building Free"}
+              {isLoggedIn ? "Vào Workspace ngay" : "Bắt đầu miễn phí"}
             </Button>
             <Button
               component="a"
@@ -174,7 +152,7 @@ export default function GitVNLanding() {
                 boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
               }}
             >
-              Explore Features
+              Khám phá tính năng
             </Button>
           </Group>
 

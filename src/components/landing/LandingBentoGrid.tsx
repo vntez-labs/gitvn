@@ -59,16 +59,16 @@ export const LandingBentoGrid: FC = () => {
                   <IconBolt size={18} />
                 </ThemeIcon>
                 <Text fw={600} fz="xl" c="#0f172a">
-                  Single-Call Tree Engine
+                  Cây thư mục siêu tốc (Tree Engine)
                 </Text>
               </Group>
               <Text fz="md" c="gray.6" lh={1.6} maw={400}>
-                Load entire repositories in one request using the Git Trees API.
-                Zero reloads, zero layout shifts, instant navigation.
+                Tải toàn bộ cấu trúc dự án chỉ trong 1 request duy nhất qua Git
+                Trees API. Tải tức thì, không giật lag, không reload trang.
               </Text>
               <Group gap={6} mt="xl" style={{ cursor: "pointer" }}>
                 <Text fz="sm" fw={600} c="vntez.6">
-                  Learn more
+                  Tìm hiểu thêm
                 </Text>
                 <IconArrowRight
                   size={16}
@@ -105,11 +105,11 @@ export const LandingBentoGrid: FC = () => {
             <IconShieldCheck size={20} />
           </ThemeIcon>
           <Text fw={600} fz="xl" c="#0f172a" mb="sm">
-            Git-Native State
+            Lưu trữ trực tiếp trong Git
           </Text>
           <Text fz="md" c="gray.6" lh={1.6}>
-            Commit your task board alongside your code. Every developer has the
-            exact same context immediately after a git pull.
+            Commit bảng Kanban và task trực tiếp vào repository mã nguồn. Cả
+            team đều có chung ngữ cảnh ngay sau mỗi lệnh git pull.
           </Text>
         </Card>
 
@@ -135,11 +135,11 @@ export const LandingBentoGrid: FC = () => {
             <IconRobot size={20} />
           </ThemeIcon>
           <Text fw={600} fz="xl" c="#0f172a" mb="sm">
-            Agent-Ready
+            Tối ưu cho AI Agent
           </Text>
           <Text fz="md" c="gray.6" lh={1.6}>
-            Export sprint state and blockers directly into structured prompts
-            ready for Claude or GPT-4o in one click.
+            Xuất trạng thái sprint và task tồn đọng thành prompt chuẩn chỉnh cho
+            Claude, GPT-4o hoặc DeepSeek chỉ với 1 cú nhấp chuột.
           </Text>
         </Card>
 
@@ -163,16 +163,17 @@ export const LandingBentoGrid: FC = () => {
                   <IconStar size={18} />
                 </ThemeIcon>
                 <Text fw={600} fz="xl" c="#0f172a">
-                  Zero Ceremony Task Matrix
+                  Quản lý công việc tinh gọn
                 </Text>
               </Group>
               <Text fz="md" c="gray.6" lh={1.6} maw={400}>
-                Forget burndown charts. Track only tasks, owners, and blockers.
-                Synchronized automatically with your repository.
+                Bỏ qua những quy trình rườm rà. Theo dõi task, người thực hiện
+                và tiến độ trực quan. Tự động đồng bộ với Pull Request trên
+                GitHub.
               </Text>
               <Group gap={6} mt="xl" style={{ cursor: "pointer" }}>
                 <Text fz="sm" fw={600} c="vntez.6">
-                  Explore Task Matrix
+                  Khám phá bảng Kanban
                 </Text>
                 <IconArrowRight
                   size={16}

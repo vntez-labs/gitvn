@@ -33,8 +33,8 @@ export const LandingFooter: FC = () => {
               </Text>
             </Group>
             <Text fz="sm" c="gray.6" maw={420} lh={1.6}>
-              Nền tảng Git Management và Agile Kanban tối giản, tích hợp trực
-              tiếp mã nguồn với AI Agents và tự động đồng bộ qua GitHub.
+              Nền tảng Quản lý Git và Agile Kanban tinh gọn, tích hợp trực tiếp
+              mã nguồn với AI Agents và tự động đồng bộ qua GitHub.
             </Text>
           </Box>
 
@@ -46,7 +46,7 @@ export const LandingFooter: FC = () => {
               mb="xs"
               style={{ letterSpacing: "0.08em", textTransform: "uppercase" }}
             >
-              Tác giả / Creator
+              Tác giả
             </Text>
             <Text fz="sm" fw={600} c="#0f172a" mb="xs">
               Nguyễn Hoàng Nam (@hnamhocit)
@@ -83,7 +83,7 @@ export const LandingFooter: FC = () => {
 
         <Group justify="space-between">
           <Text fz="xs" c="gray.5">
-            © 2026 GitVN. Crafted with care by Nguyễn Hoàng Nam.
+            © 2026 GitVN. Được phát triển bởi Nguyễn Hoàng Nam (@hnamhocit).
           </Text>
           <Group gap="lg">
             <Anchor
@@ -93,7 +93,7 @@ export const LandingFooter: FC = () => {
               fz="xs"
               c="gray.6"
             >
-              GitVN Repository
+              Mã nguồn GitVN
             </Anchor>
             <Anchor
               href="https://github.com/hnamhocit"
