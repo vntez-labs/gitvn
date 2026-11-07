@@ -41,7 +41,8 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ username: string }> },
 ) {
-  const { username } = await params;
+  const rawParams = await params;
+  const username = rawParams.username?.trim().replace(/^@/, "");
   if (!username) {
     return NextResponse.json({ error: "Thiếu username" }, { status: 400 });
   }
@@ -83,6 +84,7 @@ export async function GET(
             followers { totalCount }
             following { totalCount }
             pullRequests { totalCount }
+            mergedPullRequests: pullRequests(states: MERGED) { totalCount }
             issues { totalCount }
             repositoriesContributedTo(contributionTypes: [COMMIT, ISSUE, PULL_REQUEST, REPOSITORY]) {
               totalCount
@@ -159,11 +161,11 @@ export async function GET(
     ]);
 
     const gqlData = await gqlRes.json();
-    if (gqlData.errors || !gqlData.data?.user) {
-      return NextResponse.json(
-        { error: "Không tìm thấy người dùng trên GitHub" },
-        { status: 404 },
-      );
+    if (!gqlData.data?.user) {
+      const errMsg =
+        gqlData.errors?.[0]?.message ||
+        `Không tìm thấy người dùng @${username} trên GitHub`;
+      return NextResponse.json({ error: errMsg }, { status: 404 });
     }
 
     const userData = gqlData.data.user;
@@ -319,6 +321,7 @@ export async function GET(
           userData.pullRequests?.totalCount ??
           userData.contributionsCollection?.totalPullRequestContributions ??
           0,
+        mergedPRs: userData.mergedPullRequests?.totalCount ?? 0,
         recentPRs:
           userData.contributionsCollection?.totalPullRequestContributions ?? 0,
         totalIssues:
@@ -336,6 +339,7 @@ export async function GET(
             ?.totalRepositoriesWithContributedCommits ??
           0,
         totalStars,
+        starsReceived: totalStars,
         totalForks,
         totalRepos: userData.repositories?.totalCount ?? 0,
       },

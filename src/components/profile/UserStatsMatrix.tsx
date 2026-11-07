@@ -185,7 +185,9 @@ export function UserStatsMatrix({
             <IconStar size={15} color="#f59e0b" />
           </Group>
           <Text fz={20} fw={700} c="#0f172a" mt={4} ff="monospace">
-            {formatCompactNumber(data.stats?.starsReceived ?? 0)}
+            {formatCompactNumber(
+              data.stats?.starsReceived ?? data.stats?.totalStars ?? 0,
+            )}
           </Text>
         </Paper>
       </SimpleGrid>

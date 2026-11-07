@@ -33,11 +33,12 @@ export function UserProfileSidebar({
     <Stack gap="md">
       <Avatar
         src={user?.avatar_url}
-        size={260}
+        size={240}
         radius="50%"
         style={{
           border: "2px solid #e2e8f0",
           boxShadow: "0 8px 24px rgba(0,0,0,0.06)",
+          maxWidth: "100%",
         }}
       />
 
