@@ -5,15 +5,20 @@ import {
   IconBook,
   IconCheck,
   IconCircleDot,
+  IconCircleDotFilled,
   IconCode,
   IconExternalLink,
   IconFileText,
+  IconFileTextFilled,
   IconGitCommit,
   IconGitPullRequest,
   IconInfoCircle,
+  IconInfoCircleFilled,
   IconLayoutKanban,
+  IconLayoutKanbanFilled,
   IconRefresh,
   IconSettings,
+  IconSettingsFilled,
   IconSparkles,
   IconUserPlus,
 } from "@tabler/icons-react";
@@ -61,7 +66,8 @@ export function WorkspaceHeader({
   onInitializeGitvn,
   initializingGitvn = false,
 }: WorkspaceHeaderProps) {
-  const { selectedRepo, currentBranch } = useDashboardStore();
+  const selectedRepo = useDashboardStore((s) => s.selectedRepo);
+  const currentBranch = useDashboardStore((s) => s.currentBranch);
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
   if (!selectedRepo) return null;
 
@@ -73,17 +79,43 @@ export function WorkspaceHeader({
       icon: IconGitCommit,
       count: commitsCount,
     },
-    { id: "kanban", label: "Kanban", icon: IconLayoutKanban },
-    { id: "docs", label: "Docs", icon: IconFileText },
-    { id: "overview", label: "Overview", icon: IconInfoCircle },
+    {
+      id: "kanban",
+      label: "Kanban",
+      icon: IconLayoutKanban,
+      activeIcon: IconLayoutKanbanFilled,
+    },
+    {
+      id: "docs",
+      label: "Docs",
+      icon: IconFileText,
+      activeIcon: IconFileTextFilled,
+    },
+    {
+      id: "overview",
+      label: "Overview",
+      icon: IconInfoCircle,
+      activeIcon: IconInfoCircleFilled,
+    },
     {
       id: "pulls",
       label: "Pull requests",
       icon: IconGitPullRequest,
       count: pullsCount,
     },
-    { id: "issues", label: "Issues", icon: IconCircleDot, count: issuesCount },
-    { id: "settings", label: "Settings", icon: IconSettings },
+    {
+      id: "issues",
+      label: "Issues",
+      icon: IconCircleDot,
+      activeIcon: IconCircleDotFilled,
+      count: issuesCount,
+    },
+    {
+      id: "settings",
+      label: "Settings",
+      icon: IconSettings,
+      activeIcon: IconSettingsFilled,
+    },
   ];
 
   const btnStyles = {
@@ -240,7 +272,10 @@ export function WorkspaceHeader({
       >
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
-          const Icon = tab.icon;
+          const Icon =
+            isActive && (tab as any).activeIcon
+              ? (tab as any).activeIcon
+              : tab.icon;
 
           return (
             <button
@@ -252,7 +287,8 @@ export function WorkspaceHeader({
               <Icon
                 size={15}
                 color={isActive ? "#dc2626" : "#71717a"}
-                style={{ transition: "color 0.15s ease" }}
+                stroke={isActive ? 2.5 : 1.75}
+                style={{ transition: "all 0.15s ease", flexShrink: 0 }}
               />
               <span>{tab.label}</span>
               {typeof tab.count === "number" && tab.count > 0 && (

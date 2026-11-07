@@ -131,10 +131,11 @@ const TreeItem = memo(function TreeItem({
           alignItems: "center",
           width: "100%",
           minWidth: "max-content",
-          padding: "4px 10px",
-          paddingLeft: depth * 14 + 8,
+          padding: "3px 8px 3px 6px",
           backgroundColor: isActive ? "#fef2f2" : "transparent",
-          borderLeft: isActive ? "2px solid #dc2626" : "2px solid transparent",
+          borderLeft: isActive
+            ? "2.5px solid #dc2626"
+            : "2.5px solid transparent",
           borderRadius: isActive ? "0 4px 4px 0" : "0",
           transition: "background 0.1s ease",
         }}
@@ -146,24 +147,27 @@ const TreeItem = memo(function TreeItem({
           if (!isActive) e.currentTarget.style.backgroundColor = "transparent";
         }}
       >
-        <Group gap={6} wrap="nowrap" style={{ flexShrink: 0 }}>
-          {/* Mũi tên đóng/mở thư mục */}
-          <Box
-            w={12}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
-            }}
-          >
-            {isFolder &&
-              (isOpen ? (
-                <IconChevronDown size={12} color="#a1a1aa" />
+        <Group gap={4} wrap="nowrap" style={{ flexShrink: 0 }}>
+          {/* Mũi tên đóng/mở thư mục hoặc spacer cho file */}
+          {isFolder ? (
+            <Box
+              w={14}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              {isOpen ? (
+                <IconChevronDown size={12} color="#71717a" />
               ) : (
-                <IconChevronRight size={12} color="#a1a1aa" />
-              ))}
-          </Box>
+                <IconChevronRight size={12} color="#71717a" />
+              )}
+            </Box>
+          ) : (
+            <Box w={14} style={{ flexShrink: 0 }} />
+          )}
 
           {/* Icon file/folder màu chính hãng VS Code */}
           <FileOrFolderIcon
@@ -176,7 +180,7 @@ const TreeItem = memo(function TreeItem({
           <Text
             fz={13}
             ff="monospace"
-            c={isActive ? "#b91c1c" : isFolder ? "#27272a" : "#52525b"}
+            c={isActive ? "#b91c1c" : isFolder ? "#27272a" : "#3f3f46"}
             fw={isActive ? 600 : isFolder ? 500 : 400}
             style={{ whiteSpace: "nowrap" }}
           >
@@ -185,13 +189,14 @@ const TreeItem = memo(function TreeItem({
         </Group>
       </UnstyledButton>
 
-      {/* Đường kẻ gióng lùi dòng khi mở thư mục */}
+      {/* Thư mục con: Thụt lề chuẩn 12px và vẽ đường kẻ gióng thanh mảnh */}
       {isFolder && (
         <Collapse expanded={isOpen}>
           <Box
             style={{
               borderLeft: "1px solid #e4e4e7",
-              marginLeft: depth * 14 + 13,
+              marginLeft: 12,
+              paddingLeft: 2,
             }}
           >
             {node.children.map((child: any) => (

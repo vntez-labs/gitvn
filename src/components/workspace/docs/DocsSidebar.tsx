@@ -5,9 +5,10 @@ import {
   IconBook,
   IconFileCode,
   IconFileText,
+  IconFileTextFilled,
   IconPlus,
 } from "@tabler/icons-react";
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 import type { GitvnDocItem } from "@/interfaces/gitvn";
 
 interface DocsSidebarProps {
@@ -18,7 +19,7 @@ interface DocsSidebarProps {
   onOpenImportExportModal?: () => void;
 }
 
-export function DocsSidebar({
+export const DocsSidebar = memo(function DocsSidebar({
   docs,
   activeDocId,
   onSelectDoc,
@@ -133,11 +134,20 @@ export function DocsSidebar({
                       e.currentTarget.style.backgroundColor = "transparent";
                   }}
                 >
-                  <IconFileText
-                    size={15}
-                    color={isActive ? "#fb291a" : "#64748b"}
-                    style={{ flexShrink: 0 }}
-                  />
+                  {isActive ? (
+                    <IconFileTextFilled
+                      size={15}
+                      color="#fb291a"
+                      style={{ flexShrink: 0 }}
+                    />
+                  ) : (
+                    <IconFileText
+                      size={15}
+                      color="#64748b"
+                      stroke={1.75}
+                      style={{ flexShrink: 0 }}
+                    />
+                  )}
                   <Text
                     fz={13}
                     fw={isActive ? 600 : 400}
@@ -169,4 +179,4 @@ export function DocsSidebar({
       </Box>
     </Box>
   );
-}
+});

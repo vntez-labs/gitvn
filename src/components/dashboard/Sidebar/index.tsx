@@ -33,19 +33,17 @@ import { OrgListItem } from "./OrgListItem";
 import { RepoListItem } from "./RepoListItem";
 
 export function DashboardSidebar() {
-  const { user } = useAuthStore();
-  const {
-    orgs,
-    repos,
-    invitations = [],
-    dataLoading,
-    selectedOrg,
-    selectedRepo,
-    selectOrg,
-    selectRepo,
-    fetchInitialData,
-    acceptInvitation,
-  } = useDashboardStore();
+  const user = useAuthStore((s) => s.user);
+  const orgs = useDashboardStore((s) => s.orgs);
+  const repos = useDashboardStore((s) => s.repos);
+  const invitations = useDashboardStore((s) => s.invitations || []);
+  const dataLoading = useDashboardStore((s) => s.dataLoading);
+  const selectedOrg = useDashboardStore((s) => s.selectedOrg);
+  const selectedRepo = useDashboardStore((s) => s.selectedRepo);
+  const selectOrg = useDashboardStore((s) => s.selectOrg);
+  const selectRepo = useDashboardStore((s) => s.selectRepo);
+  const fetchInitialData = useDashboardStore((s) => s.fetchInitialData);
+  const acceptInvitation = useDashboardStore((s) => s.acceptInvitation);
 
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");

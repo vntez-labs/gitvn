@@ -94,7 +94,9 @@ export function RepoWorkspace() {
   const [bannerDismissed, setBannerDismissed] = useState<boolean>(false);
   const [initializingGitvn, setInitializingGitvn] = useState<boolean>(false);
   const [kanbanMounted, setKanbanMounted] = useState<boolean>(false);
-  const { selectedRepo, currentBranch, selectRepo } = useDashboardStore();
+  const selectedRepo = useDashboardStore((s) => s.selectedRepo);
+  const currentBranch = useDashboardStore((s) => s.currentBranch);
+  const selectRepo = useDashboardStore((s) => s.selectRepo);
 
   useEffect(() => {
     if (activeTab === "kanban") {

@@ -1,7 +1,12 @@
 "use client";
 
 import { Box, Group, Text, Tooltip, UnstyledButton } from "@mantine/core";
-import { IconLock, IconStar } from "@tabler/icons-react";
+import {
+  IconLock,
+  IconLockFilled,
+  IconStar,
+  IconStarFilled,
+} from "@tabler/icons-react";
 import type { GitHubRepo } from "@/interfaces/github";
 import { formatCompactNumber } from "@/lib/time";
 import { RepoLangIcon } from "./RepoLangIcon";
@@ -103,10 +108,14 @@ export function RepoListItem({
               style={{
                 display: "flex",
                 alignItems: "center",
-                color: "#a1a1aa",
+                color: isSelected ? "#dc2626" : "#a1a1aa",
               }}
             >
-              <IconLock size={12} stroke={2} />
+              {isSelected ? (
+                <IconLockFilled size={12} />
+              ) : (
+                <IconLock size={12} stroke={1.75} />
+              )}
             </Box>
           </Tooltip>
         )}
@@ -125,7 +134,11 @@ export function RepoListItem({
               borderColor: isSelected ? "#e4e4e7" : "transparent",
             }}
           >
-            <IconStar size={11} color="#eab308" fill="#eab308" stroke={1.5} />
+            {isSelected ? (
+              <IconStarFilled size={11} color="#eab308" />
+            ) : (
+              <IconStar size={11} color="#ca8a04" stroke={1.75} />
+            )}
             <Text
               fz={11}
               fw={isSelected ? 600 : 500}

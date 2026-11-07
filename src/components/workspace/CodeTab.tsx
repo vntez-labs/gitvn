@@ -37,17 +37,15 @@ interface CodeTabProps {
 }
 
 export function CodeTab({ onNavigateTab }: CodeTabProps) {
-  const {
-    tree,
-    loadingTree,
-    activeFile,
-    selectFile,
-    fileContent,
-    loadingContent,
-    selectedRepo,
-    currentBranch,
-    selectRepo,
-  } = useDashboardStore();
+  const tree = useDashboardStore((s) => s.tree);
+  const loadingTree = useDashboardStore((s) => s.loadingTree);
+  const activeFile = useDashboardStore((s) => s.activeFile);
+  const selectFile = useDashboardStore((s) => s.selectFile);
+  const fileContent = useDashboardStore((s) => s.fileContent);
+  const loadingContent = useDashboardStore((s) => s.loadingContent);
+  const selectedRepo = useDashboardStore((s) => s.selectedRepo);
+  const currentBranch = useDashboardStore((s) => s.currentBranch);
+  const selectRepo = useDashboardStore((s) => s.selectRepo);
 
   const [createFileOpen, setCreateFileOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);

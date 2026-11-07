@@ -42,7 +42,8 @@ interface DocsTabProps {
 }
 
 export function DocsTab({ onInitializeGitvn, hasGitvn = true }: DocsTabProps) {
-  const { selectedRepo, currentBranch } = useDashboardStore();
+  const selectedRepo = useDashboardStore((s) => s.selectedRepo);
+  const currentBranch = useDashboardStore((s) => s.currentBranch);
   const [docs, setDocs] = useState<GitvnDocItem[]>([]);
   const [activeDocId, setActiveDocId] = useState<string>("");
   const [activeDoc, setActiveDoc] = useState<GitvnDocItem | null>(null);
