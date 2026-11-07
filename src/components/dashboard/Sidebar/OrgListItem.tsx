@@ -20,17 +20,15 @@ export function OrgListItem({ org, isSelected, onSelect }: OrgListItemProps) {
         width: "100%",
         padding: "7px 10px 7px 12px",
         borderRadius: 8,
-        backgroundColor: isSelected ? "#ffffff" : "transparent",
+        backgroundColor: isSelected ? "#fff1f0" : "transparent",
         border: "1px solid",
-        borderColor: isSelected ? "#e4e4e7" : "transparent",
-        boxShadow: isSelected
-          ? "0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03)"
-          : "none",
+        borderColor: isSelected ? "#fecaca" : "transparent",
+        boxShadow: isSelected ? "0 1px 2px rgba(220, 38, 38, 0.05)" : "none",
         transition: "all 0.15s ease",
       }}
       onMouseEnter={(e) => {
         if (!isSelected) {
-          e.currentTarget.style.backgroundColor = "rgba(228, 228, 231, 0.6)";
+          e.currentTarget.style.backgroundColor = "#f4f4f5";
         }
       }}
       onMouseLeave={(e) => {
@@ -45,7 +43,7 @@ export function OrgListItem({ org, isSelected, onSelect }: OrgListItemProps) {
             left: 4,
             top: "50%",
             transform: "translateY(-50%)",
-            width: 3,
+            width: 3.5,
             height: 16,
             backgroundColor: "#dc2626",
             borderRadius: 9999,
@@ -62,16 +60,14 @@ export function OrgListItem({ org, isSelected, onSelect }: OrgListItemProps) {
           size={22}
           radius="xl"
           style={{
-            border: isSelected
-              ? "1.5px solid #e4e4e7"
-              : "1.5px solid transparent",
+            border: isSelected ? "1.5px solid #fca5a5" : "1.5px solid #e4e4e7",
             flexShrink: 0,
           }}
         />
         <Text
           fz={13}
           fw={isSelected ? 600 : 500}
-          c={isSelected ? "#18181b" : "#52525b"}
+          c={isSelected ? "#b91c1c" : "#3f3f46"}
           truncate
           style={{ flex: 1 }}
         >
@@ -89,9 +85,7 @@ export function OrgListItem({ org, isSelected, onSelect }: OrgListItemProps) {
                 fontWeight: 600,
                 height: 18,
                 padding: "0 6px",
-                backgroundColor: isSelected
-                  ? "rgba(220, 38, 38, 0.08)"
-                  : "#e4e4e7",
+                backgroundColor: isSelected ? "#fee2e2" : "#f4f4f5",
                 color: isSelected ? "#dc2626" : "#71717a",
                 flexShrink: 0,
               },

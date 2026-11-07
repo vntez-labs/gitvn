@@ -153,7 +153,7 @@ export function DashboardSidebar() {
       w={270}
       style={{
         borderRight: "1px solid #e4e4e7",
-        backgroundColor: "#f4f4f5",
+        backgroundColor: "#ffffff",
         display: "flex",
         flexDirection: "column",
         minHeight: 0,
@@ -311,7 +311,7 @@ export function DashboardSidebar() {
           mb="sm"
           styles={{
             input: {
-              backgroundColor: "#ffffff",
+              backgroundColor: "#f4f4f5",
               borderColor: "#e4e4e7",
               fontSize: 12,
               borderRadius: 6,

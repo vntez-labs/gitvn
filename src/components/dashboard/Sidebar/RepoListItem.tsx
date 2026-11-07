@@ -37,17 +37,15 @@ export function RepoListItem({
         width: "100%",
         padding: "6px 10px 6px 12px",
         borderRadius: 8,
-        backgroundColor: isSelected ? "#ffffff" : "transparent",
+        backgroundColor: isSelected ? "#fff1f0" : "transparent",
         border: "1px solid",
-        borderColor: isSelected ? "#e4e4e7" : "transparent",
-        boxShadow: isSelected
-          ? "0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03)"
-          : "none",
+        borderColor: isSelected ? "#fecaca" : "transparent",
+        boxShadow: isSelected ? "0 1px 2px rgba(220, 38, 38, 0.05)" : "none",
         transition: "all 0.15s ease",
       }}
       onMouseEnter={(e) => {
         if (!isSelected) {
-          e.currentTarget.style.backgroundColor = "rgba(228, 228, 231, 0.6)";
+          e.currentTarget.style.backgroundColor = "#f4f4f5";
         }
       }}
       onMouseLeave={(e) => {
@@ -62,7 +60,7 @@ export function RepoListItem({
             left: 4,
             top: "50%",
             transform: "translateY(-50%)",
-            width: 3,
+            width: 3.5,
             height: 16,
             backgroundColor: "#dc2626",
             borderRadius: 9999,
@@ -80,20 +78,27 @@ export function RepoListItem({
         <Box style={{ overflow: "hidden", flex: 1, minWidth: 0 }}>
           <Text
             fz={13}
-            ff="monospace"
-            fw={isSelected ? 600 : 400}
-            c={isSelected ? "#18181b" : "#52525b"}
+            fw={isSelected ? 600 : 450}
+            c={isSelected ? "#b91c1c" : "#3f3f46"}
             truncate
             title={repo.name}
+            style={{
+              fontFamily:
+                "var(--font-jetbrains-mono), 'JetBrains Mono', ui-monospace, Menlo, Monaco, Consolas, monospace",
+            }}
           >
             {repo.name}
           </Text>
           {showOwner && repo.owner?.login && (
             <Text
               fz={10}
-              c="#71717a"
+              c={isSelected ? "#b91c1c" : "#71717a"}
               truncate
-              style={{ lineHeight: 1.2, marginTop: 1 }}
+              style={{
+                lineHeight: 1.2,
+                marginTop: 1,
+                opacity: isSelected ? 0.8 : 1,
+              }}
             >
               @{repo.owner.login}
             </Text>
@@ -126,12 +131,10 @@ export function RepoListItem({
             px={5}
             py={1.5}
             style={{
-              backgroundColor: isSelected
-                ? "#f4f4f5"
-                : "rgba(228, 228, 231, 0.5)",
+              backgroundColor: isSelected ? "#fee2e2" : "#f4f4f5",
               borderRadius: 4,
               border: "1px solid",
-              borderColor: isSelected ? "#e4e4e7" : "transparent",
+              borderColor: isSelected ? "#fca5a5" : "#e4e4e7",
             }}
           >
             {isSelected ? (
@@ -142,7 +145,7 @@ export function RepoListItem({
             <Text
               fz={11}
               fw={isSelected ? 600 : 500}
-              c={isSelected ? "#3f3f46" : "#71717a"}
+              c={isSelected ? "#991b1b" : "#71717a"}
               ff="monospace"
             >
               {formatCompactNumber(starCount)}
