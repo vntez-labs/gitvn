@@ -11,10 +11,14 @@ import {
   Tooltip,
 } from "@mantine/core";
 import {
+  IconBrandFacebook,
+  IconBrandLinkedin,
+  IconBrandX,
   IconExternalLink,
   IconLink,
   IconMail,
   IconMapPin,
+  IconStar,
   IconUsers,
 } from "@tabler/icons-react";
 
@@ -46,20 +50,14 @@ export function UserProfileSidebar({
         <Text fz={22} fw={700} c="#0f172a" lh={1.2}>
           {user?.name || user?.login}
         </Text>
-        <Group gap="xs" mt={3}>
+        <Group gap={6} mt={3} align="center" wrap="wrap">
           <Text fz={15} c="#64748b" ff="monospace">
             {user?.login}
           </Text>
-          {data.isPro && (
-            <Badge
-              size="xs"
-              variant="light"
-              color="grape"
-              radius="xl"
-              style={{ fontWeight: 700 }}
-            >
-              ★ PRO
-            </Badge>
+          {user?.pronouns && (
+            <Text fz={13} c="#64748b">
+              · {user.pronouns}
+            </Text>
           )}
         </Group>
       </Box>
@@ -122,6 +120,45 @@ export function UserProfileSidebar({
             </Text>
           </Group>
         )}
+        {user?.socialAccounts?.map((social: any, idx: number) => {
+          const isFb =
+            social.provider === "FACEBOOK" ||
+            social.url?.includes("facebook.com") ||
+            social.url?.includes("fb.com");
+          const isTwitter =
+            social.provider === "TWITTER" ||
+            social.url?.includes("twitter.com") ||
+            social.url?.includes("x.com");
+          const isLinkedin =
+            social.provider === "LINKEDIN" ||
+            social.url?.includes("linkedin.com");
+
+          return (
+            <Group key={idx} gap="xs">
+              {isFb ? (
+                <IconBrandFacebook size={14} color="#1877f2" />
+              ) : isTwitter ? (
+                <IconBrandX size={14} color="#0f172a" />
+              ) : isLinkedin ? (
+                <IconBrandLinkedin size={14} color="#0a66c2" />
+              ) : (
+                <IconLink size={14} />
+              )}
+              <Text
+                component="a"
+                href={social.url}
+                target="_blank"
+                fz={12}
+                c="#334155"
+                truncate
+                style={{ textDecoration: "none" }}
+              >
+                {social.displayName ||
+                  social.url.replace(/^https?:\/\/(www\.)?/, "")}
+              </Text>
+            </Group>
+          );
+        })}
       </Stack>
 
       {/* ACHIEVEMENTS */}
@@ -129,7 +166,7 @@ export function UserProfileSidebar({
         <Box pt="xs" style={{ borderTop: "1px solid #e2e8f0" }}>
           <Group justify="space-between" mb="xs">
             <Text fz={12} fw={700} c="#0f172a">
-              Achievements ({data.achievements.length})
+              Achievements
             </Text>
             <Text
               component="a"
@@ -153,36 +190,69 @@ export function UserProfileSidebar({
                   component="a"
                   href={`https://github.com/${user?.login}?tab=achievements`}
                   target="_blank"
-                  style={{ position: "relative", display: "block" }}
+                  style={{ position: "relative", display: "inline-block" }}
                 >
                   <img
                     src={item.iconUrl}
                     alt={item.name}
-                    width={54}
-                    height={54}
+                    width={56}
+                    height={56}
                     style={{ display: "block", objectFit: "contain" }}
                   />
                   {item.tier && (
-                    <Badge
-                      size="xs"
-                      variant="filled"
-                      color="gray"
-                      radius="xl"
+                    <Box
                       style={{
                         position: "absolute",
-                        bottom: -2,
-                        right: -4,
-                        border: "1px solid #e2e8f0",
+                        bottom: 0,
+                        right: -2,
+                        backgroundColor: "#ffffff",
+                        border: "1.5px solid #d97706",
+                        borderRadius: 9999,
                         fontSize: 9,
+                        fontWeight: 700,
+                        color: "#b45309",
                         padding: "0 4px",
+                        lineHeight: "14px",
+                        boxShadow: "0 1px 2px rgba(0,0,0,0.1)",
                       }}
                     >
                       {item.tier}
-                    </Badge>
+                    </Box>
                   )}
                 </Box>
               </Tooltip>
             ))}
+          </Group>
+        </Box>
+      )}
+
+      {/* HIGHLIGHTS */}
+      {data.isPro && (
+        <Box pt="xs" style={{ borderTop: "1px solid #e2e8f0" }}>
+          <Text fz={12} fw={700} c="#0f172a" mb={6}>
+            Highlights
+          </Text>
+          <Group gap={6}>
+            <Badge
+              size="sm"
+              variant="outline"
+              color="gray"
+              radius="sm"
+              leftSection={<IconStar size={11} color="#64748b" />}
+              styles={{
+                root: {
+                  textTransform: "none",
+                  fontWeight: 600,
+                  fontSize: 11,
+                  height: 22,
+                  padding: "0 8px",
+                  borderColor: "#cbd5e1",
+                  color: "#334155",
+                },
+              }}
+            >
+              PRO
+            </Badge>
           </Group>
         </Box>
       )}
@@ -198,11 +268,21 @@ export function UserProfileSidebar({
               <Tooltip key={org.login} label={org.login} withArrow>
                 <Avatar
                   src={org.avatarUrl}
-                  size={28}
+                  size={32}
                   radius="sm"
                   component="a"
-                  href={org.url}
+                  href={org.url || `https://github.com/${org.login}`}
                   target="_blank"
+                  style={{
+                    border: "1px solid #e2e8f0",
+                    transition: "transform 0.1s ease",
+                  }}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.transform = "scale(1.08)")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.transform = "scale(1)")
+                  }
                 />
               </Tooltip>
             ))}

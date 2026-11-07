@@ -3,28 +3,50 @@ import { getValidAuthToken } from "@/lib/auth-token";
 
 function parseProfileBadges(html: string) {
   const achievements: { name: string; iconUrl: string; tier?: string }[] = [];
-  const regex =
-    /<img[^>]*src="([^"]+)"[^>]*alt="Achievement:\s*([^"]+)"[^>]*>/gi;
-  let match: RegExpExecArray | null = null;
 
-  while (true) {
-    match = regex.exec(html);
-    if (!match) break;
-    const iconUrl = match[1];
-    const rawName = match[2].trim();
-    const tierMatch = rawName.match(
-      /(.*?)(?:,\s*(x\d+|Bronze|Silver|Gold))?$/i,
+  // Parse achievements từ sidebar badges
+  const linkRegex =
+    /<a[^>]*href="\/[^"]*\?achievement=([^&"]+)[^"]*"[^>]*>([\s\S]*?)<\/a>/gi;
+  let linkMatch: RegExpExecArray | null = null;
+  while ((linkMatch = linkRegex.exec(html)) !== null) {
+    const inner = linkMatch[2];
+    const imgMatch = inner.match(
+      /<img[^>]*src="([^"]+)"[^>]*alt="Achievement:\s*([^"]+)"/i,
     );
-    const name = tierMatch ? tierMatch[1].trim() : rawName;
-    const tier = tierMatch && tierMatch[2] ? tierMatch[2].trim() : undefined;
+    if (imgMatch) {
+      const iconUrl = imgMatch[1];
+      const name = imgMatch[2].trim();
+      const tierMatch = inner.match(
+        /class="[^"]*achievement-tier-label[^"]*"[^>]*>([^<]+)<\/span>/i,
+      );
+      const tier = tierMatch ? tierMatch[1].trim() : undefined;
+      if (!achievements.some((a) => a.name === name)) {
+        achievements.push({ name, iconUrl, tier });
+      }
+    }
+  }
 
-    if (!achievements.some((a) => a.name === name)) {
-      achievements.push({ name, iconUrl, tier });
+  // Fallback nếu không có cấu trúc link: parse trực tiếp từ img
+  if (achievements.length === 0) {
+    const imgRegex =
+      /<img[^>]*src="([^"]+)"[^>]*alt="Achievement:\s*([^"]+)"[^>]*>/gi;
+    let imgMatch: RegExpExecArray | null = null;
+    while ((imgMatch = imgRegex.exec(html)) !== null) {
+      const iconUrl = imgMatch[1];
+      const rawName = imgMatch[2].trim();
+      const tierMatch = rawName.match(
+        /(.*?)(?:,\s*(x\d+|Bronze|Silver|Gold))?$/i,
+      );
+      const name = tierMatch ? tierMatch[1].trim() : rawName;
+      const tier = tierMatch && tierMatch[2] ? tierMatch[2].trim() : undefined;
+      if (!achievements.some((a) => a.name === name)) {
+        achievements.push({ name, iconUrl, tier });
+      }
     }
   }
 
   const isPro =
-    /aria-label="Highlight:\s*Pro"|title="Label:\s*Pro"|class="Label[^"]*"[^>]*>\s*PRO\s*</i.test(
+    /title="Label:\s*Pro"|aria-label="Highlight:\s*Pro"|class="Label[^"]*"[^>]*>\s*PRO\s*</i.test(
       html,
     );
   return { achievements, isPro };
@@ -74,6 +96,7 @@ export async function GET(
           user(login: $login) {
             name
             login
+            pronouns
             avatarUrl
             bio
             company
@@ -81,6 +104,13 @@ export async function GET(
             email
             websiteUrl
             createdAt
+            socialAccounts(first: 10) {
+              nodes {
+                displayName
+                provider
+                url
+              }
+            }
             followers { totalCount }
             following { totalCount }
             pullRequests { totalCount }
@@ -153,10 +183,10 @@ export async function GET(
         },
         cache: "no-store",
       }),
-      fetch(`https://github.com/${username}?tab=achievements`, {
+      fetch(`https://github.com/${username}`, {
         headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" },
         cache: "no-store",
-        signal: AbortSignal.timeout(3000), // Timeout 3s để không bao giờ block trang
+        signal: AbortSignal.timeout(8000), // Timeout 8s
       }).catch(() => null),
     ]);
 
@@ -269,10 +299,80 @@ export async function GET(
       0,
     );
 
+    // Lấy danh sách Organizations đầy đủ (kết hợp cả public lẫn memberships nếu có token)
+    const orgsMap = new Map<string, any>();
+    userData.organizations?.nodes?.forEach((org: any) => {
+      if (org?.login) {
+        orgsMap.set(org.login.toLowerCase(), {
+          login: org.login,
+          avatarUrl: org.avatarUrl,
+          url: org.url || `https://github.com/${org.login}`,
+        });
+      }
+    });
+
+    if (token) {
+      try {
+        const [userOrgsRes, membershipsRes] = await Promise.all([
+          fetch("https://api.github.com/user/orgs?per_page=100", {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              Accept: "application/vnd.github+json",
+            },
+            cache: "no-store",
+          }),
+          fetch(
+            "https://api.github.com/user/memberships/orgs?state=active&per_page=100",
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                Accept: "application/vnd.github+json",
+              },
+              cache: "no-store",
+            },
+          ),
+        ]);
+
+        if (userOrgsRes.ok) {
+          const directOrgs = await userOrgsRes.json();
+          if (Array.isArray(directOrgs)) {
+            directOrgs.forEach((org: any) => {
+              if (org?.login && !orgsMap.has(org.login.toLowerCase())) {
+                orgsMap.set(org.login.toLowerCase(), {
+                  login: org.login,
+                  avatarUrl: org.avatar_url,
+                  url: `https://github.com/${org.login}`,
+                });
+              }
+            });
+          }
+        }
+
+        if (membershipsRes.ok) {
+          const memberships = await membershipsRes.json();
+          if (Array.isArray(memberships)) {
+            memberships.forEach((m: any) => {
+              const org = m?.organization;
+              if (org?.login && !orgsMap.has(org.login.toLowerCase())) {
+                orgsMap.set(org.login.toLowerCase(), {
+                  login: org.login,
+                  avatarUrl: org.avatar_url,
+                  url: `https://github.com/${org.login}`,
+                });
+              }
+            });
+          }
+        }
+      } catch {
+        // Tiếp tục với các orgs đã có
+      }
+    }
+
     const payload = {
       user: {
         name: userData.name,
         login: userData.login,
+        pronouns: userData.pronouns || null,
         avatar_url: userData.avatarUrl,
         bio: userData.bio,
         company: userData.company,
@@ -283,6 +383,7 @@ export async function GET(
         followers: userData.followers?.totalCount ?? 0,
         following: userData.following?.totalCount ?? 0,
         html_url: `https://github.com/${userData.login}`,
+        socialAccounts: userData.socialAccounts?.nodes || [],
       },
       seniority: {
         totalDays,
@@ -308,7 +409,7 @@ export async function GET(
       },
       isPro,
       achievements,
-      orgs: userData.organizations?.nodes || [],
+      orgs: Array.from(orgsMap.values()),
       readme: readmeContent,
       pinnedRepos: repos.slice(0, 6),
       languages,
