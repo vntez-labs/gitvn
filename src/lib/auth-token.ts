@@ -229,18 +229,13 @@ export async function getValidAuthToken(): Promise<string | null> {
 
   // Trường hợp 2: Token đã hết hạn / sắp hết hạn, nhưng có Refresh Token -> Tự động gia hạn
   if (refreshToken) {
-    console.log(
-      "[Auth] Access token hết hạn hoặc sắp hết, đang tự động refresh...",
-    );
     const refreshResult = await refreshGitHubToken(refreshToken);
     if (refreshResult.ok && refreshResult.data) {
       await setAuthCookies(cookieStore, refreshResult.data);
-      console.log("[Auth] Tự động refresh token thành công!");
       return refreshResult.data.access_token;
     }
 
     // Nếu refresh token bị hỏng hoặc bị revoke trên GitHub -> Xóa sạch cookies
-    console.warn("[Auth] Refresh token không còn hợp lệ, xóa phiên đăng nhập.");
     await clearAuthCookies(cookieStore);
     return null;
   }
@@ -282,9 +277,6 @@ export async function fetchGitHubWithAuth(
     const cookieStore = await cookies();
     const refreshToken = cookieStore.get("github_refresh_token")?.value;
     if (refreshToken) {
-      console.log(
-        "[Auth 401] Bắt gặp 401, đang thử refresh token và thử lại...",
-      );
       const refreshRes = await refreshGitHubToken(refreshToken);
       if (refreshRes.ok && refreshRes.data) {
         await setAuthCookies(cookieStore, refreshRes.data);

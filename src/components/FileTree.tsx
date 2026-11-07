@@ -131,7 +131,7 @@ const TreeItem = memo(function TreeItem({
           alignItems: "center",
           width: "100%",
           minWidth: "max-content",
-          padding: "3px 8px 3px 6px",
+          padding: "4px 8px 4px 6px",
           backgroundColor: isActive ? "#fef2f2" : "transparent",
           borderLeft: isActive
             ? "2.5px solid #dc2626"
@@ -147,7 +147,7 @@ const TreeItem = memo(function TreeItem({
           if (!isActive) e.currentTarget.style.backgroundColor = "transparent";
         }}
       >
-        <Group gap={4} wrap="nowrap" style={{ flexShrink: 0 }}>
+        <Group gap={5} wrap="nowrap" style={{ flexShrink: 0 }}>
           {/* Mũi tên đóng/mở thư mục hoặc spacer cho file */}
           {isFolder ? (
             <Box
@@ -160,9 +160,9 @@ const TreeItem = memo(function TreeItem({
               }}
             >
               {isOpen ? (
-                <IconChevronDown size={12} color="#71717a" />
+                <IconChevronDown size={13} color="#71717a" />
               ) : (
-                <IconChevronRight size={12} color="#71717a" />
+                <IconChevronRight size={13} color="#71717a" />
               )}
             </Box>
           ) : (
@@ -176,13 +176,17 @@ const TreeItem = memo(function TreeItem({
             isOpen={isOpen}
           />
 
-          {/* Tên file */}
+          {/* Tên file & thư mục rõ nét với font JetBrains Mono kích thước lớn hơn, dễ đọc */}
           <Text
-            fz={13}
-            ff="monospace"
-            c={isActive ? "#b91c1c" : isFolder ? "#27272a" : "#3f3f46"}
-            fw={isActive ? 600 : isFolder ? 500 : 400}
-            style={{ whiteSpace: "nowrap" }}
+            fz={13.5}
+            c={isActive ? "#b91c1c" : isFolder ? "#18181b" : "#3f3f46"}
+            fw={isActive ? 600 : isFolder ? 550 : 450}
+            style={{
+              fontFamily:
+                "var(--font-jetbrains-mono), 'JetBrains Mono', ui-monospace, Menlo, Monaco, Consolas, monospace",
+              whiteSpace: "nowrap",
+              letterSpacing: "-0.01em",
+            }}
           >
             {node.name}
           </Text>
