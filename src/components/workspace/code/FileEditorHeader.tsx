@@ -51,8 +51,23 @@ export function FileEditorHeader({
         flexShrink: 0,
       }}
     >
-      {/* File Meta info (Line count, format) */}
-      <Group gap="xs" align="center">
+      {/* File Meta info (Path, Line count, format) */}
+      <Group
+        gap="xs"
+        align="center"
+        style={{ minWidth: 0, overflow: "hidden", flex: 1, marginRight: 12 }}
+      >
+        <Text
+          fz={13}
+          fw={600}
+          ff="monospace"
+          c="#18181b"
+          truncate
+          title={activeFile}
+          style={{ minWidth: 0 }}
+        >
+          {activeFile}
+        </Text>
         {lineCount > 0 && !isMarkdown && (
           <Badge
             size="xs"
@@ -64,6 +79,7 @@ export function FileEditorHeader({
               fontFamily: "monospace",
               fontSize: 11,
               padding: "2px 6px",
+              flexShrink: 0,
             }}
           >
             {lineCount.toLocaleString()} dòng
@@ -79,6 +95,7 @@ export function FileEditorHeader({
               color: "#c2410c",
               fontSize: 11,
               fontWeight: 600,
+              flexShrink: 0,
             }}
           >
             Đang chỉnh sửa

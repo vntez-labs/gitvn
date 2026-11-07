@@ -25,44 +25,11 @@ export function GlobalNavigationProgress() {
     return () => clearTimeout(timer);
   }, [pathname, searchParams]);
 
-  // 2. Kích hoạt hiệu ứng tiến trình cho mọi request API Axios (YouTube-style)
+  // 2. Interceptor tự động refresh token khi gặp lỗi 401 (hoàn toàn không kích hoạt progress bar toàn trang)
   useEffect(() => {
-    let activeRequests = 0;
-
-    const reqInterceptor = axios.interceptors.request.use(
-      (config) => {
-        if (activeRequests === 0) {
-          nprogress.start();
-        }
-        activeRequests++;
-        return config;
-      },
-      (error) => {
-        activeRequests--;
-        if (activeRequests <= 0) {
-          activeRequests = 0;
-          nprogress.complete();
-        }
-        return Promise.reject(error);
-      },
-    );
-
     const resInterceptor = axios.interceptors.response.use(
-      (response) => {
-        activeRequests--;
-        if (activeRequests <= 0) {
-          activeRequests = 0;
-          nprogress.complete();
-        }
-        return response;
-      },
+      (response) => response,
       async (error) => {
-        activeRequests--;
-        if (activeRequests <= 0) {
-          activeRequests = 0;
-          nprogress.complete();
-        }
-
         // Tự động thử làm mới token nếu gặp 401 Unauthorized
         const originalRequest = error.config;
         if (
@@ -87,7 +54,6 @@ export function GlobalNavigationProgress() {
     );
 
     return () => {
-      axios.interceptors.request.eject(reqInterceptor);
       axios.interceptors.response.eject(resInterceptor);
     };
   }, []);

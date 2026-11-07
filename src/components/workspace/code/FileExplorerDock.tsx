@@ -22,12 +22,12 @@ export const FileExplorerDock: FC<FileExplorerDockProps> = memo(
     return (
       <Box
         style={{
-          borderRight: "1px solid #e4e4e7",
           backgroundColor: "#fafafa",
           display: "flex",
           flexDirection: "column",
           overflow: "hidden",
           minHeight: 0,
+          height: "100%",
         }}
       >
         <Box
@@ -39,6 +39,7 @@ export const FileExplorerDock: FC<FileExplorerDockProps> = memo(
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
+            flexShrink: 0,
           }}
         >
           <Text
@@ -82,11 +83,11 @@ export const FileExplorerDock: FC<FileExplorerDockProps> = memo(
         </Box>
 
         <Box
-          className="hide-scrollbar"
           style={{
             flex: 1,
+            overflowX: "auto",
             overflowY: "auto",
-            padding: 8,
+            padding: "8px 4px",
             minHeight: 0,
           }}
         >

@@ -27,7 +27,7 @@ export function useJiraBoard(options?: UseJiraBoardOptions) {
 
   const [boardData, setBoardData] = useState<JiraBoardData | null>(null);
   const [gitvnConfig, setGitvnConfig] = useState<GitvnConfig | null>(null);
-  const [hasGitvn, setHasGitvn] = useState<boolean>(true);
+  const [hasGitvn, setHasGitvn] = useState<boolean>(false);
   const [initializing, setInitializing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<"kanban" | "backlog">("kanban");

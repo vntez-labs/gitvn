@@ -86,15 +86,15 @@ export function RepoWorkspace() {
   );
   const [pullsCount, setPullsCount] = useState<number>(0);
   const [issuesCount, setIssuesCount] = useState<number>(0);
-  const [hasGitvn, setHasGitvn] = useState<boolean>(true);
+  const [hasGitvn, setHasGitvn] = useState<boolean>(false);
   const [isOutdated, setIsOutdated] = useState<boolean>(false);
-  const [gitvnVersion, setGitvnVersion] = useState<string>("1.0.0");
+  const [gitvnVersion, setGitvnVersion] = useState<string>("2.0.0");
   const [outdatedReason, setOutdatedReason] = useState<string>("");
   const [upgradeModalOpen, setUpgradeModalOpen] = useState<boolean>(false);
   const [bannerDismissed, setBannerDismissed] = useState<boolean>(false);
   const [initializingGitvn, setInitializingGitvn] = useState<boolean>(false);
   const [kanbanMounted, setKanbanMounted] = useState<boolean>(false);
-  const { selectedRepo, currentBranch } = useDashboardStore();
+  const { selectedRepo, currentBranch, selectRepo } = useDashboardStore();
 
   useEffect(() => {
     if (activeTab === "kanban") {
@@ -137,12 +137,16 @@ export function RepoWorkspace() {
         notifications.show({
           title: "Khởi tạo .gitvn thành công!",
           message: res.data.syncedToGitHub
-            ? "Đã tạo và commit cấu trúc chuẩn .gitvn lên GitHub"
-            : "Đã tạo cấu trúc chuẩn .gitvn cục bộ",
+            ? "Đã tạo và commit cấu trúc chuẩn .gitvn v2 lên GitHub"
+            : "Đã tạo cấu trúc chuẩn .gitvn v2 cục bộ",
           color: "teal",
           icon: <IconCheck size={16} />,
         });
         setHasGitvn(true);
+        setIsOutdated(false);
+        setGitvnVersion("2.0.0");
+        checkGitvnStatus();
+        selectRepo(selectedRepo, undefined, currentBranch);
       }
     } catch (err: any) {
       notifications.show({
@@ -164,6 +168,9 @@ export function RepoWorkspace() {
     setCommitsCount(undefined);
     setPullsCount(0);
     setIssuesCount(0);
+    setHasGitvn(false);
+    setIsOutdated(false);
+    setBannerDismissed(false);
 
     const owner = selectedRepo.owner.login;
     const repo = selectedRepo.name;

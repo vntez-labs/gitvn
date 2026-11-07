@@ -66,7 +66,7 @@ export async function GET(request: Request) {
 
   const token = await getAuthToken();
 
-  // 1. Kiểm tra trên GitHub nếu có token (có cơ chế gộp request song song)
+  // 1. Kiểm tra trên GitHub nếu có token
   if (token) {
     let pending = inFlightRequests.get(cacheKey);
     if (!pending) {
@@ -84,14 +84,36 @@ export async function GET(request: Request) {
           },
         });
       }
+
+      // ghStatus === null: Repo trên GitHub KHÔNG có thư mục .gitvn
+      // Trả về hasGitvn: false rõ ràng, TUYỆT ĐỐI không fallback sang thư mục máy chủ cục bộ
+      const notFoundStatus: GitvnRepoStatus = {
+        hasGitvn: false,
+        hasConfig: false,
+        hasTasks: false,
+        hasDocs: false,
+        source: "github",
+        isOutdated: false,
+      };
+      gitvnStatusCache.set(cacheKey, { data: notFoundStatus, timestamp: now });
+      return NextResponse.json(notFoundStatus);
     } catch (err) {
       console.warn("[inspectGitHubGitvn error]:", err);
+      const errorStatus: GitvnRepoStatus = {
+        hasGitvn: false,
+        hasConfig: false,
+        hasTasks: false,
+        hasDocs: false,
+        source: "none",
+        isOutdated: false,
+      };
+      return NextResponse.json(errorStatus);
     } finally {
       inFlightRequests.delete(cacheKey);
     }
   }
 
-  // 2. Fallback: Kiểm tra trên local filesystem
+  // 2. Fallback: CHỈ kiểm tra trên local filesystem khi không có token (chạy offline / dev mode)
   try {
     const yamlPath = path.join(LOCAL_GITVN_DIR, "config.yml");
     const jsonPath = path.join(LOCAL_GITVN_DIR, "config.json");

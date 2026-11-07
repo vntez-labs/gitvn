@@ -2,7 +2,7 @@
 
 import { Box, Collapse, Group, Text, UnstyledButton } from "@mantine/core";
 import { IconChevronDown, IconChevronRight } from "@tabler/icons-react";
-import { memo, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import {
   getIconForFile,
   getIconForFolder,
@@ -106,20 +106,33 @@ const TreeItem = memo(function TreeItem({
   activePath: string | null;
   onFileClick: (p: string) => void;
 }) {
-  const [isOpen, setIsOpen] = useState(false);
   const isFolder = node.type === "tree";
   const isActive = activePath === node.path;
+  const isAncestorOfActive = Boolean(
+    activePath && activePath.startsWith(node.path + "/"),
+  );
+
+  const [isOpen, setIsOpen] = useState(isAncestorOfActive);
+
+  // Tự động mở rộng các thư mục cha chứa file đang được chọn
+  useEffect(() => {
+    if (isAncestorOfActive) {
+      setIsOpen(true);
+    }
+  }, [isAncestorOfActive]);
 
   return (
-    <Box>
+    <Box style={{ width: "100%", minWidth: "max-content" }}>
       <UnstyledButton
         onClick={() => (isFolder ? setIsOpen(!isOpen) : onFileClick(node.path))}
+        title={node.path}
         style={{
           display: "flex",
           alignItems: "center",
           width: "100%",
-          padding: "4px 8px",
-          paddingLeft: depth * 12 + 6,
+          minWidth: "max-content",
+          padding: "4px 10px",
+          paddingLeft: depth * 14 + 8,
           backgroundColor: isActive ? "#fef2f2" : "transparent",
           borderLeft: isActive ? "2px solid #dc2626" : "2px solid transparent",
           borderRadius: isActive ? "0 4px 4px 0" : "0",
@@ -133,7 +146,7 @@ const TreeItem = memo(function TreeItem({
           if (!isActive) e.currentTarget.style.backgroundColor = "transparent";
         }}
       >
-        <Group gap={6} wrap="nowrap" style={{ overflow: "hidden" }}>
+        <Group gap={6} wrap="nowrap" style={{ flexShrink: 0 }}>
           {/* Mũi tên đóng/mở thư mục */}
           <Box
             w={12}
@@ -165,7 +178,7 @@ const TreeItem = memo(function TreeItem({
             ff="monospace"
             c={isActive ? "#b91c1c" : isFolder ? "#27272a" : "#52525b"}
             fw={isActive ? 600 : isFolder ? 500 : 400}
-            truncate
+            style={{ whiteSpace: "nowrap" }}
           >
             {node.name}
           </Text>
@@ -178,7 +191,7 @@ const TreeItem = memo(function TreeItem({
           <Box
             style={{
               borderLeft: "1px solid #e4e4e7",
-              marginLeft: depth * 12 + 11,
+              marginLeft: depth * 14 + 13,
             }}
           >
             {node.children.map((child: any) => (
@@ -204,7 +217,7 @@ export const FileTree = memo(function FileTree({
 }: FileTreeProps) {
   const tree = useMemo(() => buildTree(data), [data]);
   return (
-    <Box py={2}>
+    <Box py={2} style={{ width: "max-content", minWidth: "100%" }}>
       {tree.map((node: any) => (
         <TreeItem
           key={node.path}
