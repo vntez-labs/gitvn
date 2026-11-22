@@ -24,13 +24,9 @@ import {
 
 interface UserProfileSidebarProps {
   data: any;
-  formatCompactNumber: (n: number) => string;
 }
 
-export function UserProfileSidebar({
-  data,
-  formatCompactNumber,
-}: UserProfileSidebarProps) {
+export function UserProfileSidebar({ data }: UserProfileSidebarProps) {
   const user = data.user || {};
 
   return (

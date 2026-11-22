@@ -60,7 +60,7 @@ const userProfileCache = new Map<string, UserProfileCacheEntry>();
 const CACHE_TTL_MS = 2 * 60 * 1000; // 2 phút cache
 
 export async function GET(
-  request: Request,
+  _request: Request,
   { params }: { params: Promise<{ username: string }> },
 ) {
   const rawParams = await params;

@@ -6,7 +6,6 @@ import {
   Box,
   Button,
   Group,
-  Loader,
   Menu,
   SegmentedControl,
   Select,

@@ -32,7 +32,11 @@ import { useDashboardStore } from "@/store/dashboard.store";
 import { OrgListItem } from "./OrgListItem";
 import { RepoListItem } from "./RepoListItem";
 
-export function DashboardSidebar() {
+export function DashboardSidebar({
+  onRepoSelect,
+}: {
+  onRepoSelect?: () => void;
+}) {
   const user = useAuthStore((s) => s.user);
   const orgs = useDashboardStore((s) => s.orgs);
   const repos = useDashboardStore((s) => s.repos);
@@ -50,7 +54,7 @@ export function DashboardSidebar() {
   const [acceptingId, setAcceptingId] = useState<number | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  if (!user) return null;
+  const userLogin = user?.login.toLowerCase();
 
   // Lọc theo tìm kiếm
   const query = searchQuery.trim().toLowerCase();
@@ -100,8 +104,6 @@ export function DashboardSidebar() {
 
   // Phân loại Repos
   const { personalRepos, collabRepos, orgRepos } = useMemo(() => {
-    const userLogin = user.login.toLowerCase();
-
     // Repos cá nhân: do chính user sở hữu
     const pRepos = repos.filter(
       (r) =>
@@ -146,11 +148,14 @@ export function DashboardSidebar() {
       collabRepos: cRepos,
       orgRepos: oRepos,
     };
-  }, [repos, user.login, selectedOrg, query]);
+  }, [repos, userLogin, selectedOrg, query]);
+
+  if (!user) return null;
 
   return (
     <Box
-      w={270}
+      w={onRepoSelect ? "100%" : 270}
+      h="100%"
       style={{
         borderRight: "1px solid #e4e4e7",
         backgroundColor: "#ffffff",
@@ -384,7 +389,10 @@ export function DashboardSidebar() {
                   key={repo.id}
                   repo={repo}
                   isSelected={selectedRepo?.id === repo.id}
-                  onSelect={() => selectRepo(repo)}
+                  onSelect={() => {
+                    void selectRepo(repo);
+                    onRepoSelect?.();
+                  }}
                 />
               ))
             ) : (
@@ -412,7 +420,10 @@ export function DashboardSidebar() {
                       key={repo.id}
                       repo={repo}
                       isSelected={selectedRepo?.id === repo.id}
-                      onSelect={() => selectRepo(repo)}
+                      onSelect={() => {
+                        void selectRepo(repo);
+                        onRepoSelect?.();
+                      }}
                     />
                   ))}
                 </Stack>
@@ -441,7 +452,10 @@ export function DashboardSidebar() {
                       key={repo.id}
                       repo={repo}
                       isSelected={selectedRepo?.id === repo.id}
-                      onSelect={() => selectRepo(repo)}
+                      onSelect={() => {
+                        void selectRepo(repo);
+                        onRepoSelect?.();
+                      }}
                       showOwner={true}
                     />
                   ))}

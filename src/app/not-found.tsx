@@ -10,9 +10,7 @@ import {
   Title,
 } from "@mantine/core";
 import {
-  IconArrowLeft,
   IconCompass,
-  IconGitBranch,
   IconHome,
   IconLayoutDashboard,
 } from "@tabler/icons-react";

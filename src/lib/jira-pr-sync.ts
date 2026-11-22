@@ -12,7 +12,7 @@ export interface GitHubPullItem {
   };
 }
 
-export interface TaskPrSyncChange {
+interface TaskPrSyncChange {
   taskId: string;
   taskTitle: string;
   fromStatus: TaskStatus;
@@ -39,7 +39,7 @@ function escapeRegExp(str: string): string {
  * 2. task.branch trùng với pr.head.ref
  * 3. task.id xuất hiện trong pr.head.ref, pr.title, hoặc pr.body
  */
-export function isPrLinkedToTask(task: JiraTask, pr: GitHubPullItem): boolean {
+function isPrLinkedToTask(task: JiraTask, pr: GitHubPullItem): boolean {
   if (task.pullNumber && task.pullNumber === pr.number) {
     return true;
   }

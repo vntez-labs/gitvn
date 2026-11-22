@@ -5,14 +5,12 @@ import {
   Box,
   Button,
   Group,
-  Modal,
   Paper,
   SegmentedControl,
   Skeleton,
   Stack,
   Text,
   Textarea,
-  TextInput,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import {
@@ -23,7 +21,6 @@ import {
   IconEye,
   IconFileCode,
   IconFileText,
-  IconFolderPlus,
   IconSparkles,
 } from "@tabler/icons-react";
 import { useEffect, useState } from "react";

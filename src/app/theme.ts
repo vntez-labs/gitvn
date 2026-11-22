@@ -1,7 +1,7 @@
 import { createTheme, type MantineColorsTuple } from "@mantine/core";
 
 // Bảng màu cam đỏ đặc trưng từ vntez.vercel.app (#fb291a - #f77241)
-export const vntezColors: MantineColorsTuple = [
+const vntezColors: MantineColorsTuple = [
   "#fff1f0", // 0: Nền tint nhạt, active background
   "#ffe3df", // 1: Hover highlight
   "#ffc5be", // 2: Viền nhạt

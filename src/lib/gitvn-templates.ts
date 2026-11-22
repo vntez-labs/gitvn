@@ -1,11 +1,4 @@
 import type { JiraBoardData, JiraSprint, JiraTask } from "@/interfaces/jira";
-export {
-  LATEST_GITVN_VERSION,
-  createDefaultConfig,
-  configToYaml,
-  parseGitvnConfig,
-  detectOutdated,
-} from "./gitvn-config";
 
 // Dữ liệu tasks.json mặc định
 export function createDefaultTasks(

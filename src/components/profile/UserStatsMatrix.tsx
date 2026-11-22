@@ -1,28 +1,15 @@
 "use client";
 
+import { Group, Paper, SimpleGrid, Stack, Text } from "@mantine/core";
 import {
-  Badge,
-  Box,
-  Group,
-  Paper,
-  Progress,
-  SimpleGrid,
-  Stack,
-  Text,
-} from "@mantine/core";
-import {
-  IconBox,
   IconCalendar,
   IconFlame,
   IconGitCommit,
-  IconGitFork,
   IconGitMerge,
   IconGitPullRequest,
   IconStar,
 } from "@tabler/icons-react";
-import { ContributionHeatmap, LEVEL_COLORS } from "./ContributionHeatmap";
-
-export { LEVEL_COLORS };
+import { ContributionHeatmap } from "./ContributionHeatmap";
 
 interface UserStatsMatrixProps {
   data: any;

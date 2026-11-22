@@ -4,7 +4,7 @@ import type { JiraTask } from "@/interfaces/jira";
 /**
  * Tạo prompt tối ưu hóa cho AI Coding Assistants (Cursor, Copilot, Claude, GPT-4o)
  */
-export function generateTaskAIPrompt(
+function generateTaskAIPrompt(
   task: JiraTask,
   repoName?: string,
   branch?: string,

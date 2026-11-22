@@ -9,6 +9,7 @@ import {
 } from "@/lib/github-api";
 import {
   configToYaml,
+  createDefaultConfig,
   detectOutdated,
   LATEST_GITVN_VERSION,
   parseGitvnConfig,
@@ -19,7 +20,6 @@ import {
   LOCAL_GITVN_DIR,
   upgradeGitvnRepo,
 } from "@/lib/gitvn-service";
-import { createDefaultConfig } from "@/lib/gitvn-templates";
 
 interface GitvnCacheEntry {
   data: GitvnRepoStatus;

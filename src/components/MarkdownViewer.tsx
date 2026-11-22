@@ -2,8 +2,8 @@
 
 import { Box } from "@mantine/core";
 import ReactMarkdown from "react-markdown";
-import rehypeRaw from "rehype-raw";
 import remarkGfm from "remark-gfm";
+import { markdownHtmlPlugins } from "@/lib/markdown-plugins";
 
 export function MarkdownViewer({ content }: { content: string }) {
   return (
@@ -16,7 +16,10 @@ export function MarkdownViewer({ content }: { content: string }) {
         lineHeight: "1.75",
       }}
     >
-      <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        rehypePlugins={markdownHtmlPlugins}
+      >
         {content}
       </ReactMarkdown>
     </Box>

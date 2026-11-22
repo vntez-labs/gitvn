@@ -2,7 +2,6 @@
 
 import {
   Avatar,
-  Box,
   Button,
   Group,
   Modal,
@@ -21,11 +20,6 @@ import type {
   TaskStatus,
 } from "@/interfaces/jira";
 import { getGitHubAvatarUrl } from "@/lib/avatar";
-import {
-  PRIORITY_OPTIONS,
-  PRIORITY_TO_POINTS,
-  pointsToPriority,
-} from "@/lib/jira-priority";
 import { useAuthStore } from "@/store/auth.store";
 import { TaskDescriptionEditor } from "./TaskDescriptionEditor";
 import { TaskMetaFields } from "./TaskMetaFields";
@@ -41,16 +35,6 @@ interface CreateTaskModalProps {
   onCreateTask: (newTask: JiraTask) => void;
   members?: TaskAssignee[];
 }
-
-export const PRIORITY_DEFAULT_POINTS = PRIORITY_TO_POINTS;
-
-const STATUS_OPTIONS = [
-  { value: "backlog", label: "Backlog" },
-  { value: "todo", label: "To Do" },
-  { value: "in_progress", label: "In Progress" },
-  { value: "review", label: "In Review" },
-  { value: "done", label: "Done" },
-];
 
 export function CreateTaskModal({
   opened,

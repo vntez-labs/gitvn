@@ -18,9 +18,6 @@ export const LANG_METADATA: Record<string, { name: string; color: string }> = {
   md: { name: "Markdown", color: "#083fa1" },
 };
 
-export const ICON_BASE_URL =
-  "https://cdn.jsdelivr.net/gh/vscode-icons/vscode-icons@master/icons";
-
 export function formatCompactNumber(num: number | undefined): string {
   if (!num || num === 0) return "0";
   return new Intl.NumberFormat("en", {

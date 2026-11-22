@@ -7,7 +7,6 @@ import type {
 } from "@/interfaces/gitvn";
 import type { JiraBoardData, JiraTask } from "@/interfaces/jira";
 import {
-  commitFileToGitHub,
   commitMultipleFilesToGitHub,
   fetchFileFromGitHub,
   fetchFolderContents,
@@ -18,13 +17,8 @@ import {
   LATEST_GITVN_VERSION,
   parseGitvnConfig,
 } from "./gitvn-config";
-import {
-  createDefaultDocArchitecture,
-  createDefaultDocIndex,
-  createDefaultReadme,
-  createDefaultTasks,
-} from "./gitvn-templates";
-import { parseTaskMarkdown, taskToMarkdown } from "./task-file";
+import { createDefaultReadme, createDefaultTasks } from "./gitvn-templates";
+import { taskToMarkdown } from "./task-file";
 
 export const LOCAL_GITVN_DIR = path.join(process.cwd(), ".gitvn");
 

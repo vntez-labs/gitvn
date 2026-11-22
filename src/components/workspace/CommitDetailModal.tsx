@@ -35,7 +35,6 @@ interface CommitDetailModalProps {
   owner: string;
   repo: string;
   sha: string | null;
-  branch?: string;
 }
 
 export function CommitDetailModal({
@@ -44,7 +43,6 @@ export function CommitDetailModal({
   owner,
   repo,
   sha,
-  branch = "main",
 }: CommitDetailModalProps) {
   const [loading, setLoading] = useState(false);
   const [commitData, setCommitData] = useState<any>(null);

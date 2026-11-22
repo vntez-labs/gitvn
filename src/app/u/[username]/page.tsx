@@ -2,64 +2,34 @@
 
 import {
   Alert,
-  Avatar,
-  Badge,
   Box,
   Button,
   Group,
   Paper,
-  Progress,
   SimpleGrid,
   Skeleton,
-  Stack,
   Tabs,
   Text,
   TextInput,
-  Tooltip,
 } from "@mantine/core";
 import {
   IconAlertCircle,
-  IconBox,
   IconBrandGithub,
-  IconCalendar,
-  IconExternalLink,
   IconFlame,
-  IconGitCommit,
   IconGitFork,
-  IconGitMerge,
-  IconGitPullRequest,
-  IconLink,
-  IconMail,
-  IconMapPin,
   IconSearch,
   IconStar,
-  IconUsers,
 } from "@tabler/icons-react";
 import axios from "axios";
 import { useParams, useRouter } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
-import rehypeRaw from "rehype-raw";
 import remarkGfm from "remark-gfm";
+import { GitVNLogo } from "@/components/brand/GitVNLogo";
 import { UserProfileSidebar } from "@/components/profile/UserProfileSidebar";
 import { UserStatsMatrix } from "@/components/profile/UserStatsMatrix";
-import { GitVNLogo } from "@/components/brand/GitVNLogo";
+import { markdownHtmlPlugins } from "@/lib/markdown-plugins";
 import { formatCompactNumber } from "@/lib/time";
-
-const LEVEL_COLORS: Record<string, string> = {
-  NONE: "#ebedf0",
-  FIRST_QUARTILE: "#9be9a8",
-  SECOND_QUARTILE: "#40c463",
-  THIRD_QUARTILE: "#30a14e",
-  FOURTH_QUARTILE: "#216e39",
-};
-
-function formatBytes(bytes: number) {
-  if (!bytes || bytes === 0) return "0 B";
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
 
 function UserProfileContent() {
   const params = useParams();
@@ -330,10 +300,7 @@ function UserProfileContent() {
           <Box className="insights-grid">
             {/* CỘT TRÁI: THÔNG TIN USER, PRO, ACHIEVEMENTS */}
             <Box style={{ minWidth: 0 }}>
-              <UserProfileSidebar
-                data={data}
-                formatCompactNumber={formatCompactNumber}
-              />
+              <UserProfileSidebar data={data} />
             </Box>
 
             {/* CỘT PHẢI: HEATMAP & CÁC CHIỀU ĐÁNH GIÁ CHUYÊN SÂU */}
@@ -400,7 +367,7 @@ function UserProfileContent() {
                   <Box className="readme-container">
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm]}
-                      rehypePlugins={[rehypeRaw]}
+                      rehypePlugins={markdownHtmlPlugins}
                     >
                       {data.readme}
                     </ReactMarkdown>

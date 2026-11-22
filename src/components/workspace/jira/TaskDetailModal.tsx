@@ -2,7 +2,6 @@
 
 import {
   Badge,
-  Box,
   Button,
   Divider,
   Group,
@@ -27,12 +26,6 @@ import type {
 } from "@/interfaces/jira";
 import { copyTaskAIPrompt } from "@/lib/ai-prompt";
 import { getGitHubAvatarUrl } from "@/lib/avatar";
-import {
-  PRIORITY_OPTIONS,
-  PRIORITY_TO_POINTS,
-  pointsToPriority,
-} from "@/lib/jira-priority";
-import { formatRelativeTime } from "@/lib/time";
 import { TaskAssigneeMeta } from "./TaskAssigneeMeta";
 import { TaskDescriptionEditor } from "./TaskDescriptionEditor";
 import { TaskMetaFields } from "./TaskMetaFields";
@@ -47,8 +40,6 @@ interface TaskDetailModalProps {
   canEdit: boolean;
   members?: TaskAssignee[];
 }
-
-export const PRIORITY_DEFAULT_POINTS = PRIORITY_TO_POINTS;
 
 export function TaskDetailModal({
   opened,

@@ -10,7 +10,7 @@ import {
   Text,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
-import { IconAlertCircle, IconCheck, IconSparkles } from "@tabler/icons-react";
+import { IconAlertCircle, IconCheck } from "@tabler/icons-react";
 import axios from "axios";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useState } from "react";

@@ -1,7 +1,6 @@
-import type { ProjectPermissions, ProjectRole } from "./jira";
-export type { ProjectPermissions, ProjectRole };
+import type { ProjectPermissions } from "./jira";
 
-export interface GitvnColumnConfig {
+interface GitvnColumnConfig {
   id: string; // e.g. "backlog" | "todo" | "in_progress" | "review" | "done"
   title: string;
   color: string;
@@ -17,7 +16,7 @@ export interface GitvnDocItem {
   updatedAt?: string;
 }
 
-export interface GitvnStorageConfig {
+interface GitvnStorageConfig {
   format: "decoupled" | "monolith";
   tasks_dir?: string;
   docs_dir?: string;

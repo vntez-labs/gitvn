@@ -2,35 +2,24 @@
 
 import { Button, Loader, Menu } from "@mantine/core";
 import { IconChevronDown, IconGitBranch } from "@tabler/icons-react";
-import axios from "axios";
 import { useState } from "react";
+import { useRepoBranches } from "@/hooks/useRepoBranches";
 import { useDashboardStore } from "@/store/dashboard.store";
 
 export function BranchSelector() {
   const { selectedRepo, currentBranch, changeBranch } = useDashboardStore();
-  const [branches, setBranches] = useState<{ name: string }[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [opened, setOpened] = useState(false);
+  const {
+    data: branches = [],
+    isLoading: loading,
+    error,
+  } = useRepoBranches(selectedRepo, opened);
 
   if (!selectedRepo) return null;
-  const defaultBranch = (selectedRepo as any)?.default_branch || "main";
-
-  const handleOpen = async () => {
-    if (branches.length > 0) return;
-    setLoading(true);
-    try {
-      const { data } = await axios.get(
-        `/api/github/branches?owner=${selectedRepo.owner.login}&repo=${selectedRepo.name}`,
-      );
-      setBranches(data.branches || []);
-    } catch (err) {
-      console.error("Lỗi lấy branches:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const defaultBranch = selectedRepo.default_branch || "main";
 
   return (
-    <Menu shadow="md" width={220} onOpen={handleOpen}>
+    <Menu shadow="md" width={220} opened={opened} onChange={setOpened}>
       <Menu.Target>
         <Button
           size="compact-sm"
@@ -64,6 +53,7 @@ export function BranchSelector() {
         bg="#ffffff"
         style={{ borderColor: "#e4e4e7", maxHeight: 300, overflowY: "auto" }}
       >
+        {error && <Menu.Label>Không tải được danh sách nhánh</Menu.Label>}
         <Menu.Label c="#71717a" fz={12}>
           Select Branch ({branches.length || 1})
         </Menu.Label>

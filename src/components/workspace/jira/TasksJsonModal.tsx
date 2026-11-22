@@ -8,7 +8,7 @@ import {
   IconFileCode,
   IconUpload,
 } from "@tabler/icons-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { JiraBoardData } from "@/interfaces/jira";
 import { TasksExportTab } from "./json/TasksExportTab";
 import { TasksImportTab } from "./json/TasksImportTab";
@@ -122,7 +122,7 @@ export function TasksJsonModal({
           </Tabs.Panel>
 
           <Tabs.Panel value="export">
-            <TasksExportTab boardData={boardData} owner={owner} repo={repo} />
+            <TasksExportTab boardData={boardData} repo={repo} />
           </Tabs.Panel>
 
           <Tabs.Panel value="raw">

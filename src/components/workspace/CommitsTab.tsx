@@ -269,7 +269,6 @@ export function CommitsTab({ onCommitsLoaded }: CommitsTabProps) {
           owner={selectedRepo.owner.login}
           repo={selectedRepo.name}
           sha={selectedSha}
-          branch={branchFilter === "all" ? currentBranch : branchFilter}
         />
       )}
     </Box>

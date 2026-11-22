@@ -3,6 +3,7 @@ import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import type { TreeNode } from "@/components/FileTree";
 import type { GitHubOrg, GitHubRepo } from "@/interfaces/github";
+import { getDocumentFormat } from "@/lib/document-format";
 
 interface DashboardState {
   repos: GitHubRepo[];
@@ -171,14 +172,31 @@ export const useDashboardStore = create<DashboardState>()(
         if (!repo) return;
 
         const branch = customBranch || get().currentBranch;
-        set({ activeFile: path, loadingContent: true });
+        const format = getDocumentFormat(path);
+        set({
+          activeFile: path,
+          fileContent: "",
+          loadingContent: !format,
+        });
+        if (format) return;
+
+        const isCurrent = () => {
+          const state = get();
+          return (
+            state.selectedRepo?.id === repo.id &&
+            state.currentBranch === branch &&
+            state.activeFile === path
+          );
+        };
 
         try {
           const { data } = await axios.get(
             `/api/github/content?owner=${repo.owner.login}&repo=${repo.name}&path=${encodeURIComponent(path)}&ref=${encodeURIComponent(branch)}`,
           );
+          if (!isCurrent()) return;
           set({ fileContent: data.content || "", loadingContent: false });
         } catch (error) {
+          if (!isCurrent()) return;
           console.error("Lỗi lấy nội dung file:", error);
           set({
             fileContent: "Lỗi không thể tải nội dung file.",

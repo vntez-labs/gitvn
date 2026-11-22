@@ -1,7 +1,7 @@
 import fs from "fs/promises";
 import path from "path";
 import type { JiraBoardData, JiraSprint, JiraTask } from "@/interfaces/jira";
-import { commitFileToGitHub, commitMultipleFilesToGitHub } from "./github-api";
+import { commitMultipleFilesToGitHub } from "./github-api";
 import { parseTaskMarkdown, taskToMarkdown } from "./task-file";
 
 const GITVN_DIR = path.join(process.cwd(), ".gitvn");

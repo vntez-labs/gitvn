@@ -3,7 +3,6 @@
 import { Badge, Box, Button, Group, Text } from "@mantine/core";
 import {
   IconBook,
-  IconCheck,
   IconCircleDot,
   IconCircleDotFilled,
   IconCode,
@@ -16,10 +15,8 @@ import {
   IconInfoCircleFilled,
   IconLayoutKanban,
   IconLayoutKanbanFilled,
-  IconRefresh,
   IconSettings,
   IconSettingsFilled,
-  IconSparkles,
   IconUserPlus,
 } from "@tabler/icons-react";
 import { useState } from "react";
@@ -67,7 +64,6 @@ export function WorkspaceHeader({
   initializingGitvn = false,
 }: WorkspaceHeaderProps) {
   const selectedRepo = useDashboardStore((s) => s.selectedRepo);
-  const currentBranch = useDashboardStore((s) => s.currentBranch);
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
   if (!selectedRepo) return null;
 

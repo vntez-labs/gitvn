@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import type { TreeNode } from "@/components/FileTree";
 import { LANG_METADATA } from "@/components/workspace/constants";
 
-export interface RankedContributor {
+interface RankedContributor {
   author: {
     login: string;
     avatar_url: string;

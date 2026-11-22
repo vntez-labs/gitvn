@@ -11,8 +11,8 @@ import {
   Select,
   Stack,
   Text,
-  TextInput,
   Textarea,
+  TextInput,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import {
@@ -51,7 +51,6 @@ export function CreatePullModal({
   const [body, setBody] = useState("");
   const [isDraft, setIsDraft] = useState(false);
   const [compareData, setCompareData] = useState<any>(null);
-  const [loadingCompare, setLoadingCompare] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -83,7 +82,6 @@ export function CreatePullModal({
       return;
     }
 
-    setLoadingCompare(true);
     axios
       .get(
         `/api/github/compare?owner=${owner}&repo=${repo}&base=${encodeURIComponent(
@@ -96,8 +94,7 @@ export function CreatePullModal({
           setTitle(`Merge ${headBranch} into ${baseBranch}`);
         }
       })
-      .catch(() => setCompareData(null))
-      .finally(() => setLoadingCompare(false));
+      .catch(() => setCompareData(null));
   }, [opened, owner, repo, baseBranch, headBranch]);
 
   const handleSubmit = async (e: React.FormEvent) => {

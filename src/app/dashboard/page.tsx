@@ -1,17 +1,20 @@
 "use client";
 
 import {
+  ActionIcon,
   Avatar,
   Box,
+  Drawer,
   Group,
   Menu,
   Skeleton,
   Text,
-  Tooltip,
 } from "@mantine/core";
+import { useDisclosure } from "@mantine/hooks";
 import {
   IconBrandGithub,
   IconLogout,
+  IconMenu2,
   IconRefresh,
   IconUser,
 } from "@tabler/icons-react";
@@ -28,6 +31,7 @@ export default function DashboardPage() {
   const { user, isLoading, isAuthenticated } = useAuthStore();
   const { selectedRepo, fetchInitialData } = useDashboardStore();
   const router = useRouter();
+  const [reposOpen, reposDrawer] = useDisclosure(false);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -69,7 +73,7 @@ export default function DashboardPage() {
       <Box
         component="header"
         py="xs"
-        px="lg"
+        px={{ base: "xs", sm: "lg" }}
         style={{
           borderBottom: "1px solid #e4e4e7",
           backgroundColor: "rgba(255, 255, 255, 0.9)",
@@ -97,6 +101,14 @@ export default function DashboardPage() {
           </Group>
 
           <Group gap="sm">
+            <ActionIcon
+              hiddenFrom="md"
+              variant="default"
+              aria-label="Mở danh sách repository"
+              onClick={reposDrawer.open}
+            >
+              <IconMenu2 size={18} />
+            </ActionIcon>
             <Menu shadow="md" width={220} position="bottom-end">
               <Menu.Target>
                 <Group
@@ -176,7 +188,19 @@ export default function DashboardPage() {
         style={{ display: "flex", flex: 1, overflow: "hidden", minHeight: 0 }}
       >
         {/* Cột trái: Sidebar điều khiển danh sách Repo */}
-        <DashboardSidebar />
+        <Box visibleFrom="md">
+          <DashboardSidebar />
+        </Box>
+        <Drawer
+          opened={reposOpen}
+          onClose={reposDrawer.close}
+          title="Repositories"
+          size="xs"
+        >
+          <Box h="75dvh">
+            <DashboardSidebar onRepoSelect={reposDrawer.close} />
+          </Box>
+        </Drawer>
 
         {/* Cột phải: Nếu có chọn Repo thì hiển thị Workspace, chưa thì ra Overview */}
         <Box
@@ -186,6 +210,7 @@ export default function DashboardPage() {
             flexDirection: "column",
             overflow: "hidden",
             minHeight: 0,
+            minWidth: 0,
           }}
         >
           {selectedRepo ? <RepoWorkspace /> : <DashboardOverview />}

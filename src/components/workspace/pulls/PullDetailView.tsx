@@ -1,23 +1,18 @@
 "use client";
 
 import {
-  Alert,
   Avatar,
   Badge,
   Box,
   Button,
   Group,
-  Paper,
-  SegmentedControl,
   Skeleton,
   Stack,
   Tabs,
   Text,
 } from "@mantine/core";
 import {
-  IconAlertTriangle,
   IconArrowLeft,
-  IconCheck,
   IconCircleX,
   IconExternalLink,
   IconFileDiff,

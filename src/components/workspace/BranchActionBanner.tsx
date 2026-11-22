@@ -9,14 +9,10 @@ import {
   Text,
   Tooltip,
 } from "@mantine/core";
-import {
-  IconGitCompare,
-  IconGitMerge,
-  IconGitPullRequest,
-  IconX,
-} from "@tabler/icons-react";
+import { IconGitCompare, IconGitPullRequest, IconX } from "@tabler/icons-react";
 import axios from "axios";
 import { useEffect, useState } from "react";
+import { useRepoBranches } from "@/hooks/useRepoBranches";
 import { useDashboardStore } from "@/store/dashboard.store";
 import { CompareDiffModal } from "./CompareDiffModal";
 import { CreatePullModal } from "./pulls/CreatePullModal";
@@ -28,6 +24,7 @@ interface BranchActionBannerProps {
 
 export function BranchActionBanner({ onTabChange }: BranchActionBannerProps) {
   const { selectedRepo, currentBranch } = useDashboardStore();
+  const { data: branches } = useRepoBranches(selectedRepo);
 
   const [baseBranch, setBaseBranch] = useState<string>("main");
   const [compareData, setCompareData] = useState<{
@@ -37,7 +34,6 @@ export function BranchActionBanner({ onTabChange }: BranchActionBannerProps) {
     compare_url: string;
     headBranch?: string;
   } | null>(null);
-  const [loading, setLoading] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [compareModalOpen, setCompareModalOpen] = useState(false);
@@ -48,23 +44,16 @@ export function BranchActionBanner({ onTabChange }: BranchActionBannerProps) {
   }, [selectedRepo?.id, currentBranch]);
 
   useEffect(() => {
-    if (!selectedRepo) return;
+    if (!selectedRepo || !branches) return;
     const currentRepo = selectedRepo;
+    const branchList = branches.map((branch) => branch.name);
 
     let isMounted = true;
-    setLoading(true);
+    setCompareData(null);
 
     async function checkComparison(repo: typeof currentRepo) {
       try {
-        const branchRes = await axios.get(
-          `/api/github/branches?owner=${repo.owner.login}&repo=${repo.name}`,
-        );
-        if (!isMounted) return;
-
-        const branchList: string[] = (branchRes.data.branches || []).map(
-          (b: any) => b.name,
-        );
-        const defaultB = (repo as any).default_branch || "main";
+        const defaultB = repo.default_branch || "main";
 
         const chosenBase =
           currentBranch.toLowerCase() !== "develop" &&
@@ -111,8 +100,6 @@ export function BranchActionBanner({ onTabChange }: BranchActionBannerProps) {
       } catch (err) {
         console.error("Lỗi compare branch:", err);
         if (isMounted) setCompareData(null);
-      } finally {
-        if (isMounted) setLoading(false);
       }
     }
 
@@ -121,16 +108,13 @@ export function BranchActionBanner({ onTabChange }: BranchActionBannerProps) {
     return () => {
       isMounted = false;
     };
-  }, [selectedRepo?.id, currentBranch]);
+  }, [selectedRepo, currentBranch, branches]);
 
   if (!selectedRepo || dismissed) return null;
 
   const targetBranch = compareData?.headBranch || currentBranch;
   const aheadCount = compareData?.ahead_by ?? 0;
   const behindCount = compareData?.behind_by ?? 0;
-  const compareUrl =
-    compareData?.compare_url ||
-    `https://github.com/${selectedRepo.owner.login}/${selectedRepo.name}/compare/${baseBranch}...${targetBranch}?expand=1`;
 
   if (aheadCount > 0) {
     return (

@@ -8,7 +8,7 @@ import {
   pointsToPriority,
 } from "@/lib/jira-priority";
 
-export const STATUS_OPTIONS = [
+const STATUS_OPTIONS = [
   { value: "backlog", label: "Backlog" },
   { value: "todo", label: "To Do" },
   { value: "in_progress", label: "In Progress" },

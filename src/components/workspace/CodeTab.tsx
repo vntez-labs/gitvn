@@ -1,17 +1,33 @@
 "use client";
 
-import { Box, Button, Skeleton, Stack, Text, Textarea } from "@mantine/core";
+import {
+  Box,
+  Button,
+  Drawer,
+  Skeleton,
+  Stack,
+  Text,
+  Textarea,
+} from "@mantine/core";
+import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
-import { IconCheck, IconFileCode, IconGitCommit } from "@tabler/icons-react";
+import {
+  IconCheck,
+  IconFileCode,
+  IconFiles,
+  IconGitCommit,
+} from "@tabler/icons-react";
 import axios from "axios";
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MarkdownViewer } from "@/components/MarkdownViewer";
 import { EmptyRepoView } from "@/components/workspace/EmptyRepoView";
 import type { WorkspaceTab } from "@/components/workspace/WorkspaceHeader";
+import { getDocumentFormat } from "@/lib/document-format";
 import { useDashboardStore } from "@/store/dashboard.store";
 import { CodeTreeSkeleton } from "./code/CodeTreeSkeleton";
 import { CreateFileModal } from "./code/CreateFileModal";
+import { DocumentPreview } from "./code/DocumentPreview";
 import { FileEditorHeader } from "./code/FileEditorHeader";
 import { FileExplorerDock } from "./code/FileExplorerDock";
 
@@ -48,6 +64,7 @@ export function CodeTab({ onNavigateTab }: CodeTabProps) {
   const selectRepo = useDashboardStore((s) => s.selectRepo);
 
   const [createFileOpen, setCreateFileOpen] = useState(false);
+  const [filesOpen, filesDrawer] = useDisclosure(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState("");
   const [saving, setSaving] = useState(false);
@@ -116,6 +133,19 @@ export function CodeTab({ onNavigateTab }: CodeTabProps) {
     setEditContent(fileContent || "");
   }, [activeFile, fileContent]);
 
+  const lineCount = useMemo(() => {
+    if (!fileContent) return 0;
+    let count = 1;
+    for (
+      let index = fileContent.indexOf("\n");
+      index !== -1;
+      index = fileContent.indexOf("\n", index + 1)
+    ) {
+      count++;
+    }
+    return count;
+  }, [fileContent]);
+
   if (loadingTree) {
     return <CodeTreeSkeleton />;
   }
@@ -124,10 +154,21 @@ export function CodeTab({ onNavigateTab }: CodeTabProps) {
     return <EmptyRepoView repo={selectedRepo} />;
   }
 
+  const documentFormat = activeFile && getDocumentFormat(activeFile);
+  const documentUrl =
+    documentFormat && activeFile && selectedRepo
+      ? `/api/github/content?${new URLSearchParams({
+          owner: selectedRepo.owner.login,
+          repo: selectedRepo.name,
+          path: activeFile,
+          ref: currentBranch,
+          binary: "1",
+        })}`
+      : null;
   const isMarkdown =
     activeFile?.toLowerCase().endsWith(".md") ||
     activeFile?.toLowerCase().endsWith(".mdx");
-  const lineCount = fileContent ? fileContent.split("\n").length : 0;
+  const showPlainText = fileContent.length > 100_000 || lineCount > 3_000;
 
   const handleSaveFile = async () => {
     if (!selectedRepo || !activeFile) return;
@@ -178,6 +219,7 @@ export function CodeTab({ onNavigateTab }: CodeTabProps) {
     >
       {/* File Explorer (Left Panel) */}
       <Box
+        visibleFrom="md"
         style={{
           width: explorerWidth,
           minWidth: 180,
@@ -199,6 +241,7 @@ export function CodeTab({ onNavigateTab }: CodeTabProps) {
 
       {/* Draggable Divider Handle */}
       <Box
+        visibleFrom="md"
         onMouseDown={handleStartResize}
         onDoubleClick={() => {
           setExplorerWidth(280);
@@ -253,17 +296,53 @@ export function CodeTab({ onNavigateTab }: CodeTabProps) {
           minHeight: 0,
         }}
       >
+        <Box hiddenFrom="md" px="xs" py={4}>
+          <Button
+            size="compact-xs"
+            variant="default"
+            leftSection={<IconFiles size={14} />}
+            onClick={filesDrawer.open}
+          >
+            Danh sách file
+          </Button>
+        </Box>
+        <Drawer
+          opened={filesOpen}
+          onClose={filesDrawer.close}
+          title="Danh sách file"
+          size="xs"
+        >
+          <Box h="75dvh">
+            <FileExplorerDock
+              tree={tree}
+              activeFile={activeFile}
+              onSelectFile={(path) => {
+                void selectFile(path);
+                filesDrawer.close();
+              }}
+              onCreateFileClick={() => {
+                filesDrawer.close();
+                handleOpenCreateFile();
+              }}
+            />
+          </Box>
+        </Drawer>
         {activeFile && (
           <FileEditorHeader
             activeFile={activeFile}
             lineCount={lineCount}
             isMarkdown={isMarkdown}
             fileContent={isEditing ? editContent : fileContent}
-            isEditing={isEditing}
-            onToggleEdit={() => {
-              if (!isEditing) setEditContent(fileContent);
-              setIsEditing(!isEditing);
-            }}
+            downloadUrl={documentUrl ?? undefined}
+            isEditing={isEditing && !documentFormat}
+            onToggleEdit={
+              documentFormat || loadingContent
+                ? undefined
+                : () => {
+                    if (!isEditing) setEditContent(fileContent);
+                    setIsEditing(!isEditing);
+                  }
+            }
             onSave={handleSaveFile}
             saving={saving}
           />
@@ -292,7 +371,14 @@ export function CodeTab({ onNavigateTab }: CodeTabProps) {
               </Stack>
             </Box>
           ) : activeFile ? (
-            isEditing ? (
+            documentUrl && documentFormat ? (
+              <DocumentPreview
+                key={documentUrl}
+                filename={activeFile}
+                format={documentFormat}
+                url={documentUrl}
+              />
+            ) : isEditing ? (
               <Box p="md" style={{ flex: 1, display: "flex" }}>
                 <Textarea
                   value={editContent}
@@ -325,6 +411,19 @@ export function CodeTab({ onNavigateTab }: CodeTabProps) {
                 style={{ width: "100%", color: "#18181b" }}
               >
                 <MarkdownViewer content={fileContent} />
+              </Box>
+            ) : showPlainText ? (
+              <Box p="md">
+                <Text size="xs" c="dimmed">
+                  File lớn đang hiển thị dưới dạng văn bản thường.
+                </Text>
+                <Box
+                  component="pre"
+                  ff="monospace"
+                  style={{ whiteSpace: "pre" }}
+                >
+                  {fileContent}
+                </Box>
               </Box>
             ) : (
               <CodeViewer content={fileContent} filename={activeFile} />

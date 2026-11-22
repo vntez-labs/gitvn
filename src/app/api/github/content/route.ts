@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getValidAuthToken } from "@/lib/auth-token";
+import { documentMimeTypes, getDocumentFormat } from "@/lib/document-format";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -15,6 +16,15 @@ export async function GET(request: Request) {
     );
   }
 
+  const binary = searchParams.get("binary");
+  const format = getDocumentFormat(path);
+  if (binary && !format) {
+    return NextResponse.json(
+      { error: "Định dạng không được hỗ trợ" },
+      { status: 400 },
+    );
+  }
+
   const token = await getValidAuthToken();
 
   if (!token) {
@@ -23,23 +33,59 @@ export async function GET(request: Request) {
 
   try {
     const url = new URL(
-      `https://api.github.com/repos/${owner}/${repo}/contents/${path}`,
+      `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/contents/${path.split("/").map(encodeURIComponent).join("/")}`,
     );
     if (ref) url.searchParams.set("ref", ref);
 
+    const pdf = binary && format === "pdf";
+    const range = pdf ? request.headers.get("Range") : null;
     const res = await fetch(url.toString(), {
       headers: {
         Authorization: `Bearer ${token}`,
-        Accept: "application/vnd.github.raw", // Trả thẳng text raw, không cần giải mã base64
+        Accept: "application/vnd.github.raw+json",
+        ...(pdf ? { "Accept-Encoding": "identity" } : {}),
+        ...(range ? { Range: range } : {}),
       },
       cache: "no-store",
     });
+
+    if (pdf && res.status === 416) {
+      const contentRange = res.headers.get("Content-Range");
+      return new Response(null, {
+        status: 416,
+        headers: {
+          "Cache-Control": "private, no-store",
+          ...(contentRange ? { "Content-Range": contentRange } : {}),
+        },
+      });
+    }
 
     if (!res.ok) {
       return NextResponse.json(
         { error: "Lỗi tải nội dung file" },
         { status: res.status },
       );
+    }
+
+    if (binary && format) {
+      const headers = new Headers({
+        "Content-Type": documentMimeTypes[format],
+        "Content-Disposition": "attachment",
+        "Cache-Control": "private, no-store",
+        "X-Content-Type-Options": "nosniff",
+      });
+      const encoding = res.headers.get("Content-Encoding");
+      if (pdf && (!encoding || encoding === "identity")) {
+        for (const name of [
+          "Accept-Ranges",
+          "Content-Range",
+          "Content-Length",
+        ]) {
+          const value = res.headers.get(name);
+          if (value) headers.set(name, value);
+        }
+      }
+      return new Response(res.body, { headers, status: res.status });
     }
 
     const content = await res.text();

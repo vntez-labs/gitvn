@@ -6,7 +6,6 @@ import {
   CopyButton,
   Group,
   Stack,
-  Text,
   Textarea,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";

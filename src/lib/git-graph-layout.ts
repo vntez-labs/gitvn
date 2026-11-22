@@ -1,4 +1,4 @@
-export interface GitGraphLaneSlot {
+interface GitGraphLaneSlot {
   lane: number;
   color: string;
 }
@@ -18,7 +18,7 @@ export interface GitGraphLayoutItem {
   maxLane: number;
 }
 
-export const GIT_LANE_COLORS = [
+const GIT_LANE_COLORS = [
   "#0284c7", // Sky Blue (Trunk / Main)
   "#8b5cf6", // Purple (Feature / PR)
   "#10b981", // Emerald Green

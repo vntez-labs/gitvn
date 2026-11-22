@@ -14,6 +14,7 @@ import {
   IconCheck,
   IconCopy,
   IconDeviceFloppy,
+  IconDownload,
   IconEdit,
   IconX,
 } from "@tabler/icons-react";
@@ -23,6 +24,7 @@ interface FileEditorHeaderProps {
   lineCount: number;
   isMarkdown?: boolean;
   fileContent: string;
+  downloadUrl?: string;
   isEditing?: boolean;
   onToggleEdit?: () => void;
   onSave?: () => void;
@@ -34,6 +36,7 @@ export function FileEditorHeader({
   lineCount,
   isMarkdown = false,
   fileContent,
+  downloadUrl,
   isEditing = false,
   onToggleEdit,
   onSave,
@@ -105,7 +108,18 @@ export function FileEditorHeader({
 
       {/* Hành động: Chỉnh sửa & Sao chép mã */}
       <Group gap="xs" align="center" ml="auto">
-        {isEditing ? (
+        {downloadUrl ? (
+          <Button
+            component="a"
+            href={downloadUrl}
+            download={activeFile.split("/").pop()}
+            size="xs"
+            variant="default"
+            leftSection={<IconDownload size={14} />}
+          >
+            Tải xuống
+          </Button>
+        ) : isEditing ? (
           <>
             <Button
               size="xs"

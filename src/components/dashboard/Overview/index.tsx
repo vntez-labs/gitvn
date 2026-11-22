@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  ActionIcon,
   Alert,
   Avatar,
   Badge,
@@ -12,11 +11,9 @@ import {
   Group,
   Paper,
   SimpleGrid,
-  Stack,
   Text,
   ThemeIcon,
   Title,
-  Tooltip,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import {
@@ -52,9 +49,7 @@ export function DashboardOverview() {
   const [acceptingId, setAcceptingId] = useState<number | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  if (!user) return null;
-
-  const userLogin = user.login.toLowerCase();
+  const userLogin = user?.login.toLowerCase();
 
   const { personalRepos, collabRepos } = useMemo(() => {
     const pRepos: GitHubRepo[] = [];
@@ -70,6 +65,8 @@ export function DashboardOverview() {
 
     return { personalRepos: pRepos, collabRepos: cRepos };
   }, [repos, userLogin]);
+
+  if (!user) return null;
 
   const handleRefresh = async () => {
     setRefreshing(true);

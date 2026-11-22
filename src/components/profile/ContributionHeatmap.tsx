@@ -3,7 +3,7 @@
 import { Box, Group, Paper, Text, Tooltip } from "@mantine/core";
 import type { FC } from "react";
 
-export const LEVEL_COLORS: Record<string, string> = {
+const LEVEL_COLORS: Record<string, string> = {
   NONE: "#ebedf0",
   FIRST_QUARTILE: "#ffc5be",
   SECOND_QUARTILE: "#fca59b",

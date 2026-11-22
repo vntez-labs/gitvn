@@ -2,7 +2,6 @@
 
 import {
   Badge,
-  Box,
   Button,
   CopyButton,
   Group,
@@ -22,15 +21,10 @@ import type { JiraBoardData } from "@/interfaces/jira";
 
 interface TasksExportTabProps {
   boardData: JiraBoardData | null;
-  owner: string;
   repo: string;
 }
 
-export function TasksExportTab({
-  boardData,
-  owner,
-  repo,
-}: TasksExportTabProps) {
+export function TasksExportTab({ boardData, repo }: TasksExportTabProps) {
   const jsonString = JSON.stringify(
     boardData || { tasks: [], sprints: [] },
     null,
