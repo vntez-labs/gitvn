@@ -2,6 +2,24 @@ import { NextResponse } from "next/server";
 import { getValidAuthToken } from "@/lib/auth-token";
 import { documentMimeTypes, getDocumentFormat } from "@/lib/document-format";
 
+const imageMimeTypes = new Map([
+  ["avif", "image/avif"],
+  ["bmp", "image/bmp"],
+  ["gif", "image/gif"],
+  ["ico", "image/x-icon"],
+  ["jpeg", "image/jpeg"],
+  ["jpg", "image/jpeg"],
+  ["png", "image/png"],
+  ["svg", "image/svg+xml"],
+  ["webp", "image/webp"],
+]);
+
+function contentsUrl(owner: string, repo: string, path: string) {
+  return new URL(
+    `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/contents/${path.split("/").map(encodeURIComponent).join("/")}`,
+  );
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const owner = searchParams.get("owner");
@@ -18,7 +36,12 @@ export async function GET(request: Request) {
 
   const binary = searchParams.get("binary");
   const format = getDocumentFormat(path);
-  if (binary && !format) {
+  const image = binary === "image";
+  const extension = /\.([a-z0-9]+)$/i.exec(path)?.[1].toLowerCase() ?? "";
+  const mimeType = image
+    ? imageMimeTypes.get(extension)
+    : format && documentMimeTypes[format];
+  if (binary && !mimeType) {
     return NextResponse.json(
       { error: "Định dạng không được hỗ trợ" },
       { status: 400 },
@@ -32,9 +55,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const url = new URL(
-      `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/contents/${path.split("/").map(encodeURIComponent).join("/")}`,
-    );
+    const url = contentsUrl(owner, repo, path);
     if (ref) url.searchParams.set("ref", ref);
 
     const pdf = binary && format === "pdf";
@@ -67,13 +88,19 @@ export async function GET(request: Request) {
       );
     }
 
-    if (binary && format) {
+    if (binary && mimeType) {
       const headers = new Headers({
-        "Content-Type": documentMimeTypes[format],
-        "Content-Disposition": "attachment",
+        "Content-Type": mimeType,
+        "Content-Disposition": image ? "inline" : "attachment",
         "Cache-Control": "private, no-store",
         "X-Content-Type-Options": "nosniff",
       });
+      if (image) {
+        headers.set(
+          "Content-Security-Policy",
+          "sandbox; default-src 'none'; style-src 'unsafe-inline'; img-src data:",
+        );
+      }
       const encoding = res.headers.get("Content-Encoding");
       if (pdf && (!encoding || encoding === "identity")) {
         for (const name of [
@@ -116,13 +143,12 @@ export async function PUT(request: Request) {
       );
     }
 
+    const url = contentsUrl(owner, repo, path);
     let fileSha = sha;
     // Nếu chưa có sha, thử tìm sha của file hiện tại trên GitHub
     if (!fileSha) {
       try {
-        const checkUrl = new URL(
-          `https://api.github.com/repos/${owner}/${repo}/contents/${path}`,
-        );
+        const checkUrl = new URL(url);
         if (branch) checkUrl.searchParams.set("ref", branch);
         const checkRes = await fetch(checkUrl.toString(), {
           headers: {
@@ -145,23 +171,20 @@ export async function PUT(request: Request) {
       (fileSha ? `chore(code): update ${path}` : `chore(code): create ${path}`);
     const encodedContent = Buffer.from(content, "utf-8").toString("base64");
 
-    const putRes = await fetch(
-      `https://api.github.com/repos/${owner}/${repo}/contents/${path}`,
-      {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: "application/vnd.github.v3+json",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          message: commitMessage,
-          content: encodedContent,
-          branch: branch || "main",
-          ...(fileSha ? { sha: fileSha } : {}),
-        }),
+    const putRes = await fetch(url, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/vnd.github.v3+json",
+        "Content-Type": "application/json",
       },
-    );
+      body: JSON.stringify({
+        message: commitMessage,
+        content: encodedContent,
+        branch: branch || "main",
+        ...(fileSha ? { sha: fileSha } : {}),
+      }),
+    });
 
     const data = await putRes.json();
     if (!putRes.ok) {
@@ -176,9 +199,11 @@ export async function PUT(request: Request) {
       commit: data.commit,
       content: data.content,
     });
-  } catch (error: any) {
+  } catch (error) {
     return NextResponse.json(
-      { error: error.message || "Internal Server Error" },
+      {
+        error: error instanceof Error ? error.message : "Internal Server Error",
+      },
       { status: 500 },
     );
   }

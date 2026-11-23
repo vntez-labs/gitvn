@@ -34,12 +34,16 @@ export async function GET(request: Request) {
     );
 
     if (!res.ok) {
-      // 409 hoặc 404 xảy ra khi repo rỗng (chưa có commit/branch nào)
-      if (res.status === 409 || res.status === 404) {
+      if (res.status === 409) {
         return NextResponse.json({ tree: [], empty: true });
       }
       return NextResponse.json(
-        { error: "Lỗi tải tree từ GitHub" },
+        {
+          error:
+            res.status === 404
+              ? "Không tìm thấy branch hoặc bạn không có quyền truy cập repository."
+              : "Không thể tải danh sách file từ GitHub.",
+        },
         { status: res.status },
       );
     }

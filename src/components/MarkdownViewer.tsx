@@ -1,11 +1,17 @@
 "use client";
 
 import { Box } from "@mantine/core";
-import ReactMarkdown from "react-markdown";
+import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { markdownHtmlPlugins } from "@/lib/markdown-plugins";
 
-export function MarkdownViewer({ content }: { content: string }) {
+export function MarkdownViewer({
+  content,
+  components,
+}: {
+  content: string;
+  components?: Components;
+}) {
   return (
     <Box
       className="wmde-markdown prose prose-slate max-w-none text-sm leading-relaxed"
@@ -19,6 +25,7 @@ export function MarkdownViewer({ content }: { content: string }) {
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         rehypePlugins={markdownHtmlPlugins}
+        components={components}
       >
         {content}
       </ReactMarkdown>

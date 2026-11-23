@@ -17,9 +17,11 @@ interface DashboardState {
 
   tree: TreeNode[];
   loadingTree: boolean;
+  treeError: string | null;
   activeFile: string | null;
   fileContent: string;
   loadingContent: boolean;
+  contentError: string | null;
 
   fetchInitialData: (forceRefresh?: boolean) => Promise<void>;
   acceptInvitation: (invitationId: number) => Promise<boolean>;
@@ -35,6 +37,9 @@ interface DashboardState {
   resetWorkspace: () => void;
 }
 
+let treeRequest = 0;
+let contentRequest = 0;
+
 export const useDashboardStore = create<DashboardState>()(
   persist(
     (set, get) => ({
@@ -47,9 +52,11 @@ export const useDashboardStore = create<DashboardState>()(
       currentBranch: "main",
       tree: [],
       loadingTree: false,
+      treeError: null,
       activeFile: null,
       fileContent: "",
       loadingContent: false,
+      contentError: null,
 
       fetchInitialData: async (forceRefresh = false) => {
         set({ dataLoading: true });
@@ -90,12 +97,18 @@ export const useDashboardStore = create<DashboardState>()(
       },
 
       selectOrg: (org) => {
+        treeRequest++;
+        contentRequest++;
         set({
           selectedOrg: org,
           selectedRepo: null,
           tree: [],
           activeFile: null,
           fileContent: "",
+          loadingTree: false,
+          treeError: null,
+          loadingContent: false,
+          contentError: null,
         });
       },
 
@@ -105,31 +118,41 @@ export const useDashboardStore = create<DashboardState>()(
           return;
         }
 
-        const branch = targetBranch || (repo as any).default_branch || "main";
+        const request = ++treeRequest;
+        contentRequest++;
+        const branch = targetBranch || repo.default_branch || "main";
         set({
           selectedRepo: repo,
           currentBranch: branch,
           loadingTree: true,
+          treeError: null,
           tree: [],
           activeFile: targetFile,
+          fileContent: "",
+          loadingContent: false,
+          contentError: null,
         });
 
         try {
           const { data } = await axios.get(
             `/api/github/tree?owner=${repo.owner.login}&repo=${repo.name}&branch=${encodeURIComponent(branch)}`,
           );
+          if (request !== treeRequest) return;
           const treeData: TreeNode[] = data.tree || [];
           set({ tree: treeData, loadingTree: false });
 
           // Kiểm tra nếu file trước đó vẫn tồn tại trong branch mới
-          if (targetFile && treeData.some((f) => f.path === targetFile)) {
+          if (
+            targetFile &&
+            treeData.some((f) => f.type === "blob" && f.path === targetFile)
+          ) {
             await get().selectFile(targetFile, branch);
             return;
           }
 
           // Fallback mở file README.md
           const readme = treeData.find(
-            (f) => f.path.toLowerCase() === "readme.md",
+            (f) => f.type === "blob" && f.path.toLowerCase() === "readme.md",
           );
           if (readme) {
             await get().selectFile(readme.path, branch);
@@ -137,24 +160,31 @@ export const useDashboardStore = create<DashboardState>()(
             set({ activeFile: null, fileContent: "" });
           }
         } catch (error) {
+          if (request !== treeRequest) return;
           console.error("Lỗi lấy tree:", error);
           set({
             loadingTree: false,
-            tree: [],
-            activeFile: null,
-            fileContent: "",
+            treeError: axios.isAxiosError<{ error?: string }>(error)
+              ? error.response?.data?.error || "Không thể tải danh sách file."
+              : "Không thể tải danh sách file.",
           });
         }
       },
 
       addRepo: (repo) => {
+        treeRequest++;
+        contentRequest++;
         set((state) => ({
           repos: [repo, ...state.repos.filter((r) => r.id !== repo.id)],
           selectedRepo: repo,
-          currentBranch: (repo as any).default_branch || "main",
+          currentBranch: repo.default_branch || "main",
           tree: [],
           activeFile: null,
           fileContent: "",
+          loadingTree: false,
+          treeError: null,
+          loadingContent: false,
+          contentError: null,
         }));
       },
 
@@ -172,17 +202,20 @@ export const useDashboardStore = create<DashboardState>()(
         if (!repo) return;
 
         const branch = customBranch || get().currentBranch;
+        const request = ++contentRequest;
         const format = getDocumentFormat(path);
         set({
           activeFile: path,
           fileContent: "",
           loadingContent: !format,
+          contentError: null,
         });
         if (format) return;
 
         const isCurrent = () => {
           const state = get();
           return (
+            request === contentRequest &&
             state.selectedRepo?.id === repo.id &&
             state.currentBranch === branch &&
             state.activeFile === path
@@ -199,18 +232,24 @@ export const useDashboardStore = create<DashboardState>()(
           if (!isCurrent()) return;
           console.error("Lỗi lấy nội dung file:", error);
           set({
-            fileContent: "Lỗi không thể tải nội dung file.",
+            contentError: "Không thể tải nội dung file.",
             loadingContent: false,
           });
         }
       },
 
       resetWorkspace: () => {
+        treeRequest++;
+        contentRequest++;
         set({
           selectedRepo: null,
           tree: [],
           activeFile: null,
           fileContent: "",
+          loadingTree: false,
+          treeError: null,
+          loadingContent: false,
+          contentError: null,
         });
       },
     }),

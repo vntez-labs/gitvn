@@ -52,12 +52,36 @@ interface CodeTabProps {
   onNavigateTab?: (tab: WorkspaceTab) => void;
 }
 
+function resolveRepositoryUrl(href: string | undefined, source: string) {
+  if (!href || /^(?:#|[a-z][a-z\d+.-]*:|\/\/)/i.test(href)) return null;
+
+  const origin = "https://repository.invalid";
+  const sourcePath = source.split("/").map(encodeURIComponent).join("/");
+  const base = `${origin}/${sourcePath}`;
+  try {
+    const target = new URL(href, base);
+    return target.origin === origin ? target : null;
+  } catch {
+    return null;
+  }
+}
+
+function decodePath(path: string) {
+  try {
+    return decodeURIComponent(path);
+  } catch {
+    return path;
+  }
+}
+
 export function CodeTab({ onNavigateTab }: CodeTabProps) {
   const tree = useDashboardStore((s) => s.tree);
+  const treeError = useDashboardStore((s) => s.treeError);
   const loadingTree = useDashboardStore((s) => s.loadingTree);
   const activeFile = useDashboardStore((s) => s.activeFile);
   const selectFile = useDashboardStore((s) => s.selectFile);
   const fileContent = useDashboardStore((s) => s.fileContent);
+  const contentError = useDashboardStore((s) => s.contentError);
   const loadingContent = useDashboardStore((s) => s.loadingContent);
   const selectedRepo = useDashboardStore((s) => s.selectedRepo);
   const currentBranch = useDashboardStore((s) => s.currentBranch);
@@ -75,7 +99,8 @@ export function CodeTab({ onNavigateTab }: CodeTabProps) {
       const saved = localStorage.getItem("gitvn_code_explorer_width");
       if (saved) {
         const parsed = Number(saved);
-        if (!isNaN(parsed) && parsed >= 180 && parsed <= 700) return parsed;
+        if (!Number.isNaN(parsed) && parsed >= 180 && parsed <= 700)
+          return parsed;
       }
     }
     return 280;
@@ -130,7 +155,7 @@ export function CodeTab({ onNavigateTab }: CodeTabProps) {
 
   useEffect(() => {
     setIsEditing(false);
-    setEditContent(fileContent || "");
+    setEditContent(activeFile ? fileContent : "");
   }, [activeFile, fileContent]);
 
   const lineCount = useMemo(() => {
@@ -148,6 +173,25 @@ export function CodeTab({ onNavigateTab }: CodeTabProps) {
 
   if (loadingTree) {
     return <CodeTreeSkeleton />;
+  }
+
+  if (treeError && selectedRepo) {
+    return (
+      <Stack p="md" align="flex-start" gap="xs" role="alert">
+        <Text size="sm" c="red">
+          {treeError}
+        </Text>
+        <Button
+          size="xs"
+          variant="default"
+          onClick={() =>
+            void selectRepo(selectedRepo, activeFile, currentBranch)
+          }
+        >
+          Thử lại
+        </Button>
+      </Stack>
+    );
   }
 
   if (tree.length === 0 && selectedRepo) {
@@ -169,6 +213,70 @@ export function CodeTab({ onNavigateTab }: CodeTabProps) {
     activeFile?.toLowerCase().endsWith(".md") ||
     activeFile?.toLowerCase().endsWith(".mdx");
   const showPlainText = fileContent.length > 100_000 || lineCount > 3_000;
+  const markdownComponents =
+    activeFile && selectedRepo && isMarkdown
+      ? {
+          a: function RepositoryLink({
+            node: _node,
+            href,
+            ...props
+          }: React.ComponentProps<"a"> & { node?: unknown }) {
+            const target = resolveRepositoryUrl(href, activeFile);
+            if (!target) return <a {...props} href={href} />;
+
+            const path = target.pathname.slice(1).replace(/\/$/, "");
+            const decodedPath = decodePath(path);
+            const entry = tree.find((item) => item.path === decodedPath);
+            const view = !path || entry?.type === "tree" ? "tree" : "blob";
+            const githubUrl = `${selectedRepo.html_url}/${view}/${encodeURIComponent(currentBranch)}${path ? `/${path}` : ""}${target.search}${target.hash}`;
+
+            return (
+              <a
+                {...props}
+                href={githubUrl}
+                onClick={(event) => {
+                  if (
+                    entry?.type !== "blob" ||
+                    target.hash ||
+                    target.search ||
+                    event.button !== 0 ||
+                    event.metaKey ||
+                    event.ctrlKey ||
+                    event.shiftKey ||
+                    event.altKey
+                  )
+                    return;
+                  event.preventDefault();
+                  void selectFile(entry.path);
+                }}
+              />
+            );
+          },
+          img: function RepositoryImage({
+            node: _node,
+            src,
+            alt,
+            ...props
+          }: React.ComponentProps<"img"> & { node?: unknown }) {
+            const target = resolveRepositoryUrl(
+              typeof src === "string" ? src : undefined,
+              activeFile,
+            );
+            const imageUrl = target
+              ? `/api/github/content?${new URLSearchParams({
+                  owner: selectedRepo.owner.login,
+                  repo: selectedRepo.name,
+                  path: decodePath(target.pathname.slice(1)),
+                  ref: currentBranch,
+                  binary: "image",
+                })}${target.hash}`
+              : src;
+
+            // biome-ignore lint/performance/noImgElement: Repository images use browser authentication and have unknown dimensions.
+            return <img {...props} src={imageUrl} alt={alt ?? ""} />;
+          },
+        }
+      : undefined;
 
   const handleSaveFile = async () => {
     if (!selectedRepo || !activeFile) return;
@@ -190,13 +298,22 @@ export function CodeTab({ onNavigateTab }: CodeTabProps) {
           color: "teal",
           icon: <IconCheck size={16} />,
         });
-        setIsEditing(false);
-        selectFile(activeFile);
+        const current = useDashboardStore.getState();
+        if (
+          current.selectedRepo?.id === selectedRepo.id &&
+          current.currentBranch === currentBranch &&
+          current.activeFile === activeFile
+        ) {
+          setIsEditing(false);
+          void selectFile(activeFile);
+        }
       }
-    } catch (err: any) {
+    } catch (error) {
       notifications.show({
         title: "Lưu file thất bại",
-        message: err.response?.data?.error || err.message,
+        message: axios.isAxiosError<{ error?: string }>(error)
+          ? error.response?.data?.error || error.message
+          : "Không thể lưu file.",
         color: "red",
       });
     } finally {
@@ -327,7 +444,7 @@ export function CodeTab({ onNavigateTab }: CodeTabProps) {
             />
           </Box>
         </Drawer>
-        {activeFile && (
+        {activeFile && !contentError && (
           <FileEditorHeader
             activeFile={activeFile}
             lineCount={lineCount}
@@ -370,6 +487,19 @@ export function CodeTab({ onNavigateTab }: CodeTabProps) {
                 <Skeleton height={14} width="75%" radius="sm" />
               </Stack>
             </Box>
+          ) : contentError && activeFile ? (
+            <Stack p="md" align="flex-start" gap="xs" role="alert">
+              <Text size="sm" c="red">
+                {contentError}
+              </Text>
+              <Button
+                size="xs"
+                variant="default"
+                onClick={() => void selectFile(activeFile)}
+              >
+                Thử lại
+              </Button>
+            </Stack>
           ) : activeFile ? (
             documentUrl && documentFormat ? (
               <DocumentPreview
@@ -410,7 +540,10 @@ export function CodeTab({ onNavigateTab }: CodeTabProps) {
                 className="max-w-4xl mx-auto py-8 px-10"
                 style={{ width: "100%", color: "#18181b" }}
               >
-                <MarkdownViewer content={fileContent} />
+                <MarkdownViewer
+                  content={fileContent}
+                  components={markdownComponents}
+                />
               </Box>
             ) : showPlainText ? (
               <Box p="md">
