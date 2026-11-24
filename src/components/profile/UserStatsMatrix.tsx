@@ -72,44 +72,36 @@ export function UserStatsMatrix({
       value: number.format(activity.total),
       detail: `${number.format(activity.activeDays)} ngày có hoạt động`,
       color: "#18181b",
+      isLoading: false,
     },
     {
       label: "Dòng thêm",
-      value: isLoadingChanges ? (
-        <Skeleton h={28} w={80} mt={6} radius="sm" />
-      ) : codeChanges ? (
-        `+${number.format(codeChanges.additions)}`
-      ) : (
-        "+0"
-      ),
+      value: codeChanges ? `+${number.format(codeChanges.additions)}` : "+0",
       detail: isLoadingChanges
         ? "Đang tính..."
         : hasCommits
           ? "30 ngày · repo công khai"
           : "30 ngày · 0 commit",
       color: "#166534",
+      isLoading: isLoadingChanges,
     },
     {
       label: "Dòng xóa",
-      value: isLoadingChanges ? (
-        <Skeleton h={28} w={80} mt={6} radius="sm" />
-      ) : codeChanges ? (
-        `−${number.format(codeChanges.deletions)}`
-      ) : (
-        "−0"
-      ),
+      value: codeChanges ? `−${number.format(codeChanges.deletions)}` : "−0",
       detail: isLoadingChanges
         ? "Đang tính..."
         : hasCommits
           ? "30 ngày · repo công khai"
           : "30 ngày · 0 commit",
       color: "#b91c1c",
+      isLoading: isLoadingChanges,
     },
     {
       label: "Chuỗi hiện tại",
       value: `${number.format(activity.currentStreak)} ngày`,
       detail: `Dài nhất: ${number.format(activity.longestStreak)} ngày`,
       color: "#18181b",
+      isLoading: false,
     },
   ];
 
@@ -180,7 +172,7 @@ export function UserStatsMatrix({
           </Text>
         </Group>
         <SimpleGrid cols={{ base: 2, lg: 4 }} spacing="xs">
-          {quickStats.map(({ label, value, detail, color }) => (
+          {quickStats.map(({ label, value, detail, color, isLoading }) => (
             <Box
               key={label}
               className="min-w-0 rounded-xl bg-zinc-50/80 p-3.5 lg:p-4"
@@ -188,19 +180,24 @@ export function UserStatsMatrix({
               <Text fz={12} fw={600} c="#71717a">
                 {label}
               </Text>
-              <Text
-                c={color}
-                fz={{ base: 22, md: 28, xl: 32 }}
-                fw={750}
-                lh={1.2}
-                mt={4}
-                style={{
-                  fontVariantNumeric: "tabular-nums",
-                  overflowWrap: "anywhere",
-                }}
-              >
-                {value}
-              </Text>
+              {isLoading ? (
+                <Skeleton h={32} w={100} mt={6} radius="sm" />
+              ) : (
+                <Text
+                  component="div"
+                  c={color}
+                  fz={{ base: 22, md: 28, xl: 32 }}
+                  fw={750}
+                  lh={1.2}
+                  mt={4}
+                  style={{
+                    fontVariantNumeric: "tabular-nums",
+                    overflowWrap: "anywhere",
+                  }}
+                >
+                  {value}
+                </Text>
+              )}
               <Text fz={12} c="#71717a" mt={4}>
                 {detail}
               </Text>
