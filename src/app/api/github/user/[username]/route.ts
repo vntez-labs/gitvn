@@ -12,6 +12,7 @@ type Collection = {
   totalPullRequestContributions: number;
   totalIssueContributions: number;
   totalPullRequestReviewContributions: number;
+  totalRepositoriesWithContributedCommits: number;
   commitContributionsByRepository: {
     repository: { id: string; isPrivate: boolean };
   }[];
@@ -57,6 +58,7 @@ const githubGraphQL = `
         totalPullRequestContributions
         totalIssueContributions
         totalPullRequestReviewContributions
+        totalRepositoriesWithContributedCommits
         commitContributionsByRepository(maxRepositories: 12) {
           repository { id isPrivate }
         }
@@ -356,8 +358,8 @@ export async function GET(
               through,
               weeks,
               ...summarizeActivity(weeks, through),
-              activeRepositories: (collection?.commitContributionsByRepository ?? [])
-                .filter(({ repository }) => !repository.isPrivate).length,
+              activeRepositories:
+                collection.totalRepositoriesWithContributedCommits,
               commits: collection.totalCommitContributions,
               pulls: collection.totalPullRequestContributions,
               issues: collection.totalIssueContributions,
