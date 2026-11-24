@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist_Mono, Manrope } from "next/font/google";
+import { Geist, Geist_Mono, Plus_Jakarta_Sans } from "next/font/google";
 
 // 1. Core styles bắt buộc phải import đầu tiên
 import "@mantine/core/styles.css";
@@ -22,14 +22,20 @@ import { AuthProvider } from "../components/providers/AuthProvider";
 import { GlobalNavigationProgress } from "../components/providers/GlobalNavigationProgress";
 import { theme } from "./theme";
 
-const manrope = Manrope({
-  variable: "--font-manrope",
+const geistSans = Geist({
+  variable: "--font-geist-sans",
   subsets: ["vietnamese", "latin"],
   display: "swap",
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
+  subsets: ["vietnamese", "latin"],
+  display: "swap",
+});
+
+const plusJakartaSans = Plus_Jakarta_Sans({
+  variable: "--font-plus-jakarta-sans",
   subsets: ["vietnamese", "latin"],
   display: "swap",
 });
@@ -106,7 +112,7 @@ export default function RootLayout({
     <html
       lang="vi"
       {...mantineHtmlProps}
-      className={`${manrope.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${plusJakartaSans.variable} h-full antialiased`}
     >
       <head>
         <ColorSchemeScript defaultColorScheme="light" />
