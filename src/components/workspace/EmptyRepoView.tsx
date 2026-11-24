@@ -127,7 +127,7 @@ git push -u origin ${defaultBranch}`;
                 border: "1px solid #cbd5e1",
                 borderRadius: 6,
                 padding: "6px 12px",
-                fontFamily: "monospace",
+                fontFamily: "var(--mantine-font-family-monospace)",
                 fontSize: 12,
                 color: "#1d4ed8",
                 overflowX: "auto",
@@ -161,7 +161,12 @@ git push -u origin ${defaultBranch}`;
           <Box>
             <Group gap="xs" mb={8}>
               <IconSparkles size={14} color="#16a34a" />
-              <Text fz={13} fw={600} c="#0f172a" ff="monospace">
+              <Text
+                fz={13}
+                fw={600}
+                c="#0f172a"
+                ff="var(--mantine-font-family-monospace)"
+              >
                 …hoặc tạo một repository mới từ command line
               </Text>
             </Group>
@@ -202,7 +207,7 @@ git push -u origin ${defaultBranch}`;
               <pre
                 style={{
                   margin: 0,
-                  fontFamily: "monospace",
+                  fontFamily: "var(--mantine-font-family-monospace)",
                   fontSize: 12,
                   lineHeight: 1.7,
                   color: "#1e293b",
@@ -218,7 +223,12 @@ git push -u origin ${defaultBranch}`;
           <Box>
             <Group gap="xs" mb={8}>
               <IconTerminal2 size={14} color="#d97706" />
-              <Text fz={13} fw={600} c="#0f172a" ff="monospace">
+              <Text
+                fz={13}
+                fw={600}
+                c="#0f172a"
+                ff="var(--mantine-font-family-monospace)"
+              >
                 …hoặc push một repository có sẵn từ máy tính
               </Text>
             </Group>
@@ -259,7 +269,7 @@ git push -u origin ${defaultBranch}`;
               <pre
                 style={{
                   margin: 0,
-                  fontFamily: "monospace",
+                  fontFamily: "var(--mantine-font-family-monospace)",
                   fontSize: 12,
                   lineHeight: 1.7,
                   color: "#1e293b",

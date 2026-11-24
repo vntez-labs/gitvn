@@ -307,8 +307,8 @@ export function PullDetailView({
 
             <Text
               component="div"
-              fz={13}
-              c="#64748b"
+              fz={14}
+              c="#475569"
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -321,15 +321,15 @@ export function PullDetailView({
               </span>
               <span>{isMerged ? "đã merge" : "muốn merge"}</span>
               <span style={{ color: "#0f172a", fontWeight: 600 }}>
-                {pull.commits} commits
+                {pull.commits} commit
               </span>
               <span>vào</span>
               <Badge
                 component="span"
-                size="xs"
+                size="md"
                 variant="light"
                 color="vntez"
-                ff="monospace"
+                styles={{ root: { textTransform: "none", fontSize: 13 } }}
                 px={6}
               >
                 {pull.base.label}
@@ -337,10 +337,10 @@ export function PullDetailView({
               <span>từ</span>
               <Badge
                 component="span"
-                size="xs"
+                size="md"
                 variant="outline"
                 color="gray"
-                ff="monospace"
+                styles={{ root: { textTransform: "none", fontSize: 13 } }}
                 px={6}
               >
                 {pull.head.label}
@@ -532,7 +532,12 @@ export function PullDetailView({
                     </Text>
                   </Box>
                 </Group>
-                <Badge size="sm" variant="light" color="vntez" ff="monospace">
+                <Badge
+                  size="sm"
+                  variant="light"
+                  color="vntez"
+                  ff="var(--mantine-font-family-monospace)"
+                >
                   {c.sha.slice(0, 7)}
                 </Badge>
               </Box>

@@ -30,7 +30,7 @@ interface CommitGraphRowProps {
 
 const LANE_STEP = 18;
 const getX = (lane: number) => 16 + lane * LANE_STEP;
-const ROW_HEIGHT = 52;
+const ROW_HEIGHT = 58;
 const cy = 26;
 
 export function CommitGraphRow({
@@ -99,8 +99,8 @@ export function CommitGraphRow({
                 color="red"
                 radius="sm"
                 style={{
-                  fontSize: 10.5,
-                  height: 19,
+                  fontSize: 12,
+                  height: 21,
                   padding: "0 7px",
                   fontWeight: 700,
                 }}
@@ -117,8 +117,8 @@ export function CommitGraphRow({
                 radius="sm"
                 leftSection={<IconGitMerge size={11} />}
                 style={{
-                  fontSize: 10.5,
-                  height: 19,
+                  fontSize: 12,
+                  height: 21,
                   padding: "0 7px",
                   fontWeight: 600,
                 }}
@@ -128,7 +128,7 @@ export function CommitGraphRow({
             )}
 
             <Text
-              fz={13.5}
+              fz={15}
               fw={600}
               c="#1f1c19"
               truncate
@@ -152,7 +152,7 @@ export function CommitGraphRow({
               size={17}
               radius="xl"
             />
-            <Text fz={12} c="#6e675f">
+            <Text fz={13} c="#5f5952" truncate style={{ flex: 1 }}>
               <span style={{ fontWeight: 600, color: "#1f1c19" }}>
                 {commit?.author?.name || author?.login || "Vô danh"}
               </span>{" "}
@@ -184,12 +184,12 @@ export function CommitGraphRow({
                   }
                   style={{
                     cursor: "pointer",
-                    fontFamily: "var(--font-geist-mono), monospace",
+                    fontFamily: "var(--font-commit-mono), monospace",
                     borderColor: "#e5e1da",
                     color: copied ? "#0d9488" : "#6e675f",
                     backgroundColor: "#faf8f6",
-                    fontSize: 12,
-                    height: 24,
+                    fontSize: 13,
+                    height: 26,
                     padding: "0 8px",
                     fontWeight: 500,
                   }}

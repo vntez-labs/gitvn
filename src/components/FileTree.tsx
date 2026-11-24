@@ -176,14 +176,14 @@ const TreeItem = memo(function TreeItem({
             isOpen={isOpen}
           />
 
-          {/* Tên file & thư mục rõ nét với font Geist Mono kích thước lớn hơn, dễ đọc */}
+          {/* Tên file & thư mục rõ nét với font Commit Mono kích thước lớn hơn, dễ đọc */}
           <Text
             fz={13.5}
             c={isActive ? "#b91c1c" : isFolder ? "#18181b" : "#3f3f46"}
             fw={isActive ? 600 : isFolder ? 550 : 450}
             style={{
               fontFamily:
-                "var(--font-geist-mono), ui-monospace, Menlo, Monaco, Consolas, monospace",
+                "var(--font-commit-mono), ui-monospace, Menlo, Monaco, Consolas, monospace",
               whiteSpace: "nowrap",
               letterSpacing: "-0.01em",
             }}

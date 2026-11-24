@@ -12,14 +12,8 @@ export function LanguageStatsSection({
 
   return (
     <Box mb="xl">
-      <Text
-        fz={10}
-        fw={700}
-        c="#64748b"
-        mb="xs"
-        style={{ letterSpacing: "0.08em" }}
-      >
-        LANGUAGES
+      <Text component="h2" fz={16} fw={700} mb="xs">
+        Tệp theo loại
       </Text>
 
       <Progress.Root
@@ -31,7 +25,7 @@ export function LanguageStatsSection({
         {languageStats.map((lang) => (
           <Tooltip
             key={lang.name}
-            label={`${lang.name}: ${lang.percent}% (${lang.count} files)`}
+            label={`${lang.name}: ${lang.percent}% (${lang.count} tệp)`}
             withArrow
           >
             <Progress.Section value={lang.percent} color={lang.color} />
@@ -47,10 +41,10 @@ export function LanguageStatsSection({
               h={8}
               style={{ borderRadius: "50%", backgroundColor: lang.color }}
             />
-            <Text fz={12} c="#0f172a" fw={500}>
+            <Text fz={13} c="#0f172a" fw={500}>
               {lang.name}
             </Text>
-            <Text fz={12} c="#64748b">
+            <Text fz={13} c="#64748b">
               {lang.percent}%
             </Text>
           </Group>

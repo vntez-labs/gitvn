@@ -24,7 +24,7 @@ export function GitvnStatusBadge({
     if (!onInitializeGitvn) return null;
     return (
       <Button
-        size="compact-xs"
+        size="compact-sm"
         variant="subtle"
         color="red"
         loading={initializingGitvn}
@@ -47,7 +47,7 @@ export function GitvnStatusBadge({
     return (
       <Group gap={4} wrap="nowrap">
         <Badge
-          size="xs"
+          size="sm"
           variant="outline"
           onClick={onOpenUpgradeModal}
           style={{
@@ -64,7 +64,7 @@ export function GitvnStatusBadge({
         </Badge>
         {onOpenUpgradeModal && (
           <Button
-            size="compact-xs"
+            size="compact-sm"
             variant="subtle"
             color="orange"
             onClick={onOpenUpgradeModal}
@@ -75,8 +75,8 @@ export function GitvnStatusBadge({
               borderColor: "#fde68a",
               borderRadius: 6,
               fontWeight: 500,
-              height: 20,
-              fontSize: 11,
+              height: 24,
+              fontSize: 13,
             }}
           >
             Nâng cấp v2
@@ -88,7 +88,7 @@ export function GitvnStatusBadge({
 
   return (
     <Badge
-      size="xs"
+      size="sm"
       variant="outline"
       leftSection={<IconCheck size={11} />}
       style={{

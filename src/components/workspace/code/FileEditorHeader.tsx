@@ -65,7 +65,7 @@ export function FileEditorHeader({
         <Text
           fz={13}
           fw={600}
-          ff="monospace"
+          ff="var(--mantine-font-family-monospace)"
           c="#18181b"
           truncate
           title={activeFile}
@@ -81,7 +81,7 @@ export function FileEditorHeader({
               borderColor: "#e4e4e7",
               color: "#52525b",
               backgroundColor: "#f4f4f5",
-              fontFamily: "monospace",
+              fontFamily: "var(--mantine-font-family-monospace)",
               fontSize: 11,
               padding: "2px 6px",
               flexShrink: 0,

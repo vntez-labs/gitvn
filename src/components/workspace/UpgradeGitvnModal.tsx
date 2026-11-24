@@ -138,7 +138,11 @@ export function UpgradeGitvnModal({
             <Stack gap={6}>
               <Text fz={12} c="#52525b">
                 • 1 file gom chung{" "}
-                <Text component="span" ff="monospace" fw={600}>
+                <Text
+                  component="span"
+                  ff="var(--mantine-font-family-monospace)"
+                  fw={600}
+                >
                   tasks.json
                 </Text>
               </Text>
@@ -171,7 +175,11 @@ export function UpgradeGitvnModal({
             <Stack gap={6}>
               <Text fz={12} c="#991b1b">
                 • File rời{" "}
-                <Text component="span" ff="monospace" fw={600}>
+                <Text
+                  component="span"
+                  ff="var(--mantine-font-family-monospace)"
+                  fw={600}
+                >
                   .gitvn/tasks/*.md
                 </Text>
               </Text>
@@ -180,7 +188,11 @@ export function UpgradeGitvnModal({
               </Text>
               <Text fz={12} c="#991b1b">
                 • Chuẩn hoá{" "}
-                <Text component="span" ff="monospace" fw={600}>
+                <Text
+                  component="span"
+                  ff="var(--mantine-font-family-monospace)"
+                  fw={600}
+                >
                   .gitvn/config.yml
                 </Text>
               </Text>
@@ -197,7 +209,11 @@ export function UpgradeGitvnModal({
             <Text fz={12} c="#3f3f46">
               Chuyển đổi toàn bộ tasks sang định dạng Markdown + YAML
               Frontmatter trong thư mục{" "}
-              <Text component="span" ff="monospace" fw={600}>
+              <Text
+                component="span"
+                ff="var(--mantine-font-family-monospace)"
+                fw={600}
+              >
                 .gitvn/tasks/
               </Text>
             </Text>
@@ -206,7 +222,11 @@ export function UpgradeGitvnModal({
             <IconFileCode size={15} color="#dc2626" />
             <Text fz={12} c="#3f3f46">
               Tạo file cấu hình{" "}
-              <Text component="span" ff="monospace" fw={600}>
+              <Text
+                component="span"
+                ff="var(--mantine-font-family-monospace)"
+                fw={600}
+              >
                 .gitvn/config.yml
               </Text>{" "}
               với storage format: &quot;decoupled&quot;
@@ -216,7 +236,11 @@ export function UpgradeGitvnModal({
             <IconGitBranch size={15} color="#dc2626" />
             <Text fz={12} c="#3f3f46">
               Cập nhật tài liệu AI SSOT và commit trực tiếp lên branch{" "}
-              <Text component="span" ff="monospace" fw={600}>
+              <Text
+                component="span"
+                ff="var(--mantine-font-family-monospace)"
+                fw={600}
+              >
                 {currentBranch}
               </Text>
             </Text>

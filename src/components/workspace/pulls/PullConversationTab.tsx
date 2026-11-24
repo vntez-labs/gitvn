@@ -75,7 +75,12 @@ export function PullConversationTab({
             {commits.map((c) => (
               <Group key={c.sha} gap="xs">
                 <IconGitCommit size={14} color="#fb291a" />
-                <Text fz={12} fw={500} c="#0f172a" ff="monospace">
+                <Text
+                  fz={12}
+                  fw={500}
+                  c="#0f172a"
+                  ff="var(--mantine-font-family-monospace)"
+                >
                   {c.sha.slice(0, 7)}
                 </Text>
                 <Text fz={12} c="#334155" truncate style={{ flex: 1 }}>

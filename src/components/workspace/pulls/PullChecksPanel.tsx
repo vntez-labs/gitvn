@@ -39,7 +39,7 @@ export function PullChecksPanel({ checks }: { checks: PullChecks }) {
           <Text fw={700} size="sm">
             CI/CD checks
           </Text>
-          <Text size="xs" c="dimmed" ff="monospace">
+          <Text size="xs" c="dimmed" ff="var(--mantine-font-family-monospace)">
             {checks.testMerge ? "Test merge" : "Head"} ·{" "}
             {checks.sha.slice(0, 7)}
           </Text>

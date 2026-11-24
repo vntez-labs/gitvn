@@ -71,7 +71,9 @@ export function DangerZoneModals({
             placeholder={expectedConfirmText}
             value={confirmInput}
             onChange={(e) => setConfirmInput(e.currentTarget.value)}
-            styles={{ input: { fontFamily: "monospace" } }}
+            styles={{
+              input: { fontFamily: "var(--mantine-font-family-monospace)" },
+            }}
           />
           {actionError && <Alert color="red">{actionError}</Alert>}
           <Button
@@ -116,7 +118,9 @@ export function DangerZoneModals({
             placeholder={expectedConfirmText}
             value={confirmInput}
             onChange={(e) => setConfirmInput(e.currentTarget.value)}
-            styles={{ input: { fontFamily: "monospace" } }}
+            styles={{
+              input: { fontFamily: "var(--mantine-font-family-monospace)" },
+            }}
           />
           {actionError && <Alert color="red">{actionError}</Alert>}
           <Button
@@ -162,7 +166,9 @@ export function DangerZoneModals({
             placeholder={expectedConfirmText}
             value={confirmInput}
             onChange={(e) => setConfirmInput(e.currentTarget.value)}
-            styles={{ input: { fontFamily: "monospace" } }}
+            styles={{
+              input: { fontFamily: "var(--mantine-font-family-monospace)" },
+            }}
           />
           {actionError && <Alert color="red">{actionError}</Alert>}
           <Button

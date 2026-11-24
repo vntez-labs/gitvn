@@ -634,7 +634,7 @@ export function CodeTab({ onNavigateTab, onPullCreated }: CodeTabProps) {
                     wrapper: { flex: 1, display: "flex" },
                     input: {
                       flex: 1,
-                      fontFamily: "var(--font-geist-mono), monospace",
+                      fontFamily: "var(--font-commit-mono), monospace",
                       fontSize: 14,
                       lineHeight: 1.7,
                       backgroundColor: "#ffffff",
@@ -666,7 +666,7 @@ export function CodeTab({ onNavigateTab, onPullCreated }: CodeTabProps) {
                 </Text>
                 <Box
                   component="pre"
-                  ff="monospace"
+                  ff="var(--mantine-font-family-monospace)"
                   style={{ whiteSpace: "pre" }}
                 >
                   {fileContent}
@@ -740,7 +740,9 @@ export function CodeTab({ onNavigateTab, onPullCreated }: CodeTabProps) {
               value={latest?.text ?? original?.text ?? ""}
               readOnly
               rows={9}
-              styles={{ input: { fontFamily: "monospace" } }}
+              styles={{
+                input: { fontFamily: "var(--mantine-font-family-monospace)" },
+              }}
             />
             <Textarea
               label="Bản nháp"
@@ -748,7 +750,9 @@ export function CodeTab({ onNavigateTab, onPullCreated }: CodeTabProps) {
               onChange={(event) => changeDraft(event.currentTarget.value)}
               disabled={saving}
               rows={9}
-              styles={{ input: { fontFamily: "monospace" } }}
+              styles={{
+                input: { fontFamily: "var(--mantine-font-family-monospace)" },
+              }}
             />
           </Group>
           {commitError && <Alert color="red">{commitError}</Alert>}

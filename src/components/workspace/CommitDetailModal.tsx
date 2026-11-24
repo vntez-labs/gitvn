@@ -85,7 +85,12 @@ export function CommitDetailModal({
             Chi tiết Commit
           </Text>
           {sha && (
-            <Badge size="sm" variant="light" color="vntez" ff="monospace">
+            <Badge
+              size="sm"
+              variant="light"
+              color="vntez"
+              ff="var(--mantine-font-family-monospace)"
+            >
               {sha.slice(0, 7)}
             </Badge>
           )}
@@ -213,7 +218,12 @@ export function CommitDetailModal({
                 <Text fz={12} c="#b81408">
                   Lệnh checkout commit này trên máy tính:
                 </Text>
-                <Text fz={12} ff="monospace" c="#db1b0e" fw={600}>
+                <Text
+                  fz={12}
+                  ff="var(--mantine-font-family-monospace)"
+                  c="#db1b0e"
+                  fw={600}
+                >
                   git checkout {sha?.slice(0, 7)}
                 </Text>
               </Group>

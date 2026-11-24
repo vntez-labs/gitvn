@@ -13,79 +13,48 @@ import {
   IconGitBranch,
   IconGitFork,
   IconStar,
-  IconUsers,
+  IconGitCommit,
 } from "@tabler/icons-react";
 import axios from "axios";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import useSWR from "swr";
 import { useRepoOverviewMetrics } from "@/hooks/useRepoOverviewMetrics";
+import type { RepoOverviewStats } from "@/interfaces/repo-overview";
 import { useDashboardStore } from "@/store/dashboard.store";
 import { formatCompactNumber } from "./constants";
 import { CommitFrequencyChart } from "./overview/CommitFrequencyChart";
-import { ContributorsLeaderboard } from "./overview/ContributorsLeaderboard";
+import { RepoContributors } from "./overview/RepoContributors";
 import { LanguageStatsSection } from "./overview/LanguageStatsSection";
 import { PulseHealthSection } from "./overview/PulseHealthSection";
 
+async function fetchStats(url: string) {
+  const { data } = await axios.get<RepoOverviewStats>(url);
+  return data;
+}
+
 export function OverviewTab() {
-  const { selectedRepo, currentBranch, tree } = useDashboardStore();
-
-  const [statsData, setStatsData] = useState<{
-    contributors: any[];
-    totalContributors?: number;
-    totalCommits?: number;
-    activity: any[];
-    pulse?: {
-      pulls: {
-        total: number;
-        open: number;
-        merged: number;
-        closed: number;
-        mergeRate: number;
-      };
-      issues: {
-        total: number;
-        open: number;
-        closed: number;
-        closeRate: number;
-      };
-    };
-  }>({
-    contributors: [],
-    activity: [],
-  });
-  const [loadingStats, setLoadingStats] = useState(true);
+  const { selectedRepo, tree } = useDashboardStore();
   const [refreshing, setRefreshing] = useState(false);
-  const [sortBy, setSortBy] = useState<"impact" | "prs" | "lines" | "commits">(
-    "impact",
-  );
+  const url = selectedRepo
+    ? `/api/github/stats?${new URLSearchParams({
+        owner: selectedRepo.owner.login,
+        repo: selectedRepo.name,
+      })}`
+    : null;
+  const { data, isLoading, mutate } = useSWR(url, fetchStats);
+  const languageStats = useRepoOverviewMetrics(tree);
 
-  const fetchStats = (forceRefresh = false) => {
-    if (!selectedRepo) return;
-    if (forceRefresh) setRefreshing(true);
-    else setLoadingStats(true);
-
-    const url = `/api/github/stats?owner=${selectedRepo.owner.login}&repo=${selectedRepo.name}${
-      forceRefresh ? "&refresh=true" : ""
-    }`;
-
-    axios
-      .get(url)
-      .then((res) => {
-        setStatsData(res.data);
-      })
-      .catch((err) => console.error("Lỗi tải thống kê repo:", err))
-      .finally(() => {
-        setLoadingStats(false);
-        setRefreshing(false);
-      });
-  };
-
-  useEffect(() => {
-    fetchStats(false);
-  }, [selectedRepo?.id]);
-
-  // Hook tính toán các chỉ số thống kê & ngôn ngữ
-  const { timelineMetrics, rankedContributors, languageStats } =
-    useRepoOverviewMetrics(statsData, sortBy, tree);
+  async function refresh() {
+    if (!url) return;
+    setRefreshing(true);
+    try {
+      await mutate(fetchStats(`${url}&refresh=true`), { revalidate: false });
+    } catch {
+      await mutate();
+    } finally {
+      setRefreshing(false);
+    }
+  }
 
   if (!selectedRepo) return null;
 
@@ -104,16 +73,10 @@ export function OverviewTab() {
       }}
     >
       <Box style={{ maxWidth: 960, margin: "0 auto" }}>
-        {/* ABOUT */}
+        {/* Giới thiệu */}
         <Box mb="xl">
-          <Text
-            fz={10}
-            fw={700}
-            c="#64748b"
-            mb={4}
-            style={{ letterSpacing: "0.08em" }}
-          >
-            ABOUT
+          <Text fz={13} fw={700} c="#64748b" mb={4}>
+            Giới thiệu
           </Text>
           <Text
             fz="md"
@@ -186,20 +149,21 @@ export function OverviewTab() {
           >
             <Group justify="space-between">
               <Text fz="xs" c="#64748b" fw={500}>
-                Members
+                Commit nhánh mặc định
               </Text>
               <ThemeIcon color="teal" variant="light" size="sm" radius="md">
-                <IconUsers size={14} />
+                <IconGitCommit size={14} />
               </ThemeIcon>
             </Group>
-            <Tooltip
-              label={`${(statsData.totalContributors || rankedContributors.length).toLocaleString()} members`}
-              withArrow
+            <Text
+              fz="xl"
+              fw={700}
+              c="#0f172a"
+              mt={4}
+              title="Tổng commit trên nhánh mặc định"
             >
-              <Text fz="xl" fw={700} c="#0f172a" mt={4}>
-                {statsData.totalContributors || rankedContributors.length}
-              </Text>
-            </Tooltip>
+              {data?.totalCommits?.toLocaleString() ?? "—"}
+            </Text>
           </Paper>
 
           <Paper
@@ -213,40 +177,33 @@ export function OverviewTab() {
           >
             <Group justify="space-between">
               <Text fz="xs" c="#64748b" fw={500}>
-                Default Branch
+                Nhánh mặc định
               </Text>
               <ThemeIcon color="indigo" variant="light" size="sm" radius="md">
                 <IconGitBranch size={14} />
               </ThemeIcon>
             </Group>
-            <Text fz="sm" fw={600} c="#0f172a" mt={8} ff="monospace" truncate>
-              {currentBranch}
+            <Text fz="sm" fw={600} c="#0f172a" mt={8} truncate>
+              {selectedRepo.default_branch ?? "—"}
             </Text>
           </Paper>
         </SimpleGrid>
 
-        {/* SECTION 1: PULSE (PULL REQUESTS & ISSUES) */}
-        <PulseHealthSection pulse={statsData.pulse} />
+        <PulseHealthSection pulse={data?.pulse} loading={isLoading} />
 
-        {/* SECTION 2: BIỂU ĐỒ LỊCH SỬ COMMIT */}
         <CommitFrequencyChart
-          statsData={statsData}
-          timelineMetrics={timelineMetrics}
-          loadingStats={loadingStats}
+          activity={data?.activity}
+          loadingStats={isLoading}
         />
 
-        {/* SECTION 3: BẢNG XẾP HẠNG THÀNH VIÊN ĐA CHIỀU */}
-        <ContributorsLeaderboard
-          rankedContributors={rankedContributors}
-          statsData={statsData}
-          loadingStats={loadingStats}
+        <RepoContributors
+          contributors={data?.contributors}
+          sampledCommits={data?.sampledCommits ?? 0}
+          loading={isLoading}
           refreshing={refreshing}
-          fetchStats={fetchStats}
-          sortBy={sortBy}
-          setSortBy={setSortBy}
+          onRefresh={refresh}
         />
 
-        {/* SECTION 4: TỶ LỆ NGÔN NGỮ */}
         <LanguageStatsSection languageStats={languageStats} />
       </Box>
     </Box>

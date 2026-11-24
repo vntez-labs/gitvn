@@ -95,7 +95,7 @@ export const TaskRowItem = memo(function TaskRowItem({
           fz={12}
           fw={600}
           c="#71717a"
-          ff="var(--font-geist-mono), monospace"
+          ff="var(--font-commit-mono), monospace"
           style={{ flexShrink: 0 }}
         >
           {task.id}
@@ -165,7 +165,7 @@ export const TaskRowItem = memo(function TaskRowItem({
             backgroundColor: "#f4f4f5",
             borderColor: "#e4e4e7",
             color: "#52525b",
-            fontFamily: "monospace",
+            fontFamily: "var(--mantine-font-family-monospace)",
             fontSize: 11,
           }}
         >

@@ -172,7 +172,8 @@ export async function commitMultipleFilesToGitHub(
   files: GitFileChange[],
   token: string,
   message: string,
-  branch = "main",
+  branch: string | undefined = undefined,
+  { atomic = false }: { atomic?: boolean } = {},
 ): Promise<{ ok: boolean; commitSha?: string; error?: string }> {
   if (!files || files.length === 0) {
     return { ok: true };
@@ -202,6 +203,21 @@ export async function commitMultipleFilesToGitHub(
       "Content-Type": "application/json",
     };
 
+    branch ??= atomic ? undefined : "main";
+    if (!branch) {
+      const repoRes = await fetch(
+        `https://api.github.com/repos/${owner}/${repo}`,
+        { headers, cache: "no-store" },
+      );
+      if (!repoRes.ok) {
+        return { ok: false, error: "Không thể lấy nhánh mặc định" };
+      }
+      branch = (await repoRes.json()).default_branch;
+      if (!branch) {
+        return { ok: false, error: "Repository chưa có nhánh mặc định" };
+      }
+    }
+
     // 1. Lấy latest commit SHA của nhánh
     const refRes = await fetch(
       `https://api.github.com/repos/${owner}/${repo}/git/ref/heads/${encodeURIComponent(branch)}`,
@@ -209,6 +225,7 @@ export async function commitMultipleFilesToGitHub(
     );
 
     if (!refRes.ok) {
+      if (atomic) return { ok: false, error: "Không thể lấy Git ref" };
       // Fallback nếu không đọc được Git Ref: commit từng file
       for (const f of files) {
         await commitFileToGitHub(
@@ -259,6 +276,7 @@ export async function commitMultipleFilesToGitHub(
     );
 
     if (!treeRes.ok) {
+      if (atomic) return { ok: false, error: "Không thể tạo Git tree" };
       // Fallback nếu Git Tree API lỗi
       for (const f of files) {
         await commitFileToGitHub(
@@ -276,6 +294,9 @@ export async function commitMultipleFilesToGitHub(
 
     const treeData = await treeRes.json();
     const newTreeSha = treeData.sha;
+    if (newTreeSha === baseTreeSha) {
+      return { ok: true, commitSha: latestCommitSha };
+    }
 
     // 4. Tạo Commit mới duy nhất
     const newCommitRes = await fetch(

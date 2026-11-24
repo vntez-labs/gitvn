@@ -59,7 +59,12 @@ export const DiffViewer = memo(function DiffViewer({
                   `${ICON_BASE_URL}/default_file.svg`;
               }}
             />
-            <Text fz={13} fw={600} c="#0f172a" ff="monospace">
+            <Text
+              fz={13}
+              fw={600}
+              c="#0f172a"
+              ff="var(--mantine-font-family-monospace)"
+            >
               {file.filename}
             </Text>
             <Badge
@@ -99,7 +104,7 @@ export const DiffViewer = memo(function DiffViewer({
       <Box
         style={{
           overflowX: "auto",
-          fontFamily: "monospace",
+          fontFamily: "var(--mantine-font-family-monospace)",
           fontSize: 12,
           lineHeight: "20px",
         }}

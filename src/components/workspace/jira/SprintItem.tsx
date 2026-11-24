@@ -187,7 +187,7 @@ export const SprintItem = memo(function SprintItem({
               backgroundColor: "#f4f4f5",
               borderColor: "#e4e4e7",
               color: "#52525b",
-              fontFamily: "monospace",
+              fontFamily: "var(--mantine-font-family-monospace)",
               fontSize: 11,
               fontWeight: 600,
             }}

@@ -66,7 +66,7 @@ export const FileExplorerDock: FC<FileExplorerDockProps> = memo(
             style={{
               textTransform: "uppercase",
               letterSpacing: "0.08em",
-              fontFamily: "monospace",
+              fontFamily: "var(--mantine-font-family-monospace)",
             }}
           >
             Files
@@ -79,7 +79,7 @@ export const FileExplorerDock: FC<FileExplorerDockProps> = memo(
                 backgroundColor: "#f4f4f5",
                 borderColor: "#e4e4e7",
                 color: "#52525b",
-                fontFamily: "monospace",
+                fontFamily: "var(--mantine-font-family-monospace)",
                 fontSize: 11,
                 padding: "2px 6px",
               }}

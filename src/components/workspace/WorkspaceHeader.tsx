@@ -208,9 +208,8 @@ export function WorkspaceHeader({
           <IconBook size={19} color="#dc2626" />
           <Text
             fw={600}
-            fz={15}
+            fz={16}
             c="#18181b"
-            ff="monospace"
             truncate
             title={selectedRepo.full_name}
             style={{ minWidth: 0, maxWidth: "100%" }}
@@ -222,14 +221,16 @@ export function WorkspaceHeader({
           </Text>
 
           <Badge
-            size="xs"
+            size="md"
             variant="outline"
             style={{
               backgroundColor: selectedRepo.private ? "#f4f4f5" : "#ecfdf5",
               color: selectedRepo.private ? "#52525b" : "#047857",
               borderColor: selectedRepo.private ? "#e4e4e7" : "#a7f3d0",
               borderRadius: 9999,
-              fontWeight: 500,
+              fontWeight: 600,
+              textTransform: "none",
+              fontSize: 12,
               padding: "2px 8px",
             }}
           >

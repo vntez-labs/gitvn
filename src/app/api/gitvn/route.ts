@@ -243,6 +243,12 @@ export async function POST(request: Request) {
         token,
         branch,
       );
+      if (token && !initRes.syncedToGitHub) {
+        return NextResponse.json(
+          { error: "Không thể tạo commit khởi tạo .gitvn trên GitHub." },
+          { status: 502 },
+        );
+      }
       return NextResponse.json({
         success: initRes.success,
         message: "Khởi tạo cấu trúc .gitvn v2 thành công!",

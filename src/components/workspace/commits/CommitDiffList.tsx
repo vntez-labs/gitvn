@@ -35,7 +35,13 @@ const CommitDiffFileItem = memo(function CommitDiffFileItem({
         >
           <Group gap="xs" wrap="nowrap" style={{ overflow: "hidden" }}>
             <IconFileDiff size={15} color="#fb291a" />
-            <Text fz={12.5} fw={600} c="#0f172a" ff="monospace" truncate>
+            <Text
+              fz={12.5}
+              fw={600}
+              c="#0f172a"
+              ff="var(--mantine-font-family-monospace)"
+              truncate
+            >
               {file.filename}
             </Text>
             <Badge
@@ -71,7 +77,7 @@ const CommitDiffFileItem = memo(function CommitDiffFileItem({
             borderTop: "1px solid #e2e8f0",
             padding: 10,
             overflowX: "auto",
-            fontFamily: "monospace",
+            fontFamily: "var(--mantine-font-family-monospace)",
             fontSize: 12,
             lineHeight: "19px",
           }}

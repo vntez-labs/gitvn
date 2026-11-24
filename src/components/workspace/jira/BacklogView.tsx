@@ -306,7 +306,7 @@ export const BacklogView = memo(function BacklogView({
                         borderColor: "#e4e4e7",
                         color: "#52525b",
                         backgroundColor: "#f4f4f5",
-                        fontFamily: "monospace",
+                        fontFamily: "var(--mantine-font-family-monospace)",
                         fontSize: 11,
                         padding: "2px 6px",
                       }}
@@ -321,7 +321,7 @@ export const BacklogView = memo(function BacklogView({
                           borderColor: "#e4e4e7",
                           color: "#52525b",
                           backgroundColor: "#f4f4f5",
-                          fontFamily: "monospace",
+                          fontFamily: "var(--mantine-font-family-monospace)",
                           fontSize: 11,
                           padding: "2px 6px",
                         }}

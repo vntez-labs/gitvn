@@ -114,7 +114,10 @@ export function CreateFileModal({
           onChange={(e) => setFilePath(e.currentTarget.value)}
           required
           styles={{
-            input: { fontFamily: "monospace", fontSize: 13 },
+            input: {
+              fontFamily: "var(--mantine-font-family-monospace)",
+              fontSize: 13,
+            },
             label: { fontWeight: 600, fontSize: 12, marginBottom: 4 },
           }}
         />
@@ -128,7 +131,10 @@ export function CreateFileModal({
           maxRows={12}
           autosize
           styles={{
-            input: { fontFamily: "monospace", fontSize: 12 },
+            input: {
+              fontFamily: "var(--mantine-font-family-monospace)",
+              fontSize: 12,
+            },
             label: { fontWeight: 600, fontSize: 12, marginBottom: 4 },
           }}
         />

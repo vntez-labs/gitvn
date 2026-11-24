@@ -86,7 +86,7 @@ export function UserRolesTable({
                       fz={13}
                       fw={600}
                       c="#1f1c19"
-                      ff="var(--font-geist-mono), monospace"
+                      ff="var(--font-commit-mono), monospace"
                     >
                       @{username}
                     </Text>

@@ -110,8 +110,7 @@ export function BranchSelector() {
                 color: "#18181b",
                 boxShadow: "0 1px 2px rgba(0, 0, 0, 0.05)",
                 borderRadius: 6,
-                fontFamily: "monospace",
-                fontSize: 12,
+                fontSize: 14,
                 fontWeight: 500,
               },
             }}
@@ -161,7 +160,6 @@ export function BranchSelector() {
                   c={currentBranch === b.name ? "#dc2626" : "#18181b"}
                   style={{
                     fontSize: 13,
-                    fontFamily: "monospace",
                     fontWeight: currentBranch === b.name ? 600 : 400,
                     backgroundColor:
                       currentBranch === b.name ? "#fef2f2" : "transparent",
@@ -171,10 +169,7 @@ export function BranchSelector() {
                 </Menu.Item>
               ))
           ) : (
-            <Menu.Item
-              c="#dc2626"
-              style={{ fontSize: 13, fontFamily: "monospace", fontWeight: 600 }}
-            >
+            <Menu.Item c="#dc2626" style={{ fontSize: 14, fontWeight: 600 }}>
               {defaultBranch} (default)
             </Menu.Item>
           )}

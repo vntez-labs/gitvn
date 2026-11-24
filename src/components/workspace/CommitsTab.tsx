@@ -209,7 +209,7 @@ export function CommitsTab({ onCommitsLoaded }: CommitsTabProps) {
                 key={i}
                 p="xs"
                 style={{
-                  height: 52,
+                  height: 58,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",

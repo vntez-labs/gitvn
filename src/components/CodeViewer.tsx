@@ -19,9 +19,9 @@ const LINGUIST_TO_PRISM_ALIASES: Record<string, string> = {
 };
 
 const CODE_FONT =
-  "var(--font-geist-mono), 'Fira Code', ui-monospace, Menlo, Monaco, Consolas, monospace";
+  "var(--font-commit-mono), 'Fira Code', ui-monospace, Menlo, Monaco, Consolas, monospace";
 
-// Tùy biến theme Prism: Khắc phục triệt để lỗi số dòng màu xanh lá/nghiêng của theme vs gốc, ép font Geist Mono chuẩn xác
+// Tùy biến theme Prism: Khắc phục triệt để lỗi số dòng màu xanh lá/nghiêng của theme vs gốc, ép font Commit Mono chuẩn xác
 const gitvnCodeTheme: Record<string, React.CSSProperties> = {
   ...vs,
   'code[class*="language-"]': {

@@ -17,7 +17,7 @@ const vntezColors: MantineColorsTuple = [
 export const theme = createTheme({
   fontFamily:
     "var(--font-geist-sans), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-  fontFamilyMonospace: "var(--font-geist-mono), monospace",
+  fontFamilyMonospace: "var(--font-commit-mono), monospace",
   headings: {
     fontFamily:
       "var(--font-plus-jakarta-sans), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",

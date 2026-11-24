@@ -116,7 +116,7 @@ export function DocsExportTab({ docs, repo }: DocsExportTabProps) {
             backgroundColor: "#f8fafc",
             borderColor: "#cbd5e1",
             color: "#0f172a",
-            fontFamily: "var(--font-geist-mono), monospace",
+            fontFamily: "var(--font-commit-mono), monospace",
             fontSize: 12,
             lineHeight: 1.5,
             borderRadius: 8,

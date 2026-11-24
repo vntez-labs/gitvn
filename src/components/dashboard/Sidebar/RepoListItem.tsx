@@ -84,7 +84,7 @@ export function RepoListItem({
             title={repo.name}
             style={{
               fontFamily:
-                "var(--font-geist-mono), ui-monospace, Menlo, Monaco, Consolas, monospace",
+                "var(--font-commit-mono), ui-monospace, Menlo, Monaco, Consolas, monospace",
             }}
           >
             {repo.name}

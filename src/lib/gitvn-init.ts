@@ -1,7 +1,7 @@
 import fs from "fs/promises";
 import path from "path";
 import type { GitvnConfig } from "@/interfaces/gitvn";
-import { commitFileToGitHub } from "./github-api";
+import { commitMultipleFilesToGitHub } from "./github-api";
 import {
   configToYaml,
   createDefaultConfig,
@@ -34,112 +34,47 @@ export async function initializeGitvnRepo(
   const defaultReadme = createDefaultReadme();
   const configYaml = configToYaml(defaultConfig);
 
-  // Local write
-  try {
-    await fs.mkdir(LOCAL_GITVN_DIR, { recursive: true });
-    await fs.mkdir(path.join(LOCAL_GITVN_DIR, "docs"), { recursive: true });
-    await fs.mkdir(path.join(LOCAL_GITVN_DIR, "tasks"), { recursive: true });
+  const files = [
+    { path: ".gitvn/config.yml", content: configYaml },
+    { path: ".gitvn/README.md", content: defaultReadme },
+    {
+      path: ".gitvn/tasks.json",
+      content: JSON.stringify(defaultTasks, null, 2),
+    },
+    { path: ".gitvn/docs/index.mdx", content: defaultIndexDoc },
+    { path: ".gitvn/docs/architecture.mdx", content: defaultArchDoc },
+    ...defaultTasks.tasks.map((task) => ({
+      path: `.gitvn/tasks/${task.id}.md`,
+      content: taskToMarkdown(task),
+    })),
+  ];
 
-    await fs.writeFile(
-      path.join(LOCAL_GITVN_DIR, "config.yml"),
-      configYaml,
-      "utf-8",
-    );
-    await fs.writeFile(
-      path.join(LOCAL_GITVN_DIR, "README.md"),
-      defaultReadme,
-      "utf-8",
-    );
-    await fs.writeFile(
-      path.join(LOCAL_GITVN_DIR, "tasks.json"),
-      JSON.stringify(defaultTasks, null, 2),
-      "utf-8",
-    );
-    for (const t of defaultTasks.tasks) {
-      await fs.writeFile(
-        path.join(LOCAL_GITVN_DIR, "tasks", `${t.id}.md`),
-        taskToMarkdown(t),
-        "utf-8",
+  try {
+    for (const file of files) {
+      const destination = path.join(
+        LOCAL_GITVN_DIR,
+        file.path.slice(".gitvn/".length),
       );
+      await fs.mkdir(path.dirname(destination), { recursive: true });
+      await fs.writeFile(destination, file.content, "utf-8");
     }
-    await fs.writeFile(
-      path.join(LOCAL_GITVN_DIR, "docs", "index.mdx"),
-      defaultIndexDoc,
-      "utf-8",
-    );
-    await fs.writeFile(
-      path.join(LOCAL_GITVN_DIR, "docs", "architecture.mdx"),
-      defaultArchDoc,
-      "utf-8",
-    );
   } catch {}
 
-  // GitHub commit
-  let syncedToGitHub = false;
-  if (token) {
-    const msg = `chore(gitvn): init canonical v${LATEST_GITVN_VERSION} workspace`;
-    await commitFileToGitHub(
-      owner,
-      repo,
-      ".gitvn/config.yml",
-      configYaml,
-      token,
-      `${msg} config`,
-      branch,
-    );
-    await commitFileToGitHub(
-      owner,
-      repo,
-      ".gitvn/README.md",
-      defaultReadme,
-      token,
-      `${msg} AI guide`,
-      branch,
-    );
-    await commitFileToGitHub(
-      owner,
-      repo,
-      ".gitvn/tasks.json",
-      JSON.stringify(defaultTasks, null, 2),
-      token,
-      `${msg} tasks`,
-      branch,
-    );
-    await commitFileToGitHub(
-      owner,
-      repo,
-      ".gitvn/docs/index.mdx",
-      defaultIndexDoc,
-      token,
-      `${msg} docs index`,
-      branch,
-    );
-    await commitFileToGitHub(
-      owner,
-      repo,
-      ".gitvn/docs/architecture.mdx",
-      defaultArchDoc,
-      token,
-      `${msg} docs arch`,
-      branch,
-    );
-    for (const t of defaultTasks.tasks) {
-      await commitFileToGitHub(
+  const commit = token
+    ? await commitMultipleFilesToGitHub(
         owner,
         repo,
-        `.gitvn/tasks/${t.id}.md`,
-        taskToMarkdown(t),
+        files,
         token,
-        `${msg} task ${t.id}`,
+        `chore(gitvn): initialize workspace v${LATEST_GITVN_VERSION}`,
         branch,
-      );
-    }
-    syncedToGitHub = true;
-  }
+        { atomic: true },
+      )
+    : undefined;
 
   return {
     success: true,
-    syncedToGitHub,
+    syncedToGitHub: commit?.ok ?? false,
     config: defaultConfig,
   };
 }

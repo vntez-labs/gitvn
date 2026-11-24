@@ -328,7 +328,7 @@ export function DocsTab({ onInitializeGitvn, hasGitvn = true }: DocsTabProps) {
               variant="light"
               color="vntez"
               radius="sm"
-              ff="monospace"
+              ff="var(--mantine-font-family-monospace)"
             >
               .gitvn/docs/{activeDoc?.name}
             </Badge>
@@ -434,7 +434,7 @@ export function DocsTab({ onInitializeGitvn, hasGitvn = true }: DocsTabProps) {
                     height: "100%",
                     borderRadius: 0,
                     border: "none",
-                    fontFamily: "var(--font-geist-mono), monospace",
+                    fontFamily: "var(--font-commit-mono), monospace",
                     fontSize: 13,
                     lineHeight: 1.6,
                     padding: 16,

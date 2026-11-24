@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Plus_Jakarta_Sans } from "next/font/google";
+import { Geist, Plus_Jakarta_Sans } from "next/font/google";
+import localFont from "next/font/local";
 
 // 1. Core styles bắt buộc phải import đầu tiên
 import "@mantine/core/styles.css";
@@ -28,9 +29,10 @@ const geistSans = Geist({
   display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["vietnamese", "latin"],
+const commitMono = localFont({
+  src: "./fonts/CommitMonoV143-VF.woff2",
+  weight: "200 700",
+  variable: "--font-commit-mono",
   display: "swap",
 });
 
@@ -112,7 +114,7 @@ export default function RootLayout({
     <html
       lang="vi"
       {...mantineHtmlProps}
-      className={`${geistSans.variable} ${geistMono.variable} ${plusJakartaSans.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${commitMono.variable} ${plusJakartaSans.variable} h-full antialiased`}
     >
       <head>
         <ColorSchemeScript defaultColorScheme="light" />

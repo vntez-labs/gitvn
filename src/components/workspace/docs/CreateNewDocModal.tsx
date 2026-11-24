@@ -48,7 +48,9 @@ export function CreateNewDocModal({
           value={newDocName}
           onChange={(e) => setNewDocName(e.currentTarget.value)}
           required
-          styles={{ input: { fontFamily: "monospace" } }}
+          styles={{
+            input: { fontFamily: "var(--mantine-font-family-monospace)" },
+          }}
         />
 
         <Group justify="flex-end" mt="md">

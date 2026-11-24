@@ -152,7 +152,12 @@ export function BranchActionBanner({ onTabChange }: BranchActionBannerProps) {
             <Group gap="xs" wrap="wrap">
               <Text fz={13} fw={600} c="#14532d">
                 Nhánh{" "}
-                <span style={{ color: "#16a34a", fontFamily: "monospace" }}>
+                <span
+                  style={{
+                    color: "#16a34a",
+                    fontFamily: "var(--mantine-font-family-monospace)",
+                  }}
+                >
                   {targetBranch}
                 </span>{" "}
                 có{" "}
@@ -160,7 +165,12 @@ export function BranchActionBanner({ onTabChange }: BranchActionBannerProps) {
                   {aheadCount} commit mới
                 </span>{" "}
                 cần merge vào{" "}
-                <span style={{ color: "#16a34a", fontFamily: "monospace" }}>
+                <span
+                  style={{
+                    color: "#16a34a",
+                    fontFamily: "var(--mantine-font-family-monospace)",
+                  }}
+                >
                   {baseBranch}
                 </span>
               </Text>

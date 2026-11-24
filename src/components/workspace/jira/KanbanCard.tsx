@@ -161,7 +161,7 @@ export const KanbanCard = memo(function KanbanCard({
             fz={11.5}
             fw={500}
             c="#a1a1aa"
-            ff="var(--font-geist-mono), monospace"
+            ff="var(--font-commit-mono), monospace"
           >
             {task.id}
           </Text>
@@ -218,7 +218,7 @@ export const KanbanCard = memo(function KanbanCard({
               borderColor: "#e4e4e7",
               color: "#52525b",
               backgroundColor: "#f4f4f5",
-              fontFamily: "monospace",
+              fontFamily: "var(--mantine-font-family-monospace)",
               fontSize: 10,
               padding: "2px 6px",
               height: 18,

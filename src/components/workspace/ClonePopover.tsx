@@ -99,7 +99,7 @@ export function ClonePopover() {
               backgroundColor: "#f4f4f5",
               borderColor: "#e4e4e7",
               color: "#18181b",
-              fontFamily: "monospace",
+              fontFamily: "var(--mantine-font-family-monospace)",
               fontSize: 11,
             },
           }}

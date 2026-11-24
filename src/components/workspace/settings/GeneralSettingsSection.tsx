@@ -108,7 +108,7 @@ export function GeneralSettingsSection({
                 backgroundColor: "#ffffff",
                 borderColor: "#cbd5e1",
                 color: "#0f172a",
-                fontFamily: "monospace",
+                fontFamily: "var(--mantine-font-family-monospace)",
               },
             }}
           />
@@ -196,7 +196,7 @@ export function GeneralSettingsSection({
                   backgroundColor: "#ffffff",
                   borderColor: "#cbd5e1",
                   color: "#0f172a",
-                  fontFamily: "monospace",
+                  fontFamily: "var(--mantine-font-family-monospace)",
                 },
               }}
             />
