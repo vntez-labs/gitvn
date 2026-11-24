@@ -7,6 +7,7 @@ import {
   Button,
   Container,
   Group,
+  Loader,
   Stack,
   Text,
   Title,
@@ -27,6 +28,25 @@ export default function GitVNLanding() {
   useEffect(() => {
     if (!isLoading && isLoggedIn) router.replace("/dashboard");
   }, [isLoading, isLoggedIn, router]);
+
+  if (isLoading || isLoggedIn) {
+    return (
+      <Stack
+        mih="100dvh"
+        align="center"
+        justify="center"
+        gap="sm"
+        bg="#ffffff"
+        role="status"
+      >
+        <GitVNLogo size={40} />
+        <Loader color="vntez" size="sm" aria-hidden="true" />
+        <Text size="sm" c="dimmed">
+          {isLoggedIn ? "Đang mở Workspace…" : "Đang kiểm tra phiên đăng nhập…"}
+        </Text>
+      </Stack>
+    );
+  }
 
   return (
     <Box
@@ -83,11 +103,7 @@ export default function GitVNLanding() {
               <Group gap="xs" ml="md">
                 <Button
                   component="a"
-                  href={isLoggedIn ? "/dashboard" : "/api/integrations/github"}
-                  aria-disabled={isLoading}
-                  onClick={(event) => {
-                    if (isLoading) event.preventDefault();
-                  }}
+                  href="/api/integrations/github"
                   size="sm"
                   radius="md"
                   color="vntez"
@@ -96,7 +112,7 @@ export default function GitVNLanding() {
                     boxShadow: "0 2px 8px rgba(251, 41, 26, 0.25)",
                   }}
                 >
-                  {isLoggedIn ? "Vào Workspace →" : "Kết nối GitHub"}
+                  Kết nối GitHub
                 </Button>
               </Group>
             </Group>
@@ -128,11 +144,7 @@ export default function GitVNLanding() {
           <Group mt="md" gap="md">
             <Button
               component="a"
-              href={isLoggedIn ? "/dashboard" : "/api/integrations/github"}
-              aria-disabled={isLoading}
-              onClick={(event) => {
-                if (isLoading) event.preventDefault();
-              }}
+              href="/api/integrations/github"
               size="lg"
               radius="md"
               color="vntez"
@@ -142,7 +154,7 @@ export default function GitVNLanding() {
                 boxShadow: "0 6px 20px rgba(251, 41, 26, 0.28)",
               }}
             >
-              {isLoggedIn ? "Vào Workspace ngay" : "Bắt đầu miễn phí"}
+              Bắt đầu miễn phí
             </Button>
             <Button
               component="a"
