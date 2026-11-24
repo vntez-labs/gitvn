@@ -7,11 +7,66 @@ interface RawGitHubUser {
   avatar_url?: string;
   html_url?: string;
   name?: string | null;
+  type?: string;
+}
+
+async function searchProfiles(query: string, exact: boolean) {
+  if (!/^[a-z\d-]{1,39}$/i.test(query)) return NextResponse.json({ users: [] });
+  if (!exact && query.length < 2) return NextResponse.json({ users: [] });
+  const token = await getValidAuthToken();
+  const headers = {
+    Accept: "application/vnd.github+json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+  const params = new URLSearchParams({
+    q: `${query} in:login type:user`,
+    per_page: "6",
+  });
+  const url = exact
+    ? `https://api.github.com/users/${encodeURIComponent(query)}`
+    : `https://api.github.com/search/users?${params}`;
+  try {
+    const response = await fetch(url, {
+      headers,
+      cache: "no-store",
+      signal: AbortSignal.timeout(5000),
+    });
+    if (exact && response.status === 404)
+      return NextResponse.json({ users: [] });
+    if (!response.ok)
+      return NextResponse.json(
+        { error: "GitHub chưa trả về kết quả tìm kiếm." },
+        { status: 502 },
+      );
+    const data = await response.json();
+    const users: RawGitHubUser[] = exact ? [data] : data.items;
+    return NextResponse.json({
+      users: users
+        .filter(
+          (user) =>
+            user.type === "User" &&
+            user.login &&
+            (!exact || user.login.toLowerCase() === query.toLowerCase()),
+        )
+        .map(({ login, avatar_url }) => ({ login, avatar_url })),
+    });
+  } catch {
+    return NextResponse.json(
+      { error: "Không thể kết nối GitHub." },
+      { status: 502 },
+    );
+  }
 }
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const rawQ = searchParams.get("q")?.trim() || "";
+  if (searchParams.get("scope") === "profile") {
+    return searchProfiles(
+      rawQ.replace(/^@/, ""),
+      searchParams.get("exact") === "1",
+    );
+  }
   const owner = searchParams.get("owner");
   const repo = searchParams.get("repo");
 

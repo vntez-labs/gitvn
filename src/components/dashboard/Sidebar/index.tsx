@@ -67,10 +67,6 @@ export function DashboardSidebar({
       setRecentIds([]);
     }
   }, [userLogin, selectedRepo]);
-  const recentRepos = recentIds.flatMap((id) =>
-    repos.filter((repo) => repo.id === id),
-  );
-
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
@@ -116,18 +112,27 @@ export function DashboardSidebar({
 
   const { personalRepos, collabRepos, orgRepos } = useMemo(() => {
     const orgLogin = selectedOrg?.toLowerCase();
+    const ranks = new Map(recentIds.map((id, index) => [id, index]));
+    const orderedRepos = repos.toSorted(
+      (left, right) =>
+        (ranks.get(left.id) ?? ranks.size) -
+        (ranks.get(right.id) ?? ranks.size),
+    );
+
     return {
-      personalRepos: repos.filter(
+      personalRepos: orderedRepos.filter(
         (repo) => repo.owner.login.toLowerCase() === userLogin,
       ),
-      collabRepos: repos.filter(
+      collabRepos: orderedRepos.filter(
         (repo) => repo.owner.login.toLowerCase() !== userLogin,
       ),
       orgRepos: orgLogin
-        ? repos.filter((repo) => repo.owner.login.toLowerCase() === orgLogin)
+        ? orderedRepos.filter(
+            (repo) => repo.owner.login.toLowerCase() === orgLogin,
+          )
         : [],
     };
-  }, [repos, userLogin, selectedOrg]);
+  }, [repos, userLogin, selectedOrg, recentIds]);
 
   if (!user) return null;
 
@@ -151,8 +156,8 @@ export function DashboardSidebar({
         align="center"
         wrap="nowrap"
       >
-        <Text component="h2" fz={15} fw={700} truncate miw={0}>
-          Repository
+        <Text component="h2" fz={13} fw={600} c="#52525b" truncate miw={0}>
+          Repo
         </Text>
         <Group gap={4} wrap="nowrap">
           <Tooltip label="Đồng bộ / Làm mới" withArrow>
@@ -186,7 +191,7 @@ export function DashboardSidebar({
         style={{
           flex: 1,
           overflowY: "auto",
-          padding: "12px 10px",
+          padding: "4px 10px 12px",
           minHeight: 0,
         }}
       >
@@ -239,29 +244,6 @@ export function DashboardSidebar({
               ))}
             </Stack>
           </Paper>
-        )}
-
-        {!selectedOrg && recentRepos.length > 0 && (
-          <Stack gap={4} mb="sm">
-            <Text fz={12} fw={650} c="#52525b" px="xs">
-              Repo gần đây
-            </Text>
-            {recentRepos.map((repo) => (
-              <Button
-                key={repo.id}
-                variant="subtle"
-                color="gray"
-                size="compact-sm"
-                justify="start"
-                onClick={() => {
-                  void selectRepo(repo);
-                  onRepoSelect?.();
-                }}
-              >
-                {repo.full_name}
-              </Button>
-            ))}
-          </Stack>
         )}
 
         {/* DANH SÁCH REPOS */}

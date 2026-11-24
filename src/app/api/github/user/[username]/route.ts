@@ -1,467 +1,388 @@
 import { NextResponse } from "next/server";
+import type {
+  ContributionWeek,
+  ProfileInsights,
+} from "@/interfaces/profile-insights";
 import { getValidAuthToken } from "@/lib/auth-token";
+import { parseProfileBadges } from "@/lib/github-profile-badges";
+import { contributionRange, summarizeActivity } from "@/lib/profile-activity";
 
-function parseProfileBadges(html: string) {
-  const achievements: { name: string; iconUrl: string; tier?: string }[] = [];
+type Collection = {
+  totalCommitContributions: number;
+  totalPullRequestContributions: number;
+  totalIssueContributions: number;
+  totalPullRequestReviewContributions: number;
+  commitContributionsByRepository: {
+    repository: { id: string; isPrivate: boolean };
+  }[];
+  contributionCalendar: { weeks: ContributionWeek[] };
+};
 
-  // Parse achievements từ sidebar badges
-  const linkRegex =
-    /<a[^>]*href="\/[^"]*\?achievement=([^&"]+)[^"]*"[^>]*>([\s\S]*?)<\/a>/gi;
-  let linkMatch: RegExpExecArray | null = null;
-  while ((linkMatch = linkRegex.exec(html)) !== null) {
-    const inner = linkMatch[2];
-    const imgMatch = inner.match(
-      /<img[^>]*src="([^"]+)"[^>]*alt="Achievement:\s*([^"]+)"/i,
-    );
-    if (imgMatch) {
-      const iconUrl = imgMatch[1];
-      const name = imgMatch[2].trim();
-      const tierMatch = inner.match(
-        /class="[^"]*achievement-tier-label[^"]*"[^>]*>([^<]+)<\/span>/i,
-      );
-      const tier = tierMatch ? tierMatch[1].trim() : undefined;
-      if (!achievements.some((a) => a.name === name)) {
-        achievements.push({ name, iconUrl, tier });
+type GithubProfileQuery = {
+  data?: {
+    viewer?: { login: string };
+    user:
+      | (Omit<ProfileInsights["user"], "email"> & {
+          id: string;
+          organizations?: { nodes: { login: string; avatarUrl: string }[] };
+          pinnedItems?: {
+            nodes:
+              | (NonNullable<ProfileInsights["pinnedRepositories"]>[number] & {
+                  isPrivate: boolean;
+                })[]
+              | null;
+          } | null;
+          contributionsCollection: Collection | null;
+        })
+      | null;
+    profileReadme?: {
+      isPrivate: boolean;
+      object: { text?: string; isTruncated?: boolean } | null;
+    } | null;
+  };
+  errors?: { type?: string }[];
+};
+
+const githubGraphQL = `
+  query($login: String!, $from: DateTime!, $to: DateTime!) {
+    viewer { login }
+    user(login: $login) {
+      id name login avatarUrl bio company location websiteUrl createdAt url pronouns
+      socialAccounts(first: 6) { nodes { displayName url } }
+      organizations(first: 30) { nodes { login avatarUrl } }
+      followers { totalCount }
+      following { totalCount }
+      contributionsCollection(from: $from, to: $to) {
+        totalCommitContributions
+        totalPullRequestContributions
+        totalIssueContributions
+        totalPullRequestReviewContributions
+        commitContributionsByRepository(maxRepositories: 12) {
+          repository { id isPrivate }
+        }
+        contributionCalendar {
+          weeks { contributionDays { date contributionCount contributionLevel weekday } }
+        }
+      }
+      pinnedItems(first: 6, types: [REPOSITORY]) {
+        nodes {
+          ... on Repository {
+            nameWithOwner description url isPrivate stargazerCount forkCount
+            primaryLanguage { name color }
+          }
+        }
+      }
+    }
+    profileReadme: repository(owner: $login, name: $login) {
+      isPrivate
+      object(expression: "HEAD:README.md") {
+        ... on Blob { text isTruncated }
       }
     }
   }
+`;
 
-  // Fallback nếu không có cấu trúc link: parse trực tiếp từ img
-  if (achievements.length === 0) {
-    const imgRegex =
-      /<img[^>]*src="([^"]+)"[^>]*alt="Achievement:\s*([^"]+)"[^>]*>/gi;
-    let imgMatch: RegExpExecArray | null = null;
-    while ((imgMatch = imgRegex.exec(html)) !== null) {
-      const iconUrl = imgMatch[1];
-      const rawName = imgMatch[2].trim();
-      const tierMatch = rawName.match(
-        /(.*?)(?:,\s*(x\d+|Bronze|Silver|Gold))?$/i,
-      );
-      const name = tierMatch ? tierMatch[1].trim() : rawName;
-      const tier = tierMatch && tierMatch[2] ? tierMatch[2].trim() : undefined;
-      if (!achievements.some((a) => a.name === name)) {
-        achievements.push({ name, iconUrl, tier });
-      }
-    }
-  }
+type CommitHistory = {
+  pageInfo: { hasNextPage: boolean };
+  nodes: {
+    additions: number;
+    deletions: number;
+    parents: { totalCount: number };
+  }[];
+};
 
-  const isPro =
-    /title="Label:\s*Pro"|aria-label="Highlight:\s*Pro"|class="Label[^"]*"[^>]*>\s*PRO\s*</i.test(
-      html,
+async function fetchCodeChanges(
+  token: string,
+  authorId: string,
+  collection: Collection | null,
+  to: string,
+): Promise<ProfileInsights["codeChanges"]> {
+  const publicRepos = (
+    collection?.commitContributionsByRepository ?? []
+  ).filter(({ repository }) => !repository.isPrivate);
+  const repos = publicRepos.slice(0, 5).map(({ repository }) => repository.id);
+  if (!repos.length) return null;
+  const today = Date.parse(to.slice(0, 10));
+  const from = new Date(today - 29 * 86_400_000).toISOString();
+
+  try {
+    const response = await fetch("https://api.github.com/graphql", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      cache: "no-store",
+      signal: AbortSignal.timeout(4500),
+      body: JSON.stringify({
+        query: `query($repos: [ID!]!, $author: ID!, $from: GitTimestamp!, $to: GitTimestamp!) {
+          nodes(ids: $repos) {
+            ... on Repository {
+              isPrivate
+              defaultBranchRef {
+                target {
+                  ... on Commit {
+                    history(first: 50, author: { id: $author }, since: $from, until: $to) {
+                      pageInfo { hasNextPage }
+                      nodes { additions deletions parents { totalCount } }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }`,
+        variables: { repos, author: authorId, from, to },
+      }),
+    });
+    if (!response.ok) return null;
+    const { data } = await response.json();
+    if (!Array.isArray(data?.nodes)) return null;
+    const histories = data.nodes.flatMap(
+      (
+        repo: {
+          isPrivate: boolean;
+          defaultBranchRef?: { target: { history?: CommitHistory } } | null;
+        } | null,
+      ) => {
+        const history =
+          repo?.isPrivate === false
+            ? repo.defaultBranchRef?.target.history
+            : undefined;
+        return history ? [history] : [];
+      },
     );
-  return { achievements, isPro };
-}
+    if (!histories.length) return null;
 
-interface UserProfileCacheEntry {
-  data: any;
-  timestamp: number;
+    const commits = histories
+      .flatMap((history: CommitHistory) => history.nodes)
+      .filter(
+        (commit: CommitHistory["nodes"][number]) =>
+          commit.parents.totalCount <= 1,
+      );
+    return {
+      repositories: histories.length,
+      commits: commits.length,
+      additions: commits.reduce(
+        (sum: number, commit: CommitHistory["nodes"][number]) =>
+          sum + commit.additions,
+        0,
+      ),
+      deletions: commits.reduce(
+        (sum: number, commit: CommitHistory["nodes"][number]) =>
+          sum + commit.deletions,
+        0,
+      ),
+      partial:
+        collection?.commitContributionsByRepository.length === 12 ||
+        publicRepos.length > histories.length ||
+        histories.some(
+          (history: CommitHistory) => history.pageInfo.hasNextPage,
+        ),
+    };
+  } catch {
+    return null;
+  }
 }
-const userProfileCache = new Map<string, UserProfileCacheEntry>();
-const CACHE_TTL_MS = 2 * 60 * 1000; // 2 phút cache
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ username: string }> },
 ) {
-  const rawParams = await params;
-  const username = rawParams.username?.trim().replace(/^@/, "");
-  if (!username) {
-    return NextResponse.json({ error: "Thiếu username" }, { status: 400 });
-  }
-
-  const cacheKey = username.toLowerCase();
-  const requestTime = Date.now();
-  const cached = userProfileCache.get(cacheKey);
-  if (cached && requestTime - cached.timestamp < CACHE_TTL_MS) {
-    return NextResponse.json(cached.data, {
-      headers: {
-        "Cache-Control": "public, s-maxage=120, stale-while-revalidate=300",
-      },
-    });
+  const login = (await params).username.trim().replace(/^@/, "");
+  if (!/^[a-z\d-]{1,39}$/i.test(login)) {
+    return NextResponse.json(
+      { error: "Tên tài khoản GitHub không hợp lệ." },
+      { status: 400 },
+    );
   }
 
   const token = await getValidAuthToken();
-
-  if (!token) {
+  if (!token)
     return NextResponse.json(
-      { error: "Cần đăng nhập GitHub" },
+      { error: "Đăng nhập GitHub để xem Insights." },
       { status: 401 },
     );
-  }
+
+  const { from, to } = contributionRange(new Date());
+  const signal = AbortSignal.timeout(9000);
+  const publicOrgs = fetch(
+    `https://api.github.com/users/${encodeURIComponent(login)}/orgs?per_page=30`,
+    {
+      headers: { Accept: "application/vnd.github+json" },
+      signal,
+      cache: "no-store",
+    },
+  )
+    .then(async (res) => {
+      if (!res.ok) return [];
+      const organizations: ProfileInsights["organizations"] = await res.json();
+      return organizations.map(({ login, avatar_url }) => ({
+        login,
+        avatar_url,
+      }));
+    })
+    .catch(() => []);
+
+  const badgeData = fetch(`https://github.com/${encodeURIComponent(login)}`, {
+    headers: { Accept: "text/html", "User-Agent": "Mozilla/5.0" },
+    signal: AbortSignal.timeout(3000),
+    cache: "no-store",
+  })
+    .then(async (res) => parseProfileBadges(res.ok ? await res.text() : ""))
+    .catch(() => parseProfileBadges(""));
+
+  const publicEmail = fetch(
+    `https://api.github.com/users/${encodeURIComponent(login)}`,
+    {
+      headers: { Accept: "application/vnd.github+json" },
+      signal: AbortSignal.timeout(3500),
+      cache: "no-store",
+    },
+  )
+    .then(async (res) => {
+      if (!res.ok) return null;
+      const { email } = await res.json();
+      return typeof email === "string" ? email : null;
+    })
+    .catch(() => null);
 
   try {
-    const graphqlQuery = {
-      query: `
-        query($login: String!) {
-          user(login: $login) {
-            name
-            login
-            pronouns
-            avatarUrl
-            bio
-            company
-            location
-            email
-            websiteUrl
-            createdAt
-            socialAccounts(first: 10) {
-              nodes {
-                displayName
-                provider
-                url
-              }
-            }
-            followers { totalCount }
-            following { totalCount }
-            pullRequests { totalCount }
-            mergedPullRequests: pullRequests(states: MERGED) { totalCount }
-            issues { totalCount }
-            repositoriesContributedTo(contributionTypes: [COMMIT, ISSUE, PULL_REQUEST, REPOSITORY]) {
-              totalCount
-            }
-            contributionsCollection {
-              totalCommitContributions
-              totalPullRequestContributions
-              totalIssueContributions
-              totalPullRequestReviewContributions
-              totalRepositoriesWithContributedCommits
-              contributionCalendar {
-                totalContributions
-                weeks {
-                  contributionDays {
-                    date
-                    contributionCount
-                    contributionLevel
-                    weekday
-                  }
-                }
-              }
-            }
-            repositories(first: 100, ownerAffiliations: OWNER, isFork: false, orderBy: {field: STARGAZERS, direction: DESC}) {
-              totalCount
-              nodes {
-                name
-                description
-                url
-                stargazerCount
-                forkCount
-                licenseInfo { spdxId }
-                releases { totalCount }
-                primaryLanguage { name color }
-                languages(first: 10, orderBy: {field: SIZE, direction: DESC}) {
-                  edges {
-                    size
-                    node { name color }
-                  }
-                }
-              }
-            }
-            organizations(first: 10) {
-              nodes { login avatarUrl url }
-            }
-          }
-        }
-      `,
-      variables: { login: username },
-    };
-
-    const [gqlRes, readmeRes, profileHtmlRes] = await Promise.all([
-      fetch("https://api.github.com/graphql", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-          Accept: "application/vnd.github+json",
-        },
-        body: JSON.stringify(graphqlQuery),
-        cache: "no-store",
+    const response = await fetch("https://api.github.com/graphql", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        query: githubGraphQL,
+        variables: { login, from, to },
       }),
-      fetch(`https://api.github.com/repos/${username}/${username}/readme`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: "application/vnd.github+json",
+      cache: "no-store",
+      signal,
+    });
+    if (!response.ok) {
+      return NextResponse.json(
+        { error: "GitHub chưa trả về dữ liệu hồ sơ." },
+        { status: 502 },
+      );
+    }
+    const graph: GithubProfileQuery = await response.json();
+    const userData = graph.data?.user;
+    if (!userData) {
+      const missing = graph.errors?.some((entry) => entry.type === "NOT_FOUND");
+      return NextResponse.json(
+        {
+          error: missing
+            ? "Không tìm thấy tài khoản GitHub."
+            : "GitHub chưa trả về dữ liệu hồ sơ.",
         },
-        cache: "no-store",
-      }),
-      fetch(`https://github.com/${username}`, {
-        headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" },
-        cache: "no-store",
-        signal: AbortSignal.timeout(8000), // Timeout 8s
-      }).catch(() => null),
-    ]);
-
-    const gqlData = await gqlRes.json();
-    if (!gqlData.data?.user) {
-      const errMsg =
-        gqlData.errors?.[0]?.message ||
-        `Không tìm thấy người dùng @${username} trên GitHub`;
-      return NextResponse.json({ error: errMsg }, { status: 404 });
+        { status: missing ? 404 : 502 },
+      );
     }
 
-    const userData = gqlData.data.user;
-    const repos = userData.repositories?.nodes || [];
-
-    // README & Achievements
-    let readmeContent = "";
-    if (readmeRes.ok) {
-      const readmeData = await readmeRes.json().catch(() => null);
-      if (readmeData?.content) {
-        readmeContent = Buffer.from(readmeData.content, "base64").toString(
-          "utf-8",
-        );
-      }
-    }
-    const profileHtml =
-      profileHtmlRes && profileHtmlRes.ok
-        ? await profileHtmlRes.text().catch(() => "")
-        : "";
-    const { achievements, isPro } = parseProfileBadges(profileHtml);
-
-    // 1. Phân bổ ngôn ngữ lập trình theo byte thật
-    const langMap: Record<
-      string,
-      { name: string; color: string; size: number }
-    > = {};
-    let totalBytes = 0;
-    let reposWithLicense = 0;
-    let totalReleases = 0;
-
-    repos.forEach((repo: any) => {
-      if (repo.licenseInfo?.spdxId) reposWithLicense += 1;
-      totalReleases += repo.releases?.totalCount || 0;
-
-      repo.languages?.edges?.forEach((edge: any) => {
-        const name = edge.node.name;
-        const color = edge.node.color || "#8b949e";
-        const size = edge.size || 0;
-
-        if (!langMap[name]) langMap[name] = { name, color, size: 0 };
-        langMap[name].size += size;
-        totalBytes += size;
-      });
-    });
-
-    const languages = Object.values(langMap)
-      .map((item) => ({
-        ...item,
-        percent:
-          totalBytes > 0
-            ? Number(((item.size / totalBytes) * 100).toFixed(1))
-            : 0,
-      }))
-      .sort((a, b) => b.size - a.size);
-
-    // 2. Tính thâm niên chi tiết
-    const createdDate = new Date(userData.createdAt);
-    const now = new Date();
-    const diffTime = Math.abs(now.getTime() - createdDate.getTime());
-    const totalDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    const years = Math.floor(totalDays / 365.25);
-    const months = Math.floor((totalDays % 365.25) / 30.43);
-
-    // 3. Tính streak đóng góp từ Calendar
-    const calendar = userData.contributionsCollection?.contributionCalendar;
-    const allDays: any[] = [];
-    calendar?.weeks?.forEach((w: any) => {
-      w.contributionDays?.forEach((d: any) => {
-        allDays.push(d);
-      });
-    });
-
-    let currentStreak = 0;
-    let maxStreak = 0;
-    let tempStreak = 0;
-
-    for (let i = 0; i < allDays.length; i++) {
-      if (allDays[i].contributionCount > 0) {
-        tempStreak += 1;
-        if (tempStreak > maxStreak) maxStreak = tempStreak;
-      } else {
-        tempStreak = 0;
-      }
-    }
-    // Tính current streak từ ngày gần nhất quay ngược lại
-    for (let i = allDays.length - 1; i >= 0; i--) {
-      if (allDays[i].contributionCount > 0) {
-        currentStreak += 1;
-      } else if (i === allDays.length - 1) {
-      } else {
-        break;
-      }
-    }
-
-    const totalStars = repos.reduce(
-      (sum: number, r: any) => sum + (r.stargazerCount || 0),
-      0,
-    );
-    const totalForks = repos.reduce(
-      (sum: number, r: any) => sum + (r.forkCount || 0),
-      0,
-    );
-
-    // Lấy danh sách Organizations đầy đủ (kết hợp cả public lẫn memberships nếu có token)
-    const orgsMap = new Map<string, any>();
-    userData.organizations?.nodes?.forEach((org: any) => {
-      if (org?.login) {
-        orgsMap.set(org.login.toLowerCase(), {
-          login: org.login,
-          avatarUrl: org.avatarUrl,
-          url: org.url || `https://github.com/${org.login}`,
-        });
-      }
-    });
-
-    if (token) {
-      try {
-        const [userOrgsRes, membershipsRes] = await Promise.all([
-          fetch("https://api.github.com/user/orgs?per_page=100", {
+    const {
+      id,
+      pinnedItems,
+      contributionsCollection: collection,
+      organizations: subjectOrgs,
+      ...user
+    } = userData;
+    const through = to.slice(0, 10);
+    const start = from.slice(0, 10);
+    const weeks =
+      collection?.contributionCalendar.weeks
+        .map((week) => ({
+          contributionDays: week.contributionDays.filter(
+            (day) => day.date >= start && day.date <= through,
+          ),
+        }))
+        .filter((week) => week.contributionDays.length > 0) ?? [];
+    const blob = graph.data?.profileReadme;
+    const isOwnProfile =
+      graph.data?.viewer?.login.toLowerCase() === user.login.toLowerCase();
+    const ownMemberships = isOwnProfile
+      ? fetch(
+          "https://api.github.com/user/memberships/orgs?state=active&per_page=100",
+          {
             headers: {
               Authorization: `Bearer ${token}`,
               Accept: "application/vnd.github+json",
             },
             cache: "no-store",
-          }),
-          fetch(
-            "https://api.github.com/user/memberships/orgs?state=active&per_page=100",
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-                Accept: "application/vnd.github+json",
-              },
-              cache: "no-store",
-            },
-          ),
-        ]);
-
-        if (userOrgsRes.ok) {
-          const directOrgs = await userOrgsRes.json();
-          if (Array.isArray(directOrgs)) {
-            directOrgs.forEach((org: any) => {
-              if (org?.login && !orgsMap.has(org.login.toLowerCase())) {
-                orgsMap.set(org.login.toLowerCase(), {
-                  login: org.login,
-                  avatarUrl: org.avatar_url,
-                  url: `https://github.com/${org.login}`,
-                });
-              }
-            });
-          }
-        }
-
-        if (membershipsRes.ok) {
-          const memberships = await membershipsRes.json();
-          if (Array.isArray(memberships)) {
-            memberships.forEach((m: any) => {
-              const org = m?.organization;
-              if (org?.login && !orgsMap.has(org.login.toLowerCase())) {
-                orgsMap.set(org.login.toLowerCase(), {
-                  login: org.login,
-                  avatarUrl: org.avatar_url,
-                  url: `https://github.com/${org.login}`,
-                });
-              }
-            });
-          }
-        }
-      } catch {
-        // Tiếp tục với các orgs đã có
+            signal: AbortSignal.timeout(4000),
+          },
+        )
+          .then(async (response) => {
+            if (!response.ok) return [];
+            const items: {
+              organization: ProfileInsights["organizations"][number];
+            }[] = await response.json();
+            return items.map(({ organization }) => organization);
+          })
+          .catch(() => [])
+      : [];
+    const [publicOrganizations, codeChanges, email, badges, memberships] =
+      await Promise.all([
+        publicOrgs,
+        fetchCodeChanges(token, id, collection, to),
+        publicEmail,
+        badgeData,
+        ownMemberships,
+      ]);
+    const organizations = new Map(
+      publicOrganizations.map((org) => [org.login.toLowerCase(), org]),
+    );
+    if (isOwnProfile) {
+      for (const org of memberships) {
+        organizations.set(org.login.toLowerCase(), org);
+      }
+      for (const org of subjectOrgs?.nodes ?? []) {
+        organizations.set(org.login.toLowerCase(), {
+          login: org.login,
+          avatar_url: org.avatarUrl,
+        });
       }
     }
 
-    const payload = {
-      user: {
-        name: userData.name,
-        login: userData.login,
-        pronouns: userData.pronouns || null,
-        avatar_url: userData.avatarUrl,
-        bio: userData.bio,
-        company: userData.company,
-        location: userData.location,
-        email: userData.email,
-        blog: userData.websiteUrl,
-        created_at: userData.createdAt,
-        followers: userData.followers?.totalCount ?? 0,
-        following: userData.following?.totalCount ?? 0,
-        html_url: `https://github.com/${userData.login}`,
-        socialAccounts: userData.socialAccounts?.nodes || [],
-      },
-      seniority: {
-        totalDays,
-        years,
-        months,
-        formattedJoined: createdDate.toLocaleDateString("vi-VN", {
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        }),
-      },
-      streak: {
-        currentStreak,
-        maxStreak,
-      },
-      shipReadiness: {
-        totalReleases,
-        reposWithLicense,
-        licenseRate:
-          repos.length > 0
-            ? Math.round((reposWithLicense / repos.length) * 100)
-            : 0,
-      },
-      isPro,
-      achievements,
-      orgs: Array.from(orgsMap.values()),
-      readme: readmeContent,
-      pinnedRepos: repos.slice(0, 6),
-      languages,
-      totalCodeBytes: totalBytes,
-      stats: {
-        totalContributions: calendar?.totalContributions ?? 0,
-        totalCommits:
-          userData.contributionsCollection?.totalCommitContributions ?? 0,
-        totalPRs:
-          userData.pullRequests?.totalCount ??
-          userData.contributionsCollection?.totalPullRequestContributions ??
-          0,
-        mergedPRs: userData.mergedPullRequests?.totalCount ?? 0,
-        recentPRs:
-          userData.contributionsCollection?.totalPullRequestContributions ?? 0,
-        totalIssues:
-          userData.issues?.totalCount ??
-          userData.contributionsCollection?.totalIssueContributions ??
-          0,
-        recentIssues:
-          userData.contributionsCollection?.totalIssueContributions ?? 0,
-        totalReviews:
-          userData.contributionsCollection
-            ?.totalPullRequestReviewContributions ?? 0,
-        contributedRepoCount:
-          userData.repositoriesContributedTo?.totalCount ??
-          userData.contributionsCollection
-            ?.totalRepositoriesWithContributedCommits ??
-          0,
-        totalStars,
-        starsReceived: totalStars,
-        totalForks,
-        totalRepos: userData.repositories?.totalCount ?? 0,
-      },
-      calendarWeeks: calendar?.weeks || [],
+    const payload: ProfileInsights = {
+      ...badges,
+      isOwnProfile,
+      user: { ...user, email },
+      activity:
+        collection && weeks.length
+          ? {
+              from: start,
+              through,
+              weeks,
+              ...summarizeActivity(weeks, through),
+              activeRepositories: (collection?.commitContributionsByRepository ?? [])
+                .filter(({ repository }) => !repository.isPrivate).length,
+              commits: collection.totalCommitContributions,
+              pulls: collection.totalPullRequestContributions,
+              issues: collection.totalIssueContributions,
+              reviews: collection.totalPullRequestReviewContributions,
+            }
+          : null,
+      pinnedRepositories:
+        pinnedItems?.nodes?.flatMap((node) =>
+          node?.isPrivate === false ? [node] : [],
+        ) ?? null,
+      organizations: Array.from(organizations.values()),
+      codeChanges,
+      readme:
+        blob?.isPrivate === false && !blob.object?.isTruncated
+          ? (blob.object?.text ?? null)
+          : null,
     };
 
-    userProfileCache.set(cacheKey, {
-      data: payload,
-      timestamp: Date.now(),
-    });
-
     return NextResponse.json(payload, {
-      headers: {
-        "Cache-Control": "public, s-maxage=120, stale-while-revalidate=300",
-      },
+      headers: { "Cache-Control": "private, no-store" },
     });
-  } catch (error) {
-    console.error("[API /api/github/user] Error:", error);
+  } catch {
     return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 },
+      { error: "Không thể kết nối GitHub để tải Insights." },
+      { status: 502 },
     );
   }
 }
