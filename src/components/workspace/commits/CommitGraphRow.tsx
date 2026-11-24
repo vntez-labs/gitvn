@@ -184,7 +184,7 @@ export function CommitGraphRow({
                   }
                   style={{
                     cursor: "pointer",
-                    fontFamily: "var(--font-jetbrains-mono), monospace",
+                    fontFamily: "var(--font-geist-mono), monospace",
                     borderColor: "#e5e1da",
                     color: copied ? "#0d9488" : "#6e675f",
                     backgroundColor: "#faf8f6",

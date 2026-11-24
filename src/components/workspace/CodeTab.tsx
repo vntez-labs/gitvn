@@ -634,8 +634,7 @@ export function CodeTab({ onNavigateTab, onPullCreated }: CodeTabProps) {
                     wrapper: { flex: 1, display: "flex" },
                     input: {
                       flex: 1,
-                      fontFamily:
-                        "var(--font-jetbrains-mono), 'JetBrains Mono', monospace",
+                      fontFamily: "var(--font-geist-mono), monospace",
                       fontSize: 14,
                       lineHeight: 1.7,
                       backgroundColor: "#ffffff",

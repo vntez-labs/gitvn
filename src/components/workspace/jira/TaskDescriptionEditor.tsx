@@ -62,7 +62,7 @@ export function TaskDescriptionEditor({
               backgroundColor: "#ffffff",
               borderColor: "#cbd5e1",
               color: "#0f172a",
-              fontFamily: "var(--font-jetbrains-mono), monospace",
+              fontFamily: "var(--font-geist-mono), monospace",
               fontSize: 13,
               lineHeight: 1.6,
               borderRadius: 8,

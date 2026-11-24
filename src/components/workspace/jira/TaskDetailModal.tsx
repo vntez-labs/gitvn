@@ -137,7 +137,7 @@ export function TaskDetailModal({
                 backgroundColor: "#fff1f0",
                 color: "#fb291a",
                 fontWeight: 700,
-                fontFamily: "var(--font-jetbrains-mono), monospace",
+                fontFamily: "var(--font-geist-mono), monospace",
                 borderRadius: 6,
               },
             }}
