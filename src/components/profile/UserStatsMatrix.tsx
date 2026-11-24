@@ -38,10 +38,14 @@ const date = new Intl.DateTimeFormat("vi-VN", {
 export function UserStatsMatrix({
   activity,
   codeChanges,
+  followers = 0,
 }: {
   activity: NonNullable<ProfileInsights["activity"]>;
   codeChanges: ProfileInsights["codeChanges"];
+  followers?: number;
 }) {
+  const hasCommits = codeChanges && codeChanges.commits > 0;
+
   const quickStats = [
     {
       label: "Đóng góp",
@@ -51,14 +55,14 @@ export function UserStatsMatrix({
     },
     {
       label: "Dòng thêm",
-      value: codeChanges ? `+${number.format(codeChanges.additions)}` : "—",
-      detail: "30 ngày · repo công khai",
+      value: codeChanges ? `+${number.format(codeChanges.additions)}` : "+0",
+      detail: hasCommits ? "30 ngày · repo công khai" : "30 ngày · 0 commit",
       color: "#166534",
     },
     {
       label: "Dòng xóa",
-      value: codeChanges ? `−${number.format(codeChanges.deletions)}` : "—",
-      detail: "30 ngày · repo công khai",
+      value: codeChanges ? `−${number.format(codeChanges.deletions)}` : "−0",
+      detail: hasCommits ? "30 ngày · repo công khai" : "30 ngày · 0 commit",
       color: "#b91c1c",
     },
     {
@@ -164,9 +168,9 @@ export function UserStatsMatrix({
           ))}
         </SimpleGrid>
         <Text fz={12} c="#a1a1aa" mt="sm">
-          {codeChanges
-            ? `Dòng thêm/xóa tính theo ${number.format(codeChanges.commits)} commit thường trên nhánh mặc định (${codeChanges.repositories} repo).`
-            : "Chưa có số liệu dòng thêm/xóa từ các nhánh mặc định công khai."}
+          {hasCommits
+            ? `Dòng thêm/xóa tính theo ${number.format(codeChanges?.commits ?? 0)} commit thường trên nhánh mặc định (${codeChanges?.repositories ?? 0} repo).`
+            : "Không phát sinh commit trên nhánh mặc định của repo công khai trong 30 ngày qua."}
         </Text>
       </Paper>
 
@@ -181,6 +185,10 @@ export function UserStatsMatrix({
         reviews={activity.reviews}
         issues={activity.issues}
         commits={activity.commits}
+        stars={activity.stars ?? 0}
+        releases={activity.releases ?? 0}
+        forks={activity.forks ?? 0}
+        followers={followers}
       />
 
       {/* 3. Trung tâm Hoạt động: Lịch đóng góp + Thể loại đóng góp + Nhịp hoạt động */}

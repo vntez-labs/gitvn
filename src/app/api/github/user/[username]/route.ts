@@ -26,6 +26,17 @@ type GithubProfileQuery = {
       | (Omit<ProfileInsights["user"], "email"> & {
           id: string;
           organizations?: { nodes: { login: string; avatarUrl: string }[] };
+          repositories?: {
+            totalCount: number;
+            nodes: {
+              id: string;
+              name: string;
+              isPrivate: boolean;
+              stargazerCount: number;
+              forkCount: number;
+              releases?: { totalCount: number };
+            }[];
+          } | null;
           pinnedItems?: {
             nodes:
               | (NonNullable<ProfileInsights["pinnedRepositories"]>[number] & {
@@ -53,6 +64,17 @@ const githubGraphQL = `
       organizations(first: 30) { nodes { login avatarUrl } }
       followers { totalCount }
       following { totalCount }
+      repositories(ownerAffiliations: [OWNER], isFork: false, first: 100, orderBy: { field: STARGAZERS, direction: DESC }) {
+        totalCount
+        nodes {
+          id
+          name
+          isPrivate
+          stargazerCount
+          forkCount
+          releases { totalCount }
+        }
+      }
       contributionsCollection(from: $from, to: $to) {
         totalCommitContributions
         totalPullRequestContributions
@@ -97,13 +119,27 @@ async function fetchCodeChanges(
   token: string,
   authorId: string,
   collection: Collection | null,
+  fallbackRepoIds: string[],
   to: string,
 ): Promise<ProfileInsights["codeChanges"]> {
-  const publicRepos = (
+  const collectionPublicRepos = (
     collection?.commitContributionsByRepository ?? []
-  ).filter(({ repository }) => !repository.isPrivate);
-  const repos = publicRepos.slice(0, 5).map(({ repository }) => repository.id);
-  if (!repos.length) return null;
+  )
+    .filter(({ repository }) => !repository.isPrivate)
+    .map(({ repository }) => repository.id);
+  const repos = Array.from(
+    new Set([...collectionPublicRepos, ...fallbackRepoIds]),
+  ).slice(0, 5);
+
+  if (!repos.length) {
+    return {
+      repositories: 0,
+      commits: 0,
+      additions: 0,
+      deletions: 0,
+      partial: false,
+    };
+  }
   const today = Date.parse(to.slice(0, 10));
   const from = new Date(today - 29 * 86_400_000).toISOString();
 
@@ -139,7 +175,15 @@ async function fetchCodeChanges(
     });
     if (!response.ok) return null;
     const { data } = await response.json();
-    if (!Array.isArray(data?.nodes)) return null;
+    if (!Array.isArray(data?.nodes)) {
+      return {
+        repositories: 0,
+        commits: 0,
+        additions: 0,
+        deletions: 0,
+        partial: false,
+      };
+    }
     const histories = data.nodes.flatMap(
       (
         repo: {
@@ -154,7 +198,15 @@ async function fetchCodeChanges(
         return history ? [history] : [];
       },
     );
-    if (!histories.length) return null;
+    if (!histories.length) {
+      return {
+        repositories: 0,
+        commits: 0,
+        additions: 0,
+        deletions: 0,
+        partial: false,
+      };
+    }
 
     const commits = histories
       .flatMap((history: CommitHistory) => history.nodes)
@@ -177,7 +229,7 @@ async function fetchCodeChanges(
       ),
       partial:
         collection?.commitContributionsByRepository.length === 12 ||
-        publicRepos.length > histories.length ||
+        repos.length > histories.length ||
         histories.some(
           (history: CommitHistory) => history.pageInfo.hasNextPage,
         ),
@@ -288,8 +340,26 @@ export async function GET(
       pinnedItems,
       contributionsCollection: collection,
       organizations: subjectOrgs,
+      repositories: userRepositories,
       ...user
     } = userData;
+
+    const userRepos = userRepositories?.nodes ?? [];
+    const publicOwnedRepos = userRepos.filter((r) => !r.isPrivate);
+    const totalStars = publicOwnedRepos.reduce(
+      (sum, r) => sum + (r.stargazerCount || 0),
+      0,
+    );
+    const totalForks = publicOwnedRepos.reduce(
+      (sum, r) => sum + (r.forkCount || 0),
+      0,
+    );
+    const totalReleases = publicOwnedRepos.reduce(
+      (sum, r) => sum + (r.releases?.totalCount || 0),
+      0,
+    );
+    const fallbackRepoIds = publicOwnedRepos.slice(0, 5).map((r) => r.id);
+
     const through = to.slice(0, 10);
     const start = from.slice(0, 10);
     const weeks =
@@ -327,7 +397,7 @@ export async function GET(
     const [publicOrganizations, codeChanges, email, badges, memberships] =
       await Promise.all([
         publicOrgs,
-        fetchCodeChanges(token, id, collection, to),
+        fetchCodeChanges(token, id, collection, fallbackRepoIds, to),
         publicEmail,
         badgeData,
         ownMemberships,
@@ -364,6 +434,9 @@ export async function GET(
               pulls: collection.totalPullRequestContributions,
               issues: collection.totalIssueContributions,
               reviews: collection.totalPullRequestReviewContributions,
+              stars: totalStars,
+              releases: totalReleases,
+              forks: totalForks,
             }
           : null,
       pinnedRepositories:

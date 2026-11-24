@@ -50,6 +50,9 @@ export interface ProfileInsights {
     longestStreak: number;
     recent30: number;
     previous30: number;
+    stars: number;
+    releases: number;
+    forks: number;
   } | null;
   codeChanges: {
     additions: number;

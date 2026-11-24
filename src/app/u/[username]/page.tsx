@@ -112,6 +112,7 @@ function ProfilePanels({ username }: { username: string }) {
             <UserStatsMatrix
               activity={data.activity}
               codeChanges={data.codeChanges}
+              followers={data.user.followers?.totalCount ?? 0}
             />
           ) : (
             <Alert color="gray">

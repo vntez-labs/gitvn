@@ -29,6 +29,10 @@ export function ActivityRank({
   reviews = 0,
   issues = 0,
   commits = 0,
+  stars = 0,
+  releases = 0,
+  forks = 0,
+  followers = 0,
 }: {
   weeks: ContributionWeek[];
   contributions: number;
@@ -39,6 +43,10 @@ export function ActivityRank({
   reviews?: number;
   issues?: number;
   commits?: number;
+  stars?: number;
+  releases?: number;
+  forks?: number;
+  followers?: number;
 }) {
   const result = getActivityRank({
     weeks,
@@ -50,6 +58,9 @@ export function ActivityRank({
     reviews,
     issues,
     commits,
+    stars,
+    releases,
+    followers,
   });
 
   const {
@@ -58,10 +69,10 @@ export function ActivityRank({
     rank,
     next,
     ranks,
+    impactPoints,
     activityPoints,
     consistencyPoints,
     repoPoints,
-    streakPoints,
     longestStreak: recordStreak,
   } = result;
 
@@ -70,8 +81,15 @@ export function ActivityRank({
 
   const criteria = [
     {
-      label: "Đóng góp & Tác động",
-      maxPoints: 35,
+      label: "Tác động xã hội",
+      maxPoints: 30,
+      points: impactPoints,
+      stat: `⭐ ${number.format(stars)} · 📦 ${number.format(releases)}`,
+      detail: `${number.format(followers)} người theo dõi`,
+    },
+    {
+      label: "Năng suất đóng góp",
+      maxPoints: 30,
       points: activityPoints,
       stat: `${number.format(contributions)} đóng góp`,
       detail:
@@ -80,28 +98,21 @@ export function ActivityRank({
           : "Trần 500 đóng góp",
     },
     {
-      label: "Dự án có commit",
-      maxPoints: 20,
-      points: repoPoints,
-      stat: `${number.format(repositories)} repo`,
-      detail:
-        repositories >= 4
-          ? "Đạt tối đa (≥4 repo)"
-          : "Lũy tiến: 1=8, 2=13, 3=17, 4+=20",
-    },
-    {
-      label: "Độ đều tuần",
-      maxPoints: 30,
+      label: "Chuyên cần & Kỷ luật",
+      maxPoints: 25,
       points: consistencyPoints,
       stat: `${activeWeeks}/52 tuần`,
-      detail: "Chuẩn 44/52 tuần (~85%)",
+      detail: `Kỷ lục ${number.format(recordStreak)} ngày chuỗi`,
     },
     {
-      label: "Kỷ luật chuỗi",
+      label: "Độ phủ dự án",
       maxPoints: 15,
-      points: streakPoints,
-      stat: `Kỷ lục ${number.format(recordStreak)} ngày`,
-      detail: `Hiện tại ${number.format(currentStreak)} ngày`,
+      points: repoPoints,
+      stat: `${number.format(repositories)} repo có đóng góp`,
+      detail:
+        repositories >= 6
+          ? "Đạt tối đa (≥6 repo)"
+          : "Lũy tiến: 1=5, 2=8, 3=11, 4=13, 6=15",
     },
   ];
 
@@ -222,7 +233,7 @@ export function ActivityRank({
                     {scoreNumber.format(item.points)}/{item.maxPoints}đ
                   </Badge>
                 </Group>
-                <Text fz={16} fw={750} className="text-zinc-900" mt={2}>
+                <Text fz={15} fw={750} className="text-zinc-900" mt={2}>
                   {item.stat}
                 </Text>
                 <Text fz={11} c="#71717a" mt={2} lineClamp={1}>
@@ -297,8 +308,8 @@ export function ActivityRank({
         </Group>
 
         <Text fz={11} c="#a1a1aa" ta="center" mt="xs">
-          Thang điểm 100: Đóng góp 35đ · Độ đều 30đ · Dự án 20đ · Kỷ luật chuỗi
-          15đ
+          Thang điểm 100: Tác động xã hội 30đ (Stars, Releases, Followers) ·
+          Năng suất 30đ · Độ đều 25đ · Độ phủ 15đ
         </Text>
       </Box>
     </Paper>
