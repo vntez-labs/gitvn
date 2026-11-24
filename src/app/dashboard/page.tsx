@@ -10,6 +10,7 @@ import {
   Menu,
   Skeleton,
   Text,
+  UnstyledButton,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import {
@@ -20,9 +21,14 @@ import {
   IconUser,
 } from "@tabler/icons-react";
 import axios from "axios";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { GitVNLogo } from "@/components/brand/GitVNLogo";
+import {
+  OrganizationPicker,
+  RepositorySearch,
+} from "@/components/dashboard/DashboardHeaderControls";
 import { DashboardOverview } from "@/components/dashboard/Overview";
 import { DashboardSidebar } from "@/components/dashboard/Sidebar";
 import { RepoWorkspace } from "@/components/RepoWorkspace";
@@ -141,41 +147,33 @@ export default function DashboardPage() {
       <style>{`
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .user-profile-btn:hover { background-color: #f4f4f5; }
       `}</style>
 
-      {/* TOP HEADER */}
       <Box
         component="header"
-        py="xs"
+        className="dashboard-topbar"
+        style={{ borderBottom: "1px solid #d4d4d8" }}
         px={{ base: "xs", sm: "lg" }}
-        style={{
-          borderBottom: "1px solid #e4e4e7",
-          backgroundColor: "rgba(255, 255, 255, 0.9)",
-          backdropFilter: "blur(12px)",
-          WebkitBackdropFilter: "blur(12px)",
-          flexShrink: 0,
-          position: "sticky",
-          top: 0,
-          zIndex: 10,
-        }}
+        py={7}
       >
-        <Group justify="space-between">
-          <Group
-            gap="sm"
-            style={{ cursor: "pointer" }}
-            onClick={() => router.push("/")}
-          >
-            <GitVNLogo size={28} />
-            <Text fw={700} fz={15} c="#18181b" ff="monospace">
-              Git<span style={{ color: "#dc2626" }}>VN</span>{" "}
-              <span style={{ color: "#71717a", fontWeight: 500, fontSize: 13 }}>
-                Workspace
-              </span>
-            </Text>
+        <Group justify="space-between" wrap="nowrap" gap="xs">
+          <Group gap="xs" wrap="nowrap" miw={0}>
+            <UnstyledButton
+              component={Link}
+              href="/"
+              className="dashboard-brand"
+              style={{ display: "inline-flex", alignItems: "center", gap: 7 }}
+              aria-label="GitVN"
+            >
+              <GitVNLogo size={27} />
+              <Text component="span" fw={750} fz={17}>
+                Git<span style={{ color: "#dc2626" }}>VN</span>
+              </Text>
+            </UnstyledButton>
+            <OrganizationPicker />
           </Group>
 
-          <Group gap="sm">
+          <Group gap="xs" wrap="nowrap">
             <ActionIcon
               hiddenFrom="md"
               variant="default"
@@ -184,28 +182,15 @@ export default function DashboardPage() {
             >
               <IconMenu2 size={18} />
             </ActionIcon>
+            <RepositorySearch />
             <Menu shadow="md" width={220} position="bottom-end">
               <Menu.Target>
-                <Group
-                  gap="xs"
-                  style={{
-                    cursor: "pointer",
-                    padding: "5px 10px",
-                    borderRadius: 6,
-                    transition: "background 0.15s ease",
-                  }}
-                  className="user-profile-btn"
+                <UnstyledButton
+                  className="dashboard-avatar-trigger"
+                  aria-label={`Tài khoản ${user.login}`}
                 >
-                  <Avatar
-                    src={user.avatar_url}
-                    alt={user.login}
-                    radius="xl"
-                    size="sm"
-                  />
-                  <Text fz={14} fw={600} c="#18181b">
-                    {user.login}
-                  </Text>
-                </Group>
+                  <Avatar src={user.avatar_url} alt="" radius="xl" size={30} />
+                </UnstyledButton>
               </Menu.Target>
               <Menu.Dropdown bg="#ffffff" style={{ borderColor: "#e4e4e7" }}>
                 <Menu.Label c="#71717a" fz={12}>
@@ -269,7 +254,7 @@ export default function DashboardPage() {
         <Drawer
           opened={reposOpen}
           onClose={reposDrawer.close}
-          title="Repositories"
+          title="Repository"
           size="xs"
         >
           <Box h="75dvh">

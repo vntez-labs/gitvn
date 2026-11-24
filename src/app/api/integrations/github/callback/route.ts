@@ -1,5 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { attachAuthCookiesToResponse } from "@/lib/auth-token";
+import {
+  postLoginWorkspaceCookie,
+  safeWorkspaceDestination,
+} from "@/lib/workspace-links";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -37,12 +41,19 @@ export async function GET(request: NextRequest) {
     }
 
     // 1. Tạo redirect response
-    const redirectUrl = new URL("/dashboard", request.url);
+    const destination = safeWorkspaceDestination(
+      request.cookies.get(postLoginWorkspaceCookie)?.value,
+    );
+    const redirectUrl = new URL(destination ?? "/dashboard", request.url);
     const response = NextResponse.redirect(redirectUrl);
 
     // 2. GẮN TRỰC TIẾP Set-Cookie vào Redirect Response
     attachAuthCookiesToResponse(response, tokenData, request.url);
 
+    response.cookies.set(postLoginWorkspaceCookie, "", {
+      path: "/api/integrations/github/callback",
+      maxAge: 0,
+    });
     return response;
   } catch (error) {
     console.error("GitHub OAuth callback error:", error);

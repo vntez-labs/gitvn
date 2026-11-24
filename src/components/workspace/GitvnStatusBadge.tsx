@@ -91,6 +91,7 @@ export function GitvnStatusBadge({
       size="sm"
       variant="outline"
       leftSection={<IconCheck size={11} />}
+      tt="none"
       style={{
         backgroundColor: "#fef2f2",
         color: "#b91c1c",
@@ -100,7 +101,7 @@ export function GitvnStatusBadge({
         padding: "2px 8px",
       }}
     >
-      .gitvn v{gitvnVersion || "2"} Active
+      v{gitvnVersion?.split(".")[0] || "2"} active
     </Badge>
   );
 }

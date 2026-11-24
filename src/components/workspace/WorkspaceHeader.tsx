@@ -1,17 +1,7 @@
 "use client";
 
+import { Box, Button, Drawer, Group, Stack, Text } from "@mantine/core";
 import {
-  Badge,
-  Box,
-  Button,
-  CopyButton,
-  Drawer,
-  Group,
-  Stack,
-  Text,
-} from "@mantine/core";
-import {
-  IconBook,
   IconCircleDot,
   IconCircleDotFilled,
   IconCode,
@@ -24,16 +14,19 @@ import {
   IconInfoCircleFilled,
   IconLayoutKanban,
   IconLayoutKanbanFilled,
+  IconLock,
   IconSettings,
   IconSettingsFilled,
-  IconUserPlus,
+  IconUsers,
+  IconWorld,
 } from "@tabler/icons-react";
 import { useState } from "react";
+import { dashboardPath, publicSharePath } from "@/lib/workspace-links";
 import { useDashboardStore } from "@/store/dashboard.store";
 import { BranchSelector } from "./BranchSelector";
 import { ClonePopover } from "./ClonePopover";
 import { GitvnStatusBadge } from "./GitvnStatusBadge";
-import { InviteMemberModal } from "./members/InviteMemberModal";
+import { ShareLinkMenu } from "./ShareLinkMenu";
 
 export type WorkspaceTab =
   | "code"
@@ -43,6 +36,7 @@ export type WorkspaceTab =
   | "overview"
   | "pulls"
   | "issues"
+  | "members"
   | "settings";
 
 interface WorkspaceHeaderProps {
@@ -76,8 +70,9 @@ export function WorkspaceHeader({
   const file = useDashboardStore((s) => s.activeFile);
   const selectedRepo = useDashboardStore((s) => s.selectedRepo);
   const [actionsOpen, setActionsOpen] = useState(false);
-  const [inviteModalOpen, setInviteModalOpen] = useState(false);
   if (!selectedRepo) return null;
+
+  const VisibilityIcon = selectedRepo.private ? IconLock : IconWorld;
 
   const tabs: {
     id: WorkspaceTab;
@@ -124,6 +119,7 @@ export function WorkspaceHeader({
       activeIcon: IconCircleDotFilled,
       count: issuesCount,
     },
+    { id: "members", label: "Thành viên", icon: IconUsers },
     {
       id: "settings",
       label: "Settings",
@@ -146,32 +142,16 @@ export function WorkspaceHeader({
 
   const actions = (
     <>
-      <CopyButton
-        value={
-          typeof window === "undefined"
-            ? ""
-            : `${window.location.origin}/dashboard?${new URLSearchParams({ repo: selectedRepo.full_name, branch, ...(activeTab === "code" && file ? { file } : {}) })}`
-        }
-      >
-        {({ copied, copy }) => (
-          <Button size="compact-sm" variant="default" onClick={copy}>
-            {copied ? "Đã sao chép" : "Sao chép link GitVN"}
-          </Button>
-        )}
-      </CopyButton>
-      <Button
-        size="compact-sm"
-        variant="default"
-        leftSection={<IconUserPlus size={14} color="#71717a" />}
-        onClick={() => {
-          setActionsOpen(false);
-          setInviteModalOpen(true);
-        }}
-        styles={btnStyles}
-      >
-        Mời thành viên
-      </Button>
-
+      <ShareLinkMenu
+        privateRepo={selectedRepo.private}
+        shareTitle={selectedRepo.full_name}
+        path={(selectedRepo.private ? dashboardPath : publicSharePath)({
+          owner: selectedRepo.owner.login,
+          repo: selectedRepo.name,
+          branch,
+          file: activeTab === "code" ? (file ?? undefined) : undefined,
+        })}
+      />
       <ClonePopover />
       <Button
         size="compact-sm"
@@ -189,53 +169,56 @@ export function WorkspaceHeader({
 
   return (
     <Box
-      px="lg"
+      px={{ base: "sm", md: "lg" }}
       pt="sm"
       pb={0}
       style={{
         borderBottom: "1px solid #e4e4e7",
-        backgroundColor: "rgba(255, 255, 255, 0.9)",
-        backdropFilter: "blur(12px)",
-        WebkitBackdropFilter: "blur(12px)",
+        backgroundColor: "#ffffff",
         flexShrink: 0,
         position: "sticky",
         top: 0,
         zIndex: 10,
       }}
     >
-      <Group justify="space-between" align="center" wrap="nowrap" mb={12}>
-        <Group gap="xs" style={{ minWidth: 0 }}>
-          <IconBook size={19} color="#dc2626" />
-          <Text
-            fw={600}
-            fz={16}
-            c="#18181b"
-            truncate
-            title={selectedRepo.full_name}
-            style={{ minWidth: 0, maxWidth: "100%" }}
-          >
-            {selectedRepo.owner.login} /{" "}
-            <span style={{ color: "#18181b", fontWeight: 700 }}>
+      <Group
+        justify="space-between"
+        align="center"
+        wrap="nowrap"
+        gap="xs"
+        mb="xs"
+      >
+        <Group gap="xs" style={{ flex: 1, minWidth: 0 }}>
+          <Group gap={6} wrap="nowrap" miw={0}>
+            <Text
+              component="h1"
+              fw={750}
+              fz={{ base: 16, md: 19 }}
+              c="#18181b"
+              truncate
+              title={selectedRepo.full_name}
+            >
+              <Text component="span" inherit fw={500} c="#52525b">
+                {selectedRepo.owner.login}
+              </Text>
+              {" / "}
               {selectedRepo.name}
-            </span>
-          </Text>
-
-          <Badge
-            size="md"
-            variant="outline"
-            style={{
-              backgroundColor: selectedRepo.private ? "#f4f4f5" : "#ecfdf5",
-              color: selectedRepo.private ? "#52525b" : "#047857",
-              borderColor: selectedRepo.private ? "#e4e4e7" : "#a7f3d0",
-              borderRadius: 9999,
-              fontWeight: 600,
-              textTransform: "none",
-              fontSize: 12,
-              padding: "2px 8px",
-            }}
-          >
-            {selectedRepo.private ? "Private" : "Public"}
-          </Badge>
+            </Text>
+            <Box
+              component="span"
+              role="img"
+              aria-label={selectedRepo.private ? "Private" : "Public"}
+              title={selectedRepo.private ? "Private" : "Public"}
+              style={{ display: "inline-flex", flexShrink: 0 }}
+            >
+              <VisibilityIcon
+                size={15}
+                stroke={1.75}
+                color="#71717a"
+                aria-hidden
+              />
+            </Box>
+          </Group>
 
           <GitvnStatusBadge
             hasGitvn={hasGitvn}
@@ -245,11 +228,10 @@ export function WorkspaceHeader({
             onInitializeGitvn={onInitializeGitvn}
             initializingGitvn={initializingGitvn}
           />
-
           <BranchSelector />
         </Group>
 
-        <Group gap="xs" wrap="nowrap">
+        <Group gap="xs" wrap="nowrap" style={{ flexShrink: 0 }}>
           <Group visibleFrom="lg" gap="xs" wrap="nowrap">
             {actions}
           </Group>
@@ -276,14 +258,6 @@ export function WorkspaceHeader({
         </Stack>
       </Drawer>
 
-      {/* Modal Mời & Tra cứu thành viên */}
-      <InviteMemberModal
-        opened={inviteModalOpen}
-        onClose={() => setInviteModalOpen(false)}
-        owner={selectedRepo.owner.login}
-        repo={selectedRepo.name}
-      />
-
       {/* Tabs */}
       <style>{`
         .ws-tab-btn {
@@ -291,12 +265,13 @@ export function WorkspaceHeader({
           display: inline-flex;
           align-items: center;
           gap: 6px;
-          padding: 8px 12px 10px 12px;
+          min-height: 39px;
+          padding: 8px 11px;
           font-size: 13px;
           font-weight: 500;
           color: #71717a;
           cursor: pointer;
-          border-radius: 6px 6px 0 0;
+          border-radius: 7px;
           transition: color 0.15s ease, background-color 0.15s ease;
           user-select: none;
           background: transparent;
@@ -311,9 +286,9 @@ export function WorkspaceHeader({
         }
 
         .ws-tab-active {
-          color: #18181b !important;
-          font-weight: 600 !important;
-          background: transparent !important;
+          color: #991b1b;
+          font-weight: 650;
+          background: #fff1f0;
         }
 
         .ws-tab-btn:focus-visible {
@@ -321,17 +296,6 @@ export function WorkspaceHeader({
           outline-offset: -2px;
         }
 
-        .ws-tab-active::after {
-          content: "";
-          position: absolute;
-          left: 4px;
-          right: 4px;
-          bottom: 0;
-          height: 2px;
-          background-color: #dc2626;
-          border-radius: 2px;
-          z-index: 2;
-        }
       `}</style>
       <Group
         component="nav"
@@ -341,7 +305,7 @@ export function WorkspaceHeader({
         className="hide-scrollbar"
         style={{
           overflowX: "auto",
-          marginBottom: -1,
+          paddingBottom: 8,
         }}
       >
         {tabs.map((tab) => {
@@ -373,7 +337,7 @@ export function WorkspaceHeader({
                     height: 18,
                     padding: "0 6px",
                     borderRadius: 9999,
-                    fontSize: 11,
+                    fontSize: 12,
                     fontWeight: 600,
                     backgroundColor: isActive ? "#fef2f2" : "#f4f4f5",
                     color: isActive ? "#dc2626" : "#71717a",

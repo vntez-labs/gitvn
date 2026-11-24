@@ -29,6 +29,8 @@ export function RepoListItem({
   return (
     <UnstyledButton
       onClick={onSelect}
+      aria-current={isSelected ? "page" : undefined}
+      className="dashboard-repo-item"
       style={{
         position: "relative",
         display: "flex",
@@ -37,19 +39,9 @@ export function RepoListItem({
         width: "100%",
         padding: "6px 10px 6px 12px",
         borderRadius: 8,
-        backgroundColor: isSelected ? "#fff1f0" : "transparent",
         border: "1px solid",
         borderColor: isSelected ? "#fecaca" : "transparent",
-        boxShadow: isSelected ? "0 1px 2px rgba(220, 38, 38, 0.05)" : "none",
-        transition: "all 0.15s ease",
-      }}
-      onMouseEnter={(e) => {
-        if (!isSelected) {
-          e.currentTarget.style.backgroundColor = "#f4f4f5";
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (!isSelected) e.currentTarget.style.backgroundColor = "transparent";
+        minHeight: 38,
       }}
     >
       {/* Sleek inset active indicator pill */}
@@ -77,21 +69,17 @@ export function RepoListItem({
         </Box>
         <Box style={{ overflow: "hidden", flex: 1, minWidth: 0 }}>
           <Text
-            fz={13}
-            fw={isSelected ? 600 : 450}
+            fz={14}
+            fw={isSelected ? 650 : 500}
             c={isSelected ? "#b91c1c" : "#3f3f46"}
             truncate
             title={repo.name}
-            style={{
-              fontFamily:
-                "var(--font-commit-mono), ui-monospace, Menlo, Monaco, Consolas, monospace",
-            }}
           >
             {repo.name}
           </Text>
           {showOwner && repo.owner?.login && (
             <Text
-              fz={10}
+              fz={12}
               c={isSelected ? "#b91c1c" : "#71717a"}
               truncate
               style={{
@@ -143,10 +131,9 @@ export function RepoListItem({
               <IconStar size={11} color="#ca8a04" stroke={1.75} />
             )}
             <Text
-              fz={11}
+              fz={12}
               fw={isSelected ? 600 : 500}
               c={isSelected ? "#991b1b" : "#71717a"}
-              ff="monospace"
             >
               {formatCompactNumber(starCount)}
             </Text>

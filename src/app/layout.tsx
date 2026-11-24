@@ -19,6 +19,7 @@ import {
 } from "@mantine/core";
 import { Notifications } from "@mantine/notifications";
 import { Suspense } from "react";
+import { siteUrl } from "@/lib/site-url";
 import { AuthProvider } from "../components/providers/AuthProvider";
 import { GlobalNavigationProgress } from "../components/providers/GlobalNavigationProgress";
 import { theme } from "./theme";
@@ -43,7 +44,7 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://gitvn.vercel.app"),
+  metadataBase: siteUrl,
   title: {
     default: "GitVN — Nền tảng Git Workspace, Agile Kanban & Sprint Planner",
     template: "%s | GitVN — VNTEZ",
@@ -75,15 +76,14 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "vi_VN",
-    url: "https://gitvn.vercel.app",
+    url: siteUrl,
     siteName: "GitVN Workspace",
     title: "GitVN — Nền tảng Git Workspace, Agile Kanban & Sprint Planner",
     description:
       "Nền tảng quản lý mã nguồn, bảng Kanban Agile, chu kỳ Sprint và tài liệu MDX chuẩn hoá từ hệ sinh thái VNTEZ.",
     images: [
       {
-        url: "https://gitvn.vercel.app/og-image.png",
-        secureUrl: "https://gitvn.vercel.app/og-image.png",
+        url: "/og-image.png",
         width: 1200,
         height: 630,
         type: "image/png",
@@ -97,7 +97,7 @@ export const metadata: Metadata = {
     description:
       "Nền tảng quản lý mã nguồn, bảng Kanban Agile, chu kỳ Sprint và tài liệu MDX từ VNTEZ.",
     creator: "@vntez",
-    images: ["https://gitvn.vercel.app/og-image.png"],
+    images: ["/og-image.png"],
   },
   robots: {
     index: true,

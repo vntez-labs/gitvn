@@ -6,7 +6,6 @@ import {
   Badge,
   Box,
   Button,
-  CopyButton,
   Group,
   Skeleton,
   Stack,
@@ -33,7 +32,9 @@ import type {
   PullCommit,
   PullRequestDetails,
 } from "@/lib/pull-request";
+import { dashboardPath, publicSharePath } from "@/lib/workspace-links";
 import { useDashboardStore } from "@/store/dashboard.store";
+import { ShareLinkMenu } from "../ShareLinkMenu";
 import { DiffViewer, type FileDiff } from "./DiffViewer";
 import { PullActivity } from "./PullActivity";
 import { hasPendingPullChecks, PullChecksPanel } from "./PullChecksPanel";
@@ -62,6 +63,9 @@ export function PullDetailView({
   onMergedSuccess,
 }: PullDetailViewProps) {
   const selectedRepo = useDashboardStore((state) => state.selectedRepo);
+  const privateRepo = useDashboardStore(
+    (state) => state.selectedRepo?.private ?? true,
+  );
   const [activeTab, setActiveTab] = useState<string | null>("conversation");
   const owner = selectedRepo?.owner.login;
   const repo = selectedRepo?.name;
@@ -237,19 +241,17 @@ export function PullDetailView({
             </Text>
 
             <Group gap="xs">
-              <CopyButton
-                value={
-                  typeof window === "undefined" || !owner || !repo
-                    ? ""
-                    : `${window.location.origin}/dashboard?${new URLSearchParams({ repo: `${owner}/${repo}`, pr: String(pull.number) })}`
-                }
-              >
-                {({ copied, copy }) => (
-                  <Button size="compact-xs" variant="default" onClick={copy}>
-                    {copied ? "Đã sao chép" : "Sao chép link GitVN"}
-                  </Button>
-                )}
-              </CopyButton>
+              {owner && repo && (
+                <ShareLinkMenu
+                  privateRepo={privateRepo}
+                  shareTitle={`${pull.title} #${pull.number}`}
+                  path={(privateRepo ? dashboardPath : publicSharePath)({
+                    owner,
+                    repo,
+                    pr: pull.number,
+                  })}
+                />
+              )}
               <Button
                 size="compact-xs"
                 variant="default"

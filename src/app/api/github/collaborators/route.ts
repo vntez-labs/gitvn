@@ -15,6 +15,48 @@ async function getAuthToken(): Promise<string | undefined> {
   return token || undefined;
 }
 
+async function listAccess(owner: string, repo: string, page: number) {
+  const token = await getValidAuthToken();
+  if (!token)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const params = new URLSearchParams({ per_page: "30", page: String(page) });
+  const path = `${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`;
+  try {
+    const response = await fetch(
+      `https://api.github.com/repos/${path}/collaborators?${params}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/vnd.github+json",
+        },
+        cache: "no-store",
+      },
+    );
+    if (!response.ok) {
+      return NextResponse.json(
+        { error: "Không lấy được danh sách quyền truy cập từ GitHub." },
+        { status: response.status },
+      );
+    }
+    const members: { login: string; avatar_url: string; role_name?: string }[] =
+      await response.json();
+    return NextResponse.json({
+      members: members.map(({ login, avatar_url, role_name }) => ({
+        login,
+        avatar_url,
+        role: role_name ?? null,
+      })),
+      hasNext: response.headers.get("link")?.includes('rel="next"') ?? false,
+    });
+  } catch {
+    return NextResponse.json(
+      { error: "Không kết nối được GitHub." },
+      { status: 502 },
+    );
+  }
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const owner = searchParams.get("owner");
@@ -25,6 +67,17 @@ export async function GET(request: Request) {
       { error: "Thiếu owner hoặc repo" },
       { status: 400 },
     );
+  }
+
+  if (searchParams.get("scope") === "access") {
+    const page = Number(searchParams.get("page") ?? "1");
+    if (!Number.isSafeInteger(page) || page < 1) {
+      return NextResponse.json(
+        { error: "Trang không hợp lệ." },
+        { status: 400 },
+      );
+    }
+    return listAccess(owner, repo, page);
   }
 
   const cacheKey = `${owner}/${repo}`.toLowerCase();

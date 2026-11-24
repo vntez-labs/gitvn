@@ -11,50 +11,25 @@ import {
 } from "@mantine/core";
 import {
   IconGitBranch,
+  IconGitCommit,
   IconGitFork,
   IconStar,
-  IconGitCommit,
 } from "@tabler/icons-react";
-import axios from "axios";
-import { useState } from "react";
-import useSWR from "swr";
 import { useRepoOverviewMetrics } from "@/hooks/useRepoOverviewMetrics";
-import type { RepoOverviewStats } from "@/interfaces/repo-overview";
+import { useRepoOverviewStats } from "@/hooks/useRepoOverviewStats";
 import { useDashboardStore } from "@/store/dashboard.store";
 import { formatCompactNumber } from "./constants";
 import { CommitFrequencyChart } from "./overview/CommitFrequencyChart";
-import { RepoContributors } from "./overview/RepoContributors";
 import { LanguageStatsSection } from "./overview/LanguageStatsSection";
 import { PulseHealthSection } from "./overview/PulseHealthSection";
 
-async function fetchStats(url: string) {
-  const { data } = await axios.get<RepoOverviewStats>(url);
-  return data;
-}
-
 export function OverviewTab() {
   const { selectedRepo, tree } = useDashboardStore();
-  const [refreshing, setRefreshing] = useState(false);
-  const url = selectedRepo
-    ? `/api/github/stats?${new URLSearchParams({
-        owner: selectedRepo.owner.login,
-        repo: selectedRepo.name,
-      })}`
-    : null;
-  const { data, isLoading, mutate } = useSWR(url, fetchStats);
+  const { data, isLoading } = useRepoOverviewStats(
+    selectedRepo?.owner.login,
+    selectedRepo?.name,
+  );
   const languageStats = useRepoOverviewMetrics(tree);
-
-  async function refresh() {
-    if (!url) return;
-    setRefreshing(true);
-    try {
-      await mutate(fetchStats(`${url}&refresh=true`), { revalidate: false });
-    } catch {
-      await mutate();
-    } finally {
-      setRefreshing(false);
-    }
-  }
 
   if (!selectedRepo) return null;
 
@@ -194,14 +169,6 @@ export function OverviewTab() {
         <CommitFrequencyChart
           activity={data?.activity}
           loadingStats={isLoading}
-        />
-
-        <RepoContributors
-          contributors={data?.contributors}
-          sampledCommits={data?.sampledCommits ?? 0}
-          loading={isLoading}
-          refreshing={refreshing}
-          onRefresh={refresh}
         />
 
         <LanguageStatsSection languageStats={languageStats} />

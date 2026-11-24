@@ -1,21 +1,6 @@
 import type { MetadataRoute } from "next";
+import { siteUrl } from "@/lib/site-url";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://vntez.vercel.app";
-  const now = new Date();
-
-  return [
-    {
-      url: `${baseUrl}`,
-      lastModified: now,
-      changeFrequency: "daily",
-      priority: 1.0,
-    },
-    {
-      url: `${baseUrl}/dashboard`,
-      lastModified: now,
-      changeFrequency: "always",
-      priority: 0.9,
-    },
-  ];
+  return [{ url: siteUrl.href }];
 }

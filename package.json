@@ -26,6 +26,7 @@
     "react-dom": "19.3.0",
     "react-markdown": "^10.1.0",
     "react-pdf": "^11.1.0",
+    "react-share": "^6.1.0",
     "react-syntax-highlighter": "^16.1.2",
     "rehype-raw": "^7.0.0",
     "rehype-sanitize": "^6.0.0",

@@ -1,15 +1,22 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { getValidAuthToken } from "@/lib/auth-token";
+import {
+  postLoginWorkspaceCookie,
+  safeWorkspaceDestination,
+} from "@/lib/workspace-links";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
+  const destination = safeWorkspaceDestination(searchParams.get("workspace"));
   const reconnect = searchParams.get("reconnect") === "true";
 
   // Nếu đã đăng nhập với token hợp lệ (hoặc vừa được auto-refresh thành công), chuyển thẳng vào Dashboard
   if (!reconnect) {
     const validToken = await getValidAuthToken();
     if (validToken) {
-      return NextResponse.redirect(new URL("/dashboard", request.url));
+      return NextResponse.redirect(
+        new URL(destination ?? "/dashboard", request.url),
+      );
     }
   }
 
@@ -34,7 +41,15 @@ export async function GET(request: NextRequest) {
     params.set("prompt", "consent");
   }
 
-  return NextResponse.redirect(
+  const response = NextResponse.redirect(
     `https://github.com/login/oauth/authorize?${params.toString()}`,
   );
+  response.cookies.set(postLoginWorkspaceCookie, destination ?? "", {
+    path: "/api/integrations/github/callback",
+    httpOnly: true,
+    secure: request.nextUrl.protocol === "https:",
+    sameSite: "lax",
+    maxAge: destination ? 10 * 60 : 0,
+  });
+  return response;
 }

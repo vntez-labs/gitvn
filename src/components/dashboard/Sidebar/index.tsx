@@ -2,34 +2,26 @@
 
 import {
   ActionIcon,
-  Badge,
   Box,
   Button,
-  Divider,
   Group,
   Paper,
   Skeleton,
   Stack,
   Text,
-  TextInput,
   Tooltip,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import {
-  IconArrowLeft,
   IconCheck,
-  IconInfoCircle,
   IconMailCheck,
   IconPlus,
   IconRefresh,
-  IconSearch,
-  IconX,
 } from "@tabler/icons-react";
 import { useEffect, useMemo, useState } from "react";
 import { CreateRepoModal } from "@/components/dashboard/CreateRepoModal";
 import { useAuthStore } from "@/store/auth.store";
 import { useDashboardStore } from "@/store/dashboard.store";
-import { OrgListItem } from "./OrgListItem";
 import { RepoListItem } from "./RepoListItem";
 
 export function DashboardSidebar({
@@ -38,19 +30,16 @@ export function DashboardSidebar({
   onRepoSelect?: () => void;
 }) {
   const user = useAuthStore((s) => s.user);
-  const orgs = useDashboardStore((s) => s.orgs);
   const repos = useDashboardStore((s) => s.repos);
   const invitations = useDashboardStore((s) => s.invitations || []);
   const dataLoading = useDashboardStore((s) => s.dataLoading);
   const selectedOrg = useDashboardStore((s) => s.selectedOrg);
   const selectedRepo = useDashboardStore((s) => s.selectedRepo);
-  const selectOrg = useDashboardStore((s) => s.selectOrg);
   const selectRepo = useDashboardStore((s) => s.selectRepo);
   const fetchInitialData = useDashboardStore((s) => s.fetchInitialData);
   const acceptInvitation = useDashboardStore((s) => s.acceptInvitation);
 
   const [createModalOpen, setCreateModalOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
   const [acceptingId, setAcceptingId] = useState<number | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -81,9 +70,6 @@ export function DashboardSidebar({
   const recentRepos = recentIds.flatMap((id) =>
     repos.filter((repo) => repo.id === id),
   );
-
-  // Lọc theo tìm kiếm
-  const query = searchQuery.trim().toLowerCase();
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -128,53 +114,20 @@ export function DashboardSidebar({
     }
   };
 
-  // Phân loại Repos
   const { personalRepos, collabRepos, orgRepos } = useMemo(() => {
-    // Repos cá nhân: do chính user sở hữu
-    const pRepos = repos.filter(
-      (r) =>
-        r.owner?.login?.toLowerCase() === userLogin &&
-        (!query ||
-          r.name.toLowerCase().includes(query) ||
-          r.full_name?.toLowerCase().includes(query)),
-    );
-
-    // Repos cộng tác: do user khác hoặc bên ngoài tạo mà user được chia sẻ/mời vào
-    const cRepos = repos.filter((r) => {
-      const isOwner = r.owner?.login?.toLowerCase() === userLogin;
-      const isSelectedOrg =
-        selectedOrg &&
-        r.owner?.login?.toLowerCase() === selectedOrg.toLowerCase();
-      // Không phải do user sở hữu
-      if (isOwner) return false;
-      // Nếu đang chọn Org thì repo của Org đó sẽ được tính vào orgRepos
-      if (isSelectedOrg) return false;
-
-      if (!query) return true;
-      return (
-        r.name.toLowerCase().includes(query) ||
-        r.full_name?.toLowerCase().includes(query) ||
-        r.owner?.login?.toLowerCase().includes(query)
-      );
-    });
-
-    // Repos của Organization đang chọn
-    const oRepos = selectedOrg
-      ? repos.filter(
-          (r) =>
-            r.owner?.login?.toLowerCase() === selectedOrg.toLowerCase() &&
-            (!query ||
-              r.name.toLowerCase().includes(query) ||
-              r.full_name?.toLowerCase().includes(query)),
-        )
-      : [];
-
+    const orgLogin = selectedOrg?.toLowerCase();
     return {
-      personalRepos: pRepos,
-      collabRepos: cRepos,
-      orgRepos: oRepos,
+      personalRepos: repos.filter(
+        (repo) => repo.owner.login.toLowerCase() === userLogin,
+      ),
+      collabRepos: repos.filter(
+        (repo) => repo.owner.login.toLowerCase() !== userLogin,
+      ),
+      orgRepos: orgLogin
+        ? repos.filter((repo) => repo.owner.login.toLowerCase() === orgLogin)
+        : [],
     };
-  }, [repos, userLogin, selectedOrg, query]);
+  }, [repos, userLogin, selectedOrg]);
 
   if (!user) return null;
 
@@ -184,91 +137,59 @@ export function DashboardSidebar({
       h="100%"
       style={{
         borderRight: "1px solid #e4e4e7",
-        backgroundColor: "#ffffff",
+        backgroundColor: "#fafafa",
         display: "flex",
         flexDirection: "column",
         minHeight: 0,
       }}
     >
+      {/* REPOSITORIES HEADER */}
+      <Group
+        justify="space-between"
+        px="xs"
+        py="xs"
+        align="center"
+        wrap="nowrap"
+      >
+        <Text component="h2" fz={15} fw={700} truncate miw={0}>
+          Repository
+        </Text>
+        <Group gap={4} wrap="nowrap">
+          <Tooltip label="Đồng bộ / Làm mới" withArrow>
+            <ActionIcon
+              size="md"
+              variant="subtle"
+              color="gray"
+              aria-label="Làm mới repository"
+              loading={refreshing}
+              onClick={handleRefresh}
+            >
+              <IconRefresh size={14} color="#71717a" />
+            </ActionIcon>
+          </Tooltip>
+          <Tooltip label="Tạo Repository mới" withArrow>
+            <ActionIcon
+              size="md"
+              variant="subtle"
+              color="red"
+              aria-label="Tạo repository"
+              onClick={() => setCreateModalOpen(true)}
+            >
+              <IconPlus size={15} color="#dc2626" />
+            </ActionIcon>
+          </Tooltip>
+        </Group>
+      </Group>
+
       <Box
         className="hide-scrollbar"
         style={{
           flex: 1,
           overflowY: "auto",
-          padding: "16px 10px 10px",
+          padding: "12px 10px",
           minHeight: 0,
         }}
       >
-        {/* ORGANIZATIONS HEADER */}
-        <Group justify="space-between" mb={8} px="xs" align="center">
-          <Text
-            fz={11}
-            fw={700}
-            c="#71717a"
-            style={{ letterSpacing: "0.08em", fontFamily: "monospace" }}
-          >
-            ORGANIZATIONS
-          </Text>
-          <Tooltip
-            label="Không thấy Organization? Nhấp để cấp quyền truy cập GitHub cho GitVN"
-            position="right"
-            withArrow
-            multiline
-            w={240}
-          >
-            <ActionIcon
-              size="xs"
-              variant="subtle"
-              color="gray"
-              component="a"
-              href="/api/integrations/github?reconnect=true"
-            >
-              <IconInfoCircle size={14} color="#71717a" />
-            </ActionIcon>
-          </Tooltip>
-        </Group>
-
-        {dataLoading ? (
-          <Stack gap="xs" px="xs" mb="md">
-            <Skeleton height={32} radius="sm" />
-            <Skeleton height={32} radius="sm" />
-          </Stack>
-        ) : (
-          <Stack gap={2} mb="md">
-            {orgs.length > 0 ? (
-              orgs.map((org) => {
-                const isSelected = selectedOrg
-                  ? selectedOrg.toLowerCase() === org.login.toLowerCase()
-                  : org.login.toLowerCase() === user.login.toLowerCase();
-
-                return (
-                  <OrgListItem
-                    key={org.id}
-                    org={org}
-                    isSelected={isSelected}
-                    onSelect={() => {
-                      if (
-                        (org as any).isUser ||
-                        org.login.toLowerCase() === user.login.toLowerCase()
-                      ) {
-                        selectOrg(null);
-                      } else {
-                        selectOrg(org.login);
-                      }
-                    }}
-                  />
-                );
-              })
-            ) : (
-              <Text fz={12} c="#a1a1aa" px="xs">
-                Không có organization nào.
-              </Text>
-            )}
-          </Stack>
-        )}
-
-        <Divider my="sm" color="#e4e4e7" />
-
         {/* LỜI MỜI REPO CHƯA ACCEPT (NẾU CÓ) */}
         {invitations.length > 0 && (
           <Paper
@@ -280,8 +201,8 @@ export function DashboardSidebar({
           >
             <Group gap={6} mb={6}>
               <IconMailCheck size={15} color="#dc2626" />
-              <Text fz={11} fw={700} c="#b91c1c" ff="monospace">
-                LỜI MỜI MỚI ({invitations.length})
+              <Text fz={13} fw={700} c="#b91c1c">
+                Lời mời mới ({invitations.length})
               </Text>
             </Group>
             <Stack gap={6}>
@@ -298,11 +219,11 @@ export function DashboardSidebar({
                   <Text fz={12} fw={600} c="#18181b" truncate>
                     {inv.repository?.name || "Repository"}
                   </Text>
-                  <Text fz={10} c="#71717a" mb={4} truncate>
+                  <Text fz={12} c="#71717a" mb={4} truncate>
                     Từ @{inv.inviter?.login || "ai đó"}
                   </Text>
                   <Button
-                    size="compact-xs"
+                    size="compact-sm"
                     color="red"
                     variant="filled"
                     fullWidth
@@ -320,39 +241,9 @@ export function DashboardSidebar({
           </Paper>
         )}
 
-        {/* SEARCH REPOSITORIES */}
-        <TextInput
-          size="xs"
-          placeholder="Tìm repository..."
-          leftSection={<IconSearch size={13} color="#a1a1aa" />}
-          rightSection={
-            query ? (
-              <ActionIcon
-                size="xs"
-                variant="subtle"
-                color="gray"
-                onClick={() => setSearchQuery("")}
-              >
-                <IconX size={12} />
-              </ActionIcon>
-            ) : null
-          }
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.currentTarget.value)}
-          mb="sm"
-          styles={{
-            input: {
-              backgroundColor: "#f4f4f5",
-              borderColor: "#e4e4e7",
-              fontSize: 12,
-              borderRadius: 6,
-            },
-          }}
-        />
-
-        {!query && !selectedOrg && recentRepos.length > 0 && (
+        {!selectedOrg && recentRepos.length > 0 && (
           <Stack gap={4} mb="sm">
-            <Text size="xs" fw={600} c="dimmed" px="xs">
+            <Text fz={12} fw={650} c="#52525b" px="xs">
               Repo gần đây
             </Text>
             {recentRepos.map((repo) => (
@@ -360,7 +251,7 @@ export function DashboardSidebar({
                 key={repo.id}
                 variant="subtle"
                 color="gray"
-                size="compact-xs"
+                size="compact-sm"
                 justify="start"
                 onClick={() => {
                   void selectRepo(repo);
@@ -372,55 +263,6 @@ export function DashboardSidebar({
             ))}
           </Stack>
         )}
-
-        {/* REPOSITORIES HEADER */}
-        <Group justify="space-between" mb={8} px="xs" align="center">
-          <Text
-            fz={11}
-            fw={700}
-            c="#71717a"
-            style={{ letterSpacing: "0.08em", fontFamily: "monospace" }}
-          >
-            {selectedOrg
-              ? `REPOS CỦA ${selectedOrg.toUpperCase()}`
-              : "REPOSITORIES"}
-          </Text>
-          <Group gap={4} wrap="nowrap">
-            {selectedOrg && (
-              <Tooltip label="Quay lại cá nhân & cộng tác" withArrow>
-                <ActionIcon
-                  size="sm"
-                  variant="subtle"
-                  color="gray"
-                  onClick={() => selectOrg(null)}
-                >
-                  <IconArrowLeft size={14} color="#71717a" />
-                </ActionIcon>
-              </Tooltip>
-            )}
-            <Tooltip label="Đồng bộ / Làm mới" withArrow>
-              <ActionIcon
-                size="sm"
-                variant="subtle"
-                color="gray"
-                loading={refreshing}
-                onClick={handleRefresh}
-              >
-                <IconRefresh size={14} color="#71717a" />
-              </ActionIcon>
-            </Tooltip>
-            <Tooltip label="Tạo Repository mới" withArrow>
-              <ActionIcon
-                size="sm"
-                variant="subtle"
-                color="red"
-                onClick={() => setCreateModalOpen(true)}
-              >
-                <IconPlus size={15} color="#dc2626" />
-              </ActionIcon>
-            </Tooltip>
-          </Group>
-        </Group>
 
         {/* DANH SÁCH REPOS */}
         {dataLoading ? (
@@ -445,22 +287,20 @@ export function DashboardSidebar({
                 />
               ))
             ) : (
-              <Text fz={12} c="#a1a1aa" px="xs" py="xs">
-                {query
-                  ? "Không tìm thấy repository phù hợp."
-                  : "Không có repository nào trong tổ chức này."}
+              <Text fz={13} c="#52525b" px="xs" py="xs">
+                Không có repository nào trong tổ chức này.
               </Text>
             )}
           </Stack>
         ) : (
-          // HIỂN THỊ REPOS CÁ NHÂN VÀ CỘNG TÁC (CHIA SẺ)
+          // HIỂN THỊ REPOS Cá nhân VÀ CỘNG TÁC (CHIA SẺ)
           <Stack gap="sm">
-            {/* NHÓM REPOS CÁ NHÂN */}
+            {/* NHÓM REPOS Cá nhân */}
             {personalRepos.length > 0 && (
               <Box>
                 <Group justify="space-between" px="xs" mb={4}>
-                  <Text fz={10} fw={700} c="#a1a1aa" ff="monospace">
-                    CÁ NHÂN ({personalRepos.length})
+                  <Text fz={12} fw={650} c="#52525b">
+                    Cá nhân ({personalRepos.length})
                   </Text>
                 </Group>
                 <Stack gap={2}>
@@ -488,12 +328,9 @@ export function DashboardSidebar({
                   mb={4}
                   mt={personalRepos.length > 0 ? 6 : 0}
                 >
-                  <Text fz={10} fw={700} c="#a1a1aa" ff="monospace">
-                    CỘNG TÁC & CHIA SẺ ({collabRepos.length})
+                  <Text fz={12} fw={650} c="#52525b">
+                    Được chia sẻ ({collabRepos.length})
                   </Text>
-                  <Badge size="xs" variant="light" color="blue" radius="sm">
-                    Shared
-                  </Badge>
                 </Group>
                 <Stack gap={2}>
                   {collabRepos.map((repo) => (
@@ -513,10 +350,8 @@ export function DashboardSidebar({
             )}
 
             {personalRepos.length === 0 && collabRepos.length === 0 && (
-              <Text fz={12} c="#a1a1aa" px="xs" py="xs">
-                {query
-                  ? "Không tìm thấy repository phù hợp."
-                  : "Không có repository nào."}
+              <Text fz={13} c="#52525b" px="xs" py="xs">
+                Không có repository nào.
               </Text>
             )}
           </Stack>

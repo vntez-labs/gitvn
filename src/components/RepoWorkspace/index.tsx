@@ -68,6 +68,11 @@ const IssuesTab = dynamic(
   { ssr: false, loading: () => <TabSkeleton /> },
 );
 
+const MembersTab = dynamic(
+  () => import("../workspace/members/MembersTab").then((mod) => mod.MembersTab),
+  { ssr: false, loading: () => <TabSkeleton /> },
+);
+
 const SettingsTab = dynamic(
   () => import("../workspace/SettingsTab").then((mod) => mod.SettingsTab),
   { ssr: false, loading: () => <TabSkeleton /> },
@@ -305,6 +310,9 @@ export function RepoWorkspace({ initialPull }: { initialPull?: number }) {
             }
           }}
         />
+      )}
+      {activeTab === "members" && (
+        <MembersTab key={selectedRepo.id} repository={selectedRepo} />
       )}
       {activeTab === "settings" && <SettingsTab />}
     </Box>
