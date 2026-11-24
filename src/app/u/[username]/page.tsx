@@ -41,6 +41,47 @@ async function fetchInsights(url: string) {
   return data;
 }
 
+function ProfileSkeleton() {
+  return (
+    <div className="grid items-start gap-5 lg:grid-cols-[clamp(270px,22vw,340px)_minmax(0,1fr)]">
+      <Paper withBorder radius="lg" p={{ base: "md", sm: "lg" }}>
+        <Stack gap="md">
+          <Skeleton circle h={108} w={108} />
+          <Skeleton h={28} w="75%" radius="sm" />
+          <Skeleton h={18} w="50%" radius="sm" />
+          <Skeleton h={38} w="100%" radius="sm" />
+          <Skeleton h={16} w="65%" radius="sm" />
+          <Skeleton h={16} w="55%" radius="sm" />
+          <Skeleton h={36} w="100%" radius="md" mt="xs" />
+        </Stack>
+      </Paper>
+
+      <Stack gap="md">
+        <Skeleton h={44} w={260} radius="md" />
+        <Paper withBorder radius="lg" p={{ base: "md", sm: "lg" }}>
+          <Skeleton h={22} w={180} mb="md" radius="sm" />
+          <SimpleGrid cols={{ base: 2, lg: 4 }} spacing="xs">
+            <Skeleton h={95} radius="md" />
+            <Skeleton h={95} radius="md" />
+            <Skeleton h={95} radius="md" />
+            <Skeleton h={95} radius="md" />
+          </SimpleGrid>
+        </Paper>
+        <Paper withBorder radius="lg" p={{ base: "md", sm: "lg" }}>
+          <Skeleton h={64} radius="md" mb="md" />
+          <Skeleton h={12} radius="xl" mb="md" />
+          <SimpleGrid cols={{ base: 2, lg: 4 }} spacing="xs">
+            <Skeleton h={80} radius="md" />
+            <Skeleton h={80} radius="md" />
+            <Skeleton h={80} radius="md" />
+            <Skeleton h={80} radius="md" />
+          </SimpleGrid>
+        </Paper>
+      </Stack>
+    </div>
+  );
+}
+
 function ProfilePanels({ username }: { username: string }) {
   const { data, isLoading, error } = useSWR(
     `/api/github/user/${encodeURIComponent(username)}`,
@@ -51,8 +92,7 @@ function ProfilePanels({ username }: { username: string }) {
     },
   );
 
-  if (isLoading)
-    return <Skeleton h={430} radius="lg" aria-label="Đang tải hồ sơ" />;
+  if (isLoading) return <ProfileSkeleton />;
   if (!data) {
     return (
       <Alert
@@ -110,6 +150,7 @@ function ProfilePanels({ username }: { username: string }) {
         <Tabs.Panel value="activity">
           {data.activity ? (
             <UserStatsMatrix
+              username={data.user.login}
               activity={data.activity}
               codeChanges={data.codeChanges}
               followers={data.user.followers?.totalCount ?? 0}
@@ -245,10 +286,9 @@ export default function ProfilePage() {
   return (
     <Suspense
       fallback={
-        <Box p="xl">
-          <Skeleton h={48} mb="lg" />
-          <Skeleton h={400} />
-        </Box>
+        <div className="mx-auto w-full max-w-[1920px] px-4 py-5 sm:px-6 sm:py-7 xl:px-10">
+          <ProfileSkeleton />
+        </div>
       }
     >
       <ProfilePageContent />

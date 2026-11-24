@@ -8,6 +8,7 @@ import {
   Paper,
   Progress,
   SimpleGrid,
+  Skeleton,
   Stack,
   Text,
   Tooltip,
@@ -22,6 +23,8 @@ import {
   IconTrendingDown,
   IconTrendingUp,
 } from "@tabler/icons-react";
+import axios from "axios";
+import useSWR from "swr";
 import type { ProfileInsights } from "@/interfaces/profile-insights";
 import { ActivityRank } from "./ActivityRank";
 import {
@@ -35,15 +38,32 @@ const date = new Intl.DateTimeFormat("vi-VN", {
   timeZone: "UTC",
 });
 
+async function fetchCodeChanges(url: string) {
+  const { data } = await axios.get<ProfileInsights["codeChanges"]>(url);
+  return data;
+}
+
 export function UserStatsMatrix({
+  username,
   activity,
-  codeChanges,
+  codeChanges: initialCodeChanges,
   followers = 0,
 }: {
+  username?: string;
   activity: NonNullable<ProfileInsights["activity"]>;
-  codeChanges: ProfileInsights["codeChanges"];
+  codeChanges?: ProfileInsights["codeChanges"];
   followers?: number;
 }) {
+  const { data: remoteCodeChanges, isLoading: isCodeChangesLoading } = useSWR(
+    username && !initialCodeChanges
+      ? `/api/github/user/${encodeURIComponent(username)}/code-changes`
+      : null,
+    fetchCodeChanges,
+    { revalidateOnFocus: false, dedupingInterval: 60000 },
+  );
+
+  const codeChanges = initialCodeChanges ?? remoteCodeChanges;
+  const isLoadingChanges = isCodeChangesLoading && codeChanges === undefined;
   const hasCommits = codeChanges && codeChanges.commits > 0;
 
   const quickStats = [
@@ -55,14 +75,34 @@ export function UserStatsMatrix({
     },
     {
       label: "Dòng thêm",
-      value: codeChanges ? `+${number.format(codeChanges.additions)}` : "+0",
-      detail: hasCommits ? "30 ngày · repo công khai" : "30 ngày · 0 commit",
+      value: isLoadingChanges ? (
+        <Skeleton h={28} w={80} mt={6} radius="sm" />
+      ) : codeChanges ? (
+        `+${number.format(codeChanges.additions)}`
+      ) : (
+        "+0"
+      ),
+      detail: isLoadingChanges
+        ? "Đang tính..."
+        : hasCommits
+          ? "30 ngày · repo công khai"
+          : "30 ngày · 0 commit",
       color: "#166534",
     },
     {
       label: "Dòng xóa",
-      value: codeChanges ? `−${number.format(codeChanges.deletions)}` : "−0",
-      detail: hasCommits ? "30 ngày · repo công khai" : "30 ngày · 0 commit",
+      value: isLoadingChanges ? (
+        <Skeleton h={28} w={80} mt={6} radius="sm" />
+      ) : codeChanges ? (
+        `−${number.format(codeChanges.deletions)}`
+      ) : (
+        "−0"
+      ),
+      detail: isLoadingChanges
+        ? "Đang tính..."
+        : hasCommits
+          ? "30 ngày · repo công khai"
+          : "30 ngày · 0 commit",
       color: "#b91c1c",
     },
     {
@@ -168,9 +208,11 @@ export function UserStatsMatrix({
           ))}
         </SimpleGrid>
         <Text fz={12} c="#a1a1aa" mt="sm">
-          {hasCommits
-            ? `Dòng thêm/xóa tính theo ${number.format(codeChanges?.commits ?? 0)} commit thường trên nhánh mặc định (${codeChanges?.repositories ?? 0} repo).`
-            : "Không phát sinh commit trên nhánh mặc định của repo công khai trong 30 ngày qua."}
+          {isLoadingChanges
+            ? "Đang tính toán dòng thêm/xóa trong 30 ngày qua..."
+            : hasCommits
+              ? `Dòng thêm/xóa tính theo ${number.format(codeChanges?.commits ?? 0)} commit thường trên nhánh mặc định (${codeChanges?.repositories ?? 0} repo).`
+              : "Không phát sinh commit trên nhánh mặc định của repo công khai trong 30 ngày qua."}
         </Text>
       </Paper>
 

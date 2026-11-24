@@ -106,139 +106,6 @@ const githubGraphQL = `
   }
 `;
 
-type CommitHistory = {
-  pageInfo: { hasNextPage: boolean };
-  nodes: {
-    additions: number;
-    deletions: number;
-    parents: { totalCount: number };
-  }[];
-};
-
-async function fetchCodeChanges(
-  token: string,
-  authorId: string,
-  collection: Collection | null,
-  fallbackRepoIds: string[],
-  to: string,
-): Promise<ProfileInsights["codeChanges"]> {
-  const collectionPublicRepos = (
-    collection?.commitContributionsByRepository ?? []
-  )
-    .filter(({ repository }) => !repository.isPrivate)
-    .map(({ repository }) => repository.id);
-  const repos = Array.from(
-    new Set([...collectionPublicRepos, ...fallbackRepoIds]),
-  ).slice(0, 5);
-
-  if (!repos.length) {
-    return {
-      repositories: 0,
-      commits: 0,
-      additions: 0,
-      deletions: 0,
-      partial: false,
-    };
-  }
-  const today = Date.parse(to.slice(0, 10));
-  const from = new Date(today - 29 * 86_400_000).toISOString();
-
-  try {
-    const response = await fetch("https://api.github.com/graphql", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      cache: "no-store",
-      signal: AbortSignal.timeout(4500),
-      body: JSON.stringify({
-        query: `query($repos: [ID!]!, $author: ID!, $from: GitTimestamp!, $to: GitTimestamp!) {
-          nodes(ids: $repos) {
-            ... on Repository {
-              isPrivate
-              defaultBranchRef {
-                target {
-                  ... on Commit {
-                    history(first: 50, author: { id: $author }, since: $from, until: $to) {
-                      pageInfo { hasNextPage }
-                      nodes { additions deletions parents { totalCount } }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }`,
-        variables: { repos, author: authorId, from, to },
-      }),
-    });
-    if (!response.ok) return null;
-    const { data } = await response.json();
-    if (!Array.isArray(data?.nodes)) {
-      return {
-        repositories: 0,
-        commits: 0,
-        additions: 0,
-        deletions: 0,
-        partial: false,
-      };
-    }
-    const histories = data.nodes.flatMap(
-      (
-        repo: {
-          isPrivate: boolean;
-          defaultBranchRef?: { target: { history?: CommitHistory } } | null;
-        } | null,
-      ) => {
-        const history =
-          repo?.isPrivate === false
-            ? repo.defaultBranchRef?.target.history
-            : undefined;
-        return history ? [history] : [];
-      },
-    );
-    if (!histories.length) {
-      return {
-        repositories: 0,
-        commits: 0,
-        additions: 0,
-        deletions: 0,
-        partial: false,
-      };
-    }
-
-    const commits = histories
-      .flatMap((history: CommitHistory) => history.nodes)
-      .filter(
-        (commit: CommitHistory["nodes"][number]) =>
-          commit.parents.totalCount <= 1,
-      );
-    return {
-      repositories: histories.length,
-      commits: commits.length,
-      additions: commits.reduce(
-        (sum: number, commit: CommitHistory["nodes"][number]) =>
-          sum + commit.additions,
-        0,
-      ),
-      deletions: commits.reduce(
-        (sum: number, commit: CommitHistory["nodes"][number]) =>
-          sum + commit.deletions,
-        0,
-      ),
-      partial:
-        collection?.commitContributionsByRepository.length === 12 ||
-        repos.length > histories.length ||
-        histories.some(
-          (history: CommitHistory) => history.pageInfo.hasNextPage,
-        ),
-    };
-  } catch {
-    return null;
-  }
-}
-
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ username: string }> },
@@ -280,7 +147,7 @@ export async function GET(
 
   const badgeData = fetch(`https://github.com/${encodeURIComponent(login)}`, {
     headers: { Accept: "text/html", "User-Agent": "Mozilla/5.0" },
-    signal: AbortSignal.timeout(3000),
+    signal: AbortSignal.timeout(1500),
     cache: "no-store",
   })
     .then(async (res) => parseProfileBadges(res.ok ? await res.text() : ""))
@@ -358,7 +225,6 @@ export async function GET(
       (sum, r) => sum + (r.releases?.totalCount || 0),
       0,
     );
-    const fallbackRepoIds = publicOwnedRepos.slice(0, 5).map((r) => r.id);
 
     const through = to.slice(0, 10);
     const start = from.slice(0, 10);
@@ -394,14 +260,9 @@ export async function GET(
           })
           .catch(() => [])
       : [];
-    const [publicOrganizations, codeChanges, email, badges, memberships] =
-      await Promise.all([
-        publicOrgs,
-        fetchCodeChanges(token, id, collection, fallbackRepoIds, to),
-        publicEmail,
-        badgeData,
-        ownMemberships,
-      ]);
+    const [publicOrganizations, email, badges, memberships] = await Promise.all(
+      [publicOrgs, publicEmail, badgeData, ownMemberships],
+    );
     const organizations = new Map(
       publicOrganizations.map((org) => [org.login.toLowerCase(), org]),
     );
@@ -444,7 +305,7 @@ export async function GET(
           node?.isPrivate === false ? [node] : [],
         ) ?? null,
       organizations: Array.from(organizations.values()),
-      codeChanges,
+      codeChanges: null,
       readme:
         blob?.isPrivate === false && !blob.object?.isTruncated
           ? (blob.object?.text ?? null)
