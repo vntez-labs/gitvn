@@ -1,0 +1,20 @@
+{
+  "stars": "Sao trên kho công khai gốc",
+  "followers": "Người theo dõi",
+  "forks": "Lượt fork trên kho công khai gốc",
+  "releases": "Kho công khai gốc có bản phát hành",
+  "commits": "Commit sau điều chỉnh theo ngày",
+  "pulls": "Pull request đã mở",
+  "issues": "Issue đã mở",
+  "reviews": "PR được đánh giá",
+  "activeWeeks": "Tuần UTC có hoạt động",
+  "activeDays": "Ngày UTC có hoạt động",
+  "streak": "Chuỗi ngày hoạt động dài nhất",
+  "qualified": "Kho đạt ngưỡng hoạt động",
+  "sustained": "Kho có hoạt động qua nhiều tuần",
+  "external": "Kho đạt ngưỡng thuộc chủ sở hữu khác",
+  "merged": "PR được người khác hợp nhất",
+  "reviewed": "PR được người khác đánh giá",
+  "otherReviews": "PR của người khác đã đánh giá",
+  "linkedIssues": "Issue được giải quyết qua PR có liên kết"
+}

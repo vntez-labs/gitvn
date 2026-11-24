@@ -1,0 +1,36 @@
+{
+  "version": "3.0.0",
+  "rankThresholds": [0, 15, 30, 50, 70, 85, 92],
+  "burst": [10, 20, 0.5, 0.1],
+  "qualification": [5, 3, 4],
+  "categories": {
+    "impact": {
+      "stars": [10, 500, "log"],
+      "followers": [4, 200, "log"],
+      "forks": [4, 100, "log"],
+      "releases": [2, 10, "log"]
+    },
+    "activity": {
+      "commits": [12, 1500, "log"],
+      "pulls": [8, 100, "log"],
+      "issues": [4, 50, "log"],
+      "reviews": [6, 150, "log"]
+    },
+    "consistency": {
+      "activeWeeks": [12, 48, "linear"],
+      "activeDays": [10, 220, "linear"],
+      "streak": [3, 30, "linear"]
+    },
+    "coverage": {
+      "qualified": [5, 8, "log"],
+      "sustained": [3, 4, "log"],
+      "external": [2, 8, "log"]
+    },
+    "collaboration": {
+      "merged": [5, 40, "log"],
+      "reviewed": [3, 40, "log"],
+      "otherReviews": [4, 100, "log"],
+      "linkedIssues": [3, 25, "log"]
+    }
+  }
+}

@@ -1,3 +1,5 @@
+import type { ScoreResult } from "@/lib/scoring/models";
+
 export interface ContributionDay {
   date: string;
   contributionCount: number;
@@ -19,6 +21,7 @@ export interface ProfileRepository {
 }
 
 export interface ProfileInsights {
+  score?: ScoreResult;
   user: {
     name: string | null;
     login: string;

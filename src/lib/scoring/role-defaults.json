@@ -1,0 +1,9 @@
+{
+  "reviewPrs": [4, 100, "log"],
+  "reviewAuthors": [1, 20, "log"],
+  "contributorMerges": [5, 50, "log"],
+  "contributorReviews": [2, 30, "log"],
+  "maintainerMerges": [5, 50, "log"],
+  "maintainerAuthors": [2, 20, "log"],
+  "resolvedIssues": [3, 30, "log"]
+}

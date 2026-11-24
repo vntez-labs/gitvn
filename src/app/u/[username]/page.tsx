@@ -31,10 +31,12 @@ import { Suspense } from "react";
 import useSWR from "swr";
 import { GitVNLogo } from "@/components/brand/GitVNLogo";
 import { MarkdownViewer } from "@/components/MarkdownViewer";
+import { ActivityRank } from "@/components/profile/ActivityRank";
 import { ProfileSearch } from "@/components/profile/ProfileSearch";
 import { UserProfileSidebar } from "@/components/profile/UserProfileSidebar";
 import { UserStatsMatrix } from "@/components/profile/UserStatsMatrix";
 import type { ProfileInsights } from "@/interfaces/profile-insights";
+import { resolveUserRank } from "@/lib/activity-rank";
 
 async function fetchInsights(url: string) {
   const { data } = await axios.get<ProfileInsights>(url);
@@ -117,6 +119,25 @@ function ProfilePanels({ username }: { username: string }) {
     );
   }
 
+  const currentRank = data
+    ? resolveUserRank({
+        scoreV3: data.score,
+        weeks: data.activity?.weeks,
+        contributions: data.activity?.total,
+        repositories: data.activity?.activeRepositories,
+        currentStreak: data.activity?.currentStreak,
+        longestStreak: data.activity?.longestStreak,
+        pulls: data.activity?.pulls,
+        reviews: data.activity?.reviews,
+        issues: data.activity?.issues,
+        commits: data.activity?.commits,
+        stars: data.activity?.stars,
+        releases: data.activity?.releases,
+        forks: data.activity?.forks,
+        followers: data.user.followers?.totalCount,
+      })
+    : null;
+
   return (
     <div className="grid items-start gap-5 lg:grid-cols-[clamp(270px,22vw,340px)_minmax(0,1fr)]">
       <UserProfileSidebar
@@ -125,6 +146,7 @@ function ProfilePanels({ username }: { username: string }) {
         achievements={data.achievements}
         isPro={data.isPro}
         isOwnProfile={data.isOwnProfile}
+        rank={currentRank}
       />
 
       <Tabs
@@ -152,13 +174,25 @@ function ProfilePanels({ username }: { username: string }) {
             <UserStatsMatrix
               username={data.user.login}
               activity={data.activity}
+              score={data.score}
               codeChanges={data.codeChanges}
               followers={data.user.followers?.totalCount ?? 0}
             />
           ) : (
-            <Alert color="gray">
-              GitHub chưa trả về lịch đóng góp cho kỳ này.
-            </Alert>
+            <>
+              <Alert color="gray">
+                GitHub chưa trả về lịch đóng góp cho kỳ này.
+              </Alert>
+              {data.score && (
+                <ActivityRank
+                  scoreV3={data.score}
+                  weeks={[]}
+                  contributions={0}
+                  repositories={0}
+                  currentStreak={0}
+                />
+              )}
+            </>
           )}
         </Tabs.Panel>
 

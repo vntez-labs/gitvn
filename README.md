@@ -34,3 +34,13 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+### Hạng hoạt động V3
+
+GitVN Insights tính điểm từ hoạt động công khai quan sát được trong 365 ngày UTC và số liệu tác động tích lũy từ GitHub. Điểm tạm tính hiển thị khi một phần dữ liệu chưa được thu thập. Xem [công thức](docs/scoring-v3-formula.md), [kiến trúc](docs/scoring-v3-architecture.md) và [giới hạn dữ liệu](docs/scoring-v3-limitations.md).
+
+TypeScript chạy trên máy chủ. Rust và WASM dùng để kiểm chứng và đo hiệu năng. Xem [lệnh kiểm tra và kết quả đo](docs/scoring-v3-benchmark.md).
+
+Scoring V3.1 uses GitHub daily aggregates for ranking and collects detailed commit history separately for descriptive code statistics. See the [collector design, budgets, and measured GitHub comparison](docs/github-data-collection.md).
+
+V3.2 adds [role-aware collaboration](docs/scoring-v3.2-collaboration.md) with bounded [maintainer evidence collection](docs/maintainer-data-collection.md).

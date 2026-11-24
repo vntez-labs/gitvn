@@ -7,6 +7,7 @@ import {
   Box,
   Button,
   Group,
+  Image,
   Paper,
   Stack,
   Text,
@@ -23,6 +24,15 @@ import {
   IconTrophy,
 } from "@tabler/icons-react";
 import type { ProfileInsights } from "@/interfaces/profile-insights";
+import type { ActivityRankTier } from "@/lib/activity-rank";
+
+export interface UserProfileSidebarProps
+  extends Pick<
+    ProfileInsights,
+    "user" | "organizations" | "achievements" | "isPro" | "isOwnProfile"
+  > {
+  rank?: ActivityRankTier | null;
+}
 
 export function UserProfileSidebar({
   user,
@@ -30,10 +40,8 @@ export function UserProfileSidebar({
   achievements = [],
   isPro,
   isOwnProfile,
-}: Pick<
-  ProfileInsights,
-  "user" | "organizations" | "achievements" | "isPro" | "isOwnProfile"
->) {
+  rank,
+}: UserProfileSidebarProps) {
   const joined = new Intl.DateTimeFormat("vi-VN", {
     dateStyle: "long",
     timeZone: "UTC",
@@ -47,26 +55,107 @@ export function UserProfileSidebar({
     <Paper withBorder radius="lg" p={{ base: "md", sm: "lg" }}>
       <Stack gap="md">
         <Stack gap="sm">
-          <Avatar
-            src={user.avatarUrl}
-            radius="xl"
-            size={108}
-            className="ring-1 ring-zinc-200 ring-offset-4 ring-offset-white"
-          />
+          <div className="relative inline-block w-fit">
+            <Avatar
+              src={user.avatarUrl}
+              radius="xl"
+              size={108}
+              className="ring-2 ring-offset-4 ring-offset-white dark:ring-offset-zinc-900 transition-all"
+              style={{
+                borderColor: rank?.color ? `${rank.color}80` : undefined,
+                boxShadow: rank?.color
+                  ? `0 0 20px -2px ${rank.color}35`
+                  : undefined,
+              }}
+            />
+            {rank && (
+              <Tooltip
+                label={`Cấp bậc: ${rank.name}`}
+                position="bottom"
+                withArrow
+              >
+                <div
+                  className="absolute -bottom-1 -right-1 grid h-8 w-8 place-items-center rounded-full bg-white dark:bg-zinc-900 shadow-md border cursor-pointer transition-transform hover:scale-110"
+                  style={{
+                    borderColor: `${rank.color}60`,
+                    boxShadow: `0 2px 8px ${rank.color}30`,
+                  }}
+                >
+                  <Image
+                    src={`/ranks/${rank.badge}.webp`}
+                    alt={rank.name}
+                    w={22}
+                    h={22}
+                    fit="contain"
+                  />
+                </div>
+              </Tooltip>
+            )}
+          </div>
           <Box miw={0}>
             <Text
               component="h1"
               fz={{ base: 23, xl: 26 }}
-              fw={750}
-              lh={1.14}
-              style={{ overflowWrap: "anywhere" }}
+              fw={800}
+              lh={1.2}
+              style={{
+                overflowWrap: "anywhere",
+                color: rank?.color || "inherit",
+                backgroundImage: rank?.gradient,
+                WebkitBackgroundClip: rank?.gradient ? "text" : undefined,
+                WebkitTextFillColor: rank?.gradient ? "transparent" : undefined,
+                filter: rank?.color
+                  ? `drop-shadow(0 2px 8px ${rank.color}25)`
+                  : undefined,
+              }}
             >
               {user.name || user.login}
             </Text>
-            <Group gap={7} mt={5} fz={14} c="#52525b">
+            <Group
+              gap={7}
+              mt={6}
+              fz={14}
+              c="#52525b"
+              align="center"
+              wrap="wrap"
+            >
               <Text size="inherit">@{user.login}</Text>
+              {rank && (
+                <Tooltip
+                  label={`Hạng hoạt động: ${rank.name} · ${rank.description}`}
+                  position="top"
+                  withArrow
+                >
+                  <Badge
+                    size="sm"
+                    variant="outline"
+                    leftSection={
+                      <Image
+                        src={`/ranks/${rank.badge}.webp`}
+                        alt=""
+                        w={14}
+                        h={14}
+                        fit="contain"
+                      />
+                    }
+                    styles={{
+                      root: {
+                        borderColor: `${rank.color}60`,
+                        backgroundColor: `color-mix(in srgb, ${rank.color} 12%, transparent)`,
+                        color: rank.color,
+                        fontWeight: 700,
+                        textTransform: "none",
+                        paddingLeft: 6,
+                        paddingRight: 8,
+                      },
+                    }}
+                  >
+                    {rank.name}
+                  </Badge>
+                </Tooltip>
+              )}
               {isPro && (
-                <Badge variant="light" color="violet" size="md">
+                <Badge variant="light" color="violet" size="sm">
                   Pro
                 </Badge>
               )}

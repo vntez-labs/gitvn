@@ -1,0 +1,9 @@
+# Scoring V3 audit and implementation plan
+
+GitVN uses the Next.js App Router, TypeScript, Mantine, SWR and Bun. The Insights browser requests an authenticated local route. The route fans out to GitHub GraphQL, public organization and email REST endpoints, and profile HTML for badges. It can make an extra membership request on self profiles. The separate code-change flow uses commit history and remains descriptive.
+
+The current client calculates rank on each render. It combines total calendar activity with PR, issue and review counts, so the same activity can earn overlapping volume credit. Repository counts can reward shallow activity. Stars, followers and releases are lifetime snapshots, and the first 100 owned repositories can truncate those totals. The calendar can contain restricted or non-code activity. The existing response has no commit SHAs, empty-commit evidence, review identities, or PR merge details suitable for strict scoring.
+
+Keep the existing route, application UI, private no-store response, REST flows and seven rank assets. Capture legacy regression tests before switching. Introduce a pure, versioned pipeline with separate detailed and aggregate evidence, explicit completeness, configurable weighting, and server-side score serialization. Add a Rust crate and opt-in WASM benchmarks without adding a Rust toolchain to the Next.js deployment. Use bounded evidence from the existing GraphQL operation and avoid per-event requests. Validate fixture parity, calibrate across synthetic profiles if public API authorization is unavailable, then run application verification.
+
+No checked-in CI workflow or container deployment was found. The live GitHub schema and deployment runtime require separate verification. The pre-existing changes to the rank metadata, rank component and seventh icon are the baseline for the integration.

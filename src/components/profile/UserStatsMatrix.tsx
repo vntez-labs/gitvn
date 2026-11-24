@@ -48,11 +48,13 @@ export function UserStatsMatrix({
   activity,
   codeChanges: initialCodeChanges,
   followers = 0,
+  score,
 }: {
   username?: string;
   activity: NonNullable<ProfileInsights["activity"]>;
   codeChanges?: ProfileInsights["codeChanges"];
   followers?: number;
+  score?: ProfileInsights["score"];
 }) {
   const { data: remoteCodeChanges, isLoading: isCodeChangesLoading } = useSWR(
     username && !initialCodeChanges
@@ -215,6 +217,7 @@ export function UserStatsMatrix({
 
       {/* 2. Hạng hoạt động & Điểm chuyên nghiệp */}
       <ActivityRank
+        scoreV3={score}
         weeks={activity.weeks}
         contributions={activity.total}
         repositories={activity.activeRepositories}

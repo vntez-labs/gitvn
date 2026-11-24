@@ -12,12 +12,36 @@ import {
   Tooltip,
 } from "@mantine/core";
 import type { ContributionWeek } from "@/interfaces/profile-insights";
-import { getActivityRank } from "@/lib/activity-rank";
+import { activityRanks, getActivityRank } from "@/lib/activity-rank";
+import type { ScoreResult } from "@/lib/scoring/models";
 
 const number = new Intl.NumberFormat("vi-VN");
 const scoreNumber = new Intl.NumberFormat("vi-VN", {
-  maximumFractionDigits: 1,
+  maximumFractionDigits: 2,
 });
+
+const metricUnits: Record<string, string> = {
+  stars: "sao",
+  followers: "người theo dõi",
+  commits: "commit",
+  pulls: "PR",
+  activeWeeks: "tuần",
+  activeDays: "ngày",
+  qualified: "kho đạt ngưỡng",
+  sustained: "kho duy trì",
+  merged: "PR được hợp nhất",
+  reviewed: "PR được review",
+};
+
+const roleMetricLabels = {
+  reviewPrs: "Số PR đã review",
+  reviewAuthors: "Số tác giả PR đã review",
+  contributorMerges: "PR được người khác hợp nhất",
+  contributorReviews: "PR được người khác review",
+  maintainerMerges: "PR của người khác đã hợp nhất",
+  maintainerAuthors: "Số tác giả có đóng góp được tích hợp",
+  resolvedIssues: "Issue được giải quyết qua PR",
+};
 
 export function ActivityRank({
   weeks,
@@ -33,6 +57,7 @@ export function ActivityRank({
   releases = 0,
   forks = 0,
   followers = 0,
+  scoreV3,
 }: {
   weeks: ContributionWeek[];
   contributions: number;
@@ -47,99 +72,183 @@ export function ActivityRank({
   releases?: number;
   forks?: number;
   followers?: number;
+  scoreV3?: ScoreResult;
 }) {
-  const result = getActivityRank({
-    weeks,
-    contributions,
-    repositories,
-    currentStreak,
-    longestStreak,
-    pulls,
-    reviews,
-    issues,
-    commits,
-    stars,
-    releases,
-    followers,
-  });
+  const result = scoreV3
+    ? null
+    : getActivityRank({
+        weeks,
+        contributions,
+        repositories,
+        currentStreak,
+        longestStreak,
+        pulls,
+        reviews,
+        issues,
+        commits,
+        stars,
+        releases,
+        forks,
+        followers,
+      });
 
-  const {
-    activeWeeks,
-    score,
-    rank,
-    next,
-    ranks,
-    impactPoints,
-    activityPoints,
-    consistencyPoints,
-    repoPoints,
-    longestStreak: recordStreak,
-  } = result;
-
-  const remaining = next ? Math.max(0, Math.ceil(next.minScore - score)) : 0;
-  const totalProgress = Math.min(100, Math.max(0, score));
-
-  const criteria = [
-    {
-      label: "Tác động xã hội",
-      maxPoints: 30,
-      points: impactPoints,
-      stat: `⭐ ${number.format(stars)} · 📦 ${number.format(releases)}`,
-      detail: `${number.format(followers)} người theo dõi`,
-    },
-    {
-      label: "Năng suất đóng góp",
-      maxPoints: 30,
-      points: activityPoints,
-      stat: `${number.format(contributions)} đóng góp`,
-      detail:
-        pulls + reviews > 0
-          ? `${pulls} PRs · ${reviews} reviews`
-          : "Trần 500 đóng góp",
-    },
-    {
-      label: "Chuyên cần & Kỷ luật",
-      maxPoints: 25,
-      points: consistencyPoints,
-      stat: `${activeWeeks}/52 tuần`,
-      detail: `Kỷ lục ${number.format(recordStreak)} ngày chuỗi`,
-    },
-    {
-      label: "Độ phủ dự án",
-      maxPoints: 15,
-      points: repoPoints,
-      stat: `${number.format(repositories)} repo có đóng góp`,
-      detail:
-        repositories >= 6
-          ? "Đạt tối đa (≥6 repo)"
-          : "Lũy tiến: 1=5, 2=8, 3=11, 4=13, 6=15",
-    },
-  ];
+  const ranks = scoreV3
+    ? activityRanks.map((tier, index) => ({
+        ...tier,
+        minScore: scoreV3.rankThresholds[index],
+      }))
+    : activityRanks;
+  const score = scoreV3?.totalScore ?? result?.score ?? 0;
+  const rank =
+    ranks[
+      scoreV3?.rank ?? ranks.findLastIndex((tier) => tier.minScore <= score)
+    ];
+  const next = scoreV3
+    ? scoreV3.nextRank === null
+      ? undefined
+      : ranks[scoreV3.nextRank]
+    : result?.next;
+  const activeWeeks = scoreV3
+    ? scoreV3.categories
+        .find((category) => category.id === "consistency")
+        ?.metrics.find((metric) => metric.id === "activeWeeks")?.adjusted
+    : result?.activeWeeks;
+  const remaining =
+    scoreV3?.pointsToNextRank ?? (next ? Math.ceil(next.minScore - score) : 0);
+  const totalProgress = score;
+  const labels = {
+    impact: "Tác động cộng đồng",
+    activity: "Hoạt động đóng góp",
+    consistency: "Chuyên cần & Kỷ luật",
+    coverage: "Độ phủ dự án",
+    collaboration: "Cộng tác",
+  };
+  const role = scoreV3?.collaboration;
+  const roleCounts = [
+    role?.review.metrics[0].raw == null
+      ? null
+      : `${number.format(role.review.metrics[0].raw)} PR đã review`,
+    role?.maintainer.metrics[0].raw == null
+      ? null
+      : `${number.format(role.maintainer.metrics[0].raw)} PR đã hợp nhất`,
+  ].filter(Boolean);
+  const criteria = scoreV3
+    ? scoreV3.categories.map((category) => {
+        if (category.id === "collaboration" && role)
+          return {
+            label: labels.collaboration,
+            maxPoints: category.maximum,
+            points: category.points,
+            stat: roleCounts.join(" · ") || "Chưa có bằng chứng cộng tác",
+            detail:
+              role.minimum === role.maximum
+                ? "Đã xác định điểm"
+                : "Số liệu quan sát được · 365 ngày UTC",
+          };
+        const resolved = category.metrics.every(
+          (metric) => metric.scoreResolved,
+        );
+        const complete = category.metrics.every(
+          (metric) => metric.availability === "complete",
+        );
+        const units = category.metrics
+          .slice(0, 2)
+          .filter((metric) => metric.raw !== null)
+          .map(
+            (metric) =>
+              `${number.format(metric.raw ?? 0)} ${metricUnits[metric.id]}`,
+          );
+        const status = complete
+          ? "Đã thu thập đầy đủ"
+          : resolved
+            ? "Đã xác định điểm"
+            : "Cần bổ sung dữ liệu";
+        return {
+          label: labels[category.id],
+          maxPoints: category.maximum,
+          points: category.points,
+          stat: units.join(" · ") || status,
+          detail: `${status} · ${category.id === "impact" ? "Ảnh chụp tích lũy" : "365 ngày UTC"}`,
+        };
+      })
+    : [
+        {
+          label: "Tác động xã hội",
+          maxPoints: 30,
+          points: result?.impactPoints ?? 0,
+          stat: `⭐ ${number.format(stars)} · 📦 ${number.format(releases)}`,
+          detail: `${number.format(followers)} người theo dõi`,
+        },
+        {
+          label: "Năng suất đóng góp",
+          maxPoints: 30,
+          points: result?.activityPoints ?? 0,
+          stat: `${number.format(contributions)} đóng góp`,
+          detail:
+            pulls + reviews > 0
+              ? `${pulls} PRs · ${reviews} reviews`
+              : "Mục tiêu 2.000 đóng góp",
+        },
+        {
+          label: "Chuyên cần & Kỷ luật",
+          maxPoints: 25,
+          points: result?.consistencyPoints ?? 0,
+          stat: `${activeWeeks ?? 0}/52 tuần`,
+          detail: `Kỷ lục ${number.format(result?.longestStreak ?? 0)} ngày chuỗi`,
+        },
+        {
+          label: "Độ phủ dự án",
+          maxPoints: 15,
+          points: result?.repoPoints ?? 0,
+          stat: `${number.format(repositories)} repo có đóng góp`,
+          detail:
+            repositories >= 20
+              ? "Đạt tối đa (≥20 repo)"
+              : "Lũy tiến: 2=4, 5=8, 8=10, 12=12, 20=15",
+        },
+      ];
 
   return (
     <Paper withBorder radius="lg" p={{ base: "md", sm: "lg" }}>
       {/* Header Info */}
       <Group justify="space-between" align="center" gap="md" wrap="nowrap">
         <Group gap="md" wrap="nowrap" align="center">
-          <Image
-            src={`/ranks/${rank.badge}.webp`}
-            alt={`Huy hiệu ${rank.name}`}
-            w={{ base: 56, sm: 64 }}
-            h={{ base: 56, sm: 64 }}
-            fit="contain"
-            aria-hidden="true"
-          />
+          <div className="grid h-14 w-14 shrink-0 place-items-center sm:h-16 sm:w-16">
+            <Image
+              src={`/ranks/${rank.badge}.webp`}
+              alt={`Huy hiệu ${rank.name}`}
+              w={{
+                base: 56,
+                sm: 64,
+              }}
+              h={{
+                base: 56,
+                sm: 64,
+              }}
+              fit="contain"
+              aria-hidden="true"
+            />
+          </div>
           <Box>
             <Text size="xs" fw={600} c="#71717a" tt="uppercase" lts={0.5}>
-              Hạng hoạt động · 365 ngày
+              Hạng hoạt động
+              {scoreV3 ? ` · V${scoreV3.scoringVersion}` : " · 365 ngày"}
             </Text>
             <Text
               component="h3"
               fz={{ base: 22, sm: 26 }}
-              fw={800}
-              c={rank.color}
+              fw={900}
               lh={1.2}
               mt={2}
+              style={{
+                color: rank.color,
+                backgroundImage: rank.gradient,
+                WebkitBackgroundClip: rank.gradient ? "text" : undefined,
+                WebkitTextFillColor: rank.gradient ? "transparent" : undefined,
+                filter: rank.color
+                  ? `drop-shadow(0 2px 10px ${rank.color}35)`
+                  : undefined,
+              }}
             >
               {rank.name}
             </Text>
@@ -158,14 +267,22 @@ export function ActivityRank({
             fw={800}
             style={{ fontVariantNumeric: "tabular-nums" }}
           >
-            {number.format(activeWeeks)}
-            <span className="text-xs font-normal text-zinc-400">/52</span>
+            {activeWeeks == null ? "—" : number.format(activeWeeks)}
+            {!scoreV3 && (
+              <span className="text-xs font-normal text-zinc-400">/52</span>
+            )}
           </Text>
           <Text fz={12} c="#71717a">
             tuần hoạt động
           </Text>
         </Box>
       </Group>
+
+      {scoreV3?.provisional && (
+        <Badge color="yellow" variant="light" mt="sm">
+          Điểm tạm tính
+        </Badge>
+      )}
 
       {/* Main Unified Progress Bar (0 to 100) */}
       <Box mt="lg">
@@ -209,10 +326,13 @@ export function ActivityRank({
         </Group>
       </Box>
 
-      {/* 4 Criteria Cards with clear spacing and breathing room */}
-      <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="sm" mt="lg">
+      <SimpleGrid
+        cols={{ base: 1, sm: 2, lg: scoreV3 ? 5 : 4 }}
+        spacing="sm"
+        mt="lg"
+      >
         {criteria.map((item) => {
-          const pct = Math.min(100, (item.points / item.maxPoints) * 100);
+          const pct = item.maxPoints ? (item.points / item.maxPoints) * 100 : 0;
           const isMax = item.points >= item.maxPoints;
           return (
             <Box
@@ -257,7 +377,12 @@ export function ActivityRank({
 
       {/* Ranks Milestone Track */}
       <Box mt="lg" pt="sm" className="border-t border-zinc-100">
-        <Group gap={4} justify="space-between" wrap="nowrap">
+        <Group
+          gap={4}
+          justify="space-between"
+          wrap="nowrap"
+          className="overflow-x-auto"
+        >
           {ranks.map((item) => {
             const isReached = score >= item.minScore;
             const isCurrent = rank.name === item.name;
@@ -270,27 +395,30 @@ export function ActivityRank({
               >
                 <Box
                   ta="center"
-                  className={`min-w-0 flex-1 rounded-xl p-2 transition-all ${
+                  aria-current={isCurrent ? "step" : undefined}
+                  className={`min-w-0 flex-1 rounded-xl p-1.5 sm:p-2 transition-all ${
                     isCurrent
                       ? "bg-zinc-100 ring-1 ring-zinc-300"
                       : "hover:bg-zinc-50"
                   }`}
                 >
-                  <Image
-                    src={`/ranks/${item.badge}.webp`}
-                    alt=""
-                    w={{ base: 32, sm: 38 }}
-                    h={{ base: 32, sm: 38 }}
-                    fit="contain"
-                    mx="auto"
-                    style={{
-                      opacity: isReached ? 1 : 0.35,
-                      filter: isReached ? undefined : "grayscale(0.7)",
-                      transform: isCurrent ? "scale(1.06)" : undefined,
-                    }}
-                  />
+                  <div className="mx-auto grid h-9 w-9 place-items-center sm:h-11 sm:w-11">
+                    <Image
+                      src={`/ranks/${item.badge}.webp`}
+                      alt=""
+                      w={{ base: 28, sm: 38 }}
+                      h={{ base: 28, sm: 38 }}
+                      fit="contain"
+                      mx="auto"
+                      style={{
+                        opacity: isReached ? 1 : 0.35,
+                        filter: isReached ? undefined : "grayscale(0.7)",
+                        transform: isCurrent ? "scale(1.06)" : undefined,
+                      }}
+                    />
+                  </div>
                   <Text
-                    fz={{ base: 10, sm: 11 }}
+                    fz={{ base: 9.5, sm: 11 }}
                     fw={isCurrent ? 750 : isReached ? 600 : 500}
                     c={isReached ? item.color : "#71717a"}
                     lineClamp={1}
@@ -298,7 +426,7 @@ export function ActivityRank({
                   >
                     {item.name}
                   </Text>
-                  <Text fz={10} c="#a1a1aa" mt={1}>
+                  <Text fz={{ base: 9, sm: 10 }} c="#a1a1aa" mt={1}>
                     ≥{number.format(item.minScore)}đ
                   </Text>
                 </Box>
@@ -307,10 +435,134 @@ export function ActivityRank({
           })}
         </Group>
 
-        <Text fz={11} c="#a1a1aa" ta="center" mt="xs">
-          Thang điểm 100: Tác động xã hội 30đ (Stars, Releases, Followers) ·
-          Năng suất 30đ · Độ đều 25đ · Độ phủ 15đ
-        </Text>
+        {scoreV3 && (
+          <details className="mt-4">
+            <summary className="cursor-pointer text-sm font-semibold">
+              Chi tiết cách tính điểm
+            </summary>
+            {scoreV3.collection?.status === "stale" && (
+              <Text size="xs">
+                Đang sử dụng dữ liệu cache từ lần thu thập trước.
+              </Text>
+            )}
+            {(scoreV3.collection?.restricted ||
+              scoreV3.collection?.status === "restricted") && (
+              <Text size="xs">
+                Dữ liệu đóng góp giới hạn theo quyền truy cập.
+              </Text>
+            )}
+            {scoreV3.bounds && !scoreV3.bounds.scoreResolved && (
+              <Text size="xs" mt="xs">
+                Khoảng điểm có thể xác nhận{" "}
+                {scoreNumber.format(scoreV3.bounds.minimum)}–
+                {scoreNumber.format(scoreV3.bounds.maximum)}.{" "}
+                {scoreV3.bounds.rankResolved
+                  ? "Hạng đã xác định."
+                  : "Hạng còn tạm tính."}
+              </Text>
+            )}
+            {role && (
+              <Box mt="md">
+                <Group justify="space-between">
+                  <Text fw={700} size="sm">
+                    Cộng tác
+                  </Text>
+                  <Text fw={700} size="sm">
+                    {scoreNumber.format(role.points)}/15 điểm
+                  </Text>
+                </Group>
+                <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="xs" mt={6}>
+                  {(
+                    [
+                      ["Đánh giá PR", role.review],
+                      ["Vai trò đóng góp", role.contributor],
+                      ["Vai trò tích hợp", role.maintainer],
+                      ["Giải quyết issue", role.issues],
+                    ] as const
+                  ).map(([title, component]) => (
+                    <Box
+                      key={title}
+                      className="rounded-md border border-zinc-200 px-3 py-2"
+                    >
+                      <Group justify="space-between" gap={4}>
+                        <Text fw={600} size="xs">
+                          {title}
+                        </Text>
+                        <Text size="xs">
+                          {scoreNumber.format(component.points)}/
+                          {component.ceiling}đ
+                        </Text>
+                      </Group>
+                      {component.metrics.map((metric) => (
+                        <Text key={metric.id} size="xs" mt={3}>
+                          {roleMetricLabels[metric.id]} ·{" "}
+                          {metric.raw == null
+                            ? "Chưa có dữ liệu"
+                            : number.format(metric.raw)}
+                          {metric.availability === "partial"
+                            ? " quan sát được"
+                            : ""}
+                        </Text>
+                      ))}
+                    </Box>
+                  ))}
+                </SimpleGrid>
+                <Text size="xs" mt="xs">
+                  Điểm vai trò cộng tác{" "}
+                  {scoreNumber.format(role.sharedRole.points)}/7. Điểm này lấy
+                  theo vai trò có điểm cao hơn.
+                </Text>
+                {role.minimum !== role.maximum && (
+                  <Text size="xs">
+                    Khoảng điểm cộng tác {scoreNumber.format(role.minimum)}–
+                    {scoreNumber.format(role.maximum)}/15.
+                  </Text>
+                )}
+              </Box>
+            )}
+            {scoreV3.categories
+              .filter((category) => !role || category.id !== "collaboration")
+              .map((category) => (
+                <Box key={category.id} mt="sm">
+                  <Text fw={600} size="sm">
+                    {labels[category.id]}
+                  </Text>
+                  <ul className="list-disc pl-5">
+                    {category.metrics.map((metric) => (
+                      <li key={metric.id}>
+                        <Text size="xs">
+                          {metric.explanation} ·{" "}
+                          {metric.raw === null
+                            ? "Chưa có dữ liệu"
+                            : `${scoreNumber.format(metric.raw)} → ${scoreNumber.format(metric.adjusted ?? 0)}`}
+                          {metric.availability === "partial"
+                            ? metric.scoreResolved
+                              ? " (đã xác định điểm)"
+                              : " (một phần)"
+                            : ""}
+                          {" · "}
+                          {scoreNumber.format(metric.points)}/{metric.maximum}đ
+                          {" · Ngưỡng "}
+                          {number.format(metric.threshold)}
+                        </Text>
+                      </li>
+                    ))}
+                  </ul>
+                </Box>
+              ))}
+            {scoreV3.adjustments.map((item) => (
+              <Text key={item.rule} size="xs" mt="xs">
+                {item.explanation} {scoreNumber.format(item.original)} →{" "}
+                {scoreNumber.format(item.adjusted)}.
+              </Text>
+            ))}
+            {scoreV3.completeness.limitations.map((item) => (
+              <Text key={item} size="xs" mt="xs">
+                {item}
+              </Text>
+            ))}
+          </details>
+        )}
       </Box>
     </Paper>
   );
