@@ -21,7 +21,8 @@ import { useState } from "react";
 import { useDashboardStore } from "@/store/dashboard.store";
 
 export function ClonePopover() {
-  const { selectedRepo, currentBranch } = useDashboardStore();
+  const selectedRepo = useDashboardStore((state) => state.selectedRepo);
+  const currentBranch = useDashboardStore((state) => state.currentBranch);
   const [protocol, setProtocol] = useState<"https" | "ssh">("https");
 
   if (!selectedRepo) return null;
@@ -30,11 +31,16 @@ export function ClonePopover() {
     selectedRepo.clone_url ||
     `https://github.com/${selectedRepo.owner.login}/${selectedRepo.name}.git`;
   const sshUrl = `git@github.com:${selectedRepo.owner.login}/${selectedRepo.name}.git`;
-  const zipUrl = `https://github.com/${selectedRepo.owner.login}/${selectedRepo.name}/archive/refs/heads/${currentBranch}.zip`;
+  const zipUrl = `https://github.com/${selectedRepo.owner.login}/${selectedRepo.name}/archive/refs/heads/${encodeURIComponent(currentBranch)}.zip`;
   const cloneTarget = protocol === "https" ? httpsUrl : sshUrl;
 
   return (
-    <Popover width={340} position="bottom-end" withArrow shadow="md">
+    <Popover
+      width="min(340px, calc(100vw - 24px))"
+      position="bottom-end"
+      withArrow
+      shadow="md"
+    >
       <Popover.Target>
         <Button
           size="compact-sm"

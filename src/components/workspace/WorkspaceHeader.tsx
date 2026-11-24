@@ -1,6 +1,15 @@
 "use client";
 
-import { Badge, Box, Button, CopyButton, Group, Text } from "@mantine/core";
+import {
+  Badge,
+  Box,
+  Button,
+  CopyButton,
+  Drawer,
+  Group,
+  Stack,
+  Text,
+} from "@mantine/core";
 import {
   IconBook,
   IconCircleDot,
@@ -66,10 +75,17 @@ export function WorkspaceHeader({
   const branch = useDashboardStore((s) => s.currentBranch);
   const file = useDashboardStore((s) => s.activeFile);
   const selectedRepo = useDashboardStore((s) => s.selectedRepo);
+  const [actionsOpen, setActionsOpen] = useState(false);
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
   if (!selectedRepo) return null;
 
-  const tabs = [
+  const tabs: {
+    id: WorkspaceTab;
+    label: string;
+    icon: typeof IconCode;
+    activeIcon?: typeof IconCode;
+    count?: number;
+  }[] = [
     { id: "code", label: "Code", icon: IconCode },
     {
       id: "commits",
@@ -128,6 +144,49 @@ export function WorkspaceHeader({
     },
   };
 
+  const actions = (
+    <>
+      <CopyButton
+        value={
+          typeof window === "undefined"
+            ? ""
+            : `${window.location.origin}/dashboard?${new URLSearchParams({ repo: selectedRepo.full_name, branch, ...(activeTab === "code" && file ? { file } : {}) })}`
+        }
+      >
+        {({ copied, copy }) => (
+          <Button size="compact-sm" variant="default" onClick={copy}>
+            {copied ? "Đã sao chép" : "Sao chép link GitVN"}
+          </Button>
+        )}
+      </CopyButton>
+      <Button
+        size="compact-sm"
+        variant="default"
+        leftSection={<IconUserPlus size={14} color="#71717a" />}
+        onClick={() => {
+          setActionsOpen(false);
+          setInviteModalOpen(true);
+        }}
+        styles={btnStyles}
+      >
+        Mời thành viên
+      </Button>
+
+      <ClonePopover />
+      <Button
+        size="compact-sm"
+        variant="default"
+        component="a"
+        href={selectedRepo.html_url}
+        target="_blank"
+        rightSection={<IconExternalLink size={13} color="#71717a" />}
+        styles={btnStyles}
+      >
+        GitHub
+      </Button>
+    </>
+  );
+
   return (
     <Box
       px="lg"
@@ -145,9 +204,17 @@ export function WorkspaceHeader({
       }}
     >
       <Group justify="space-between" align="center" wrap="nowrap" mb={12}>
-        <Group gap="xs" wrap="nowrap">
+        <Group gap="xs" style={{ minWidth: 0 }}>
           <IconBook size={19} color="#dc2626" />
-          <Text fw={600} fz={15} c="#18181b" ff="monospace">
+          <Text
+            fw={600}
+            fz={15}
+            c="#18181b"
+            ff="monospace"
+            truncate
+            title={selectedRepo.full_name}
+            style={{ minWidth: 0, maxWidth: "100%" }}
+          >
             {selectedRepo.owner.login} /{" "}
             <span style={{ color: "#18181b", fontWeight: 700 }}>
               {selectedRepo.name}
@@ -179,46 +246,34 @@ export function WorkspaceHeader({
           />
 
           <BranchSelector />
-          <CopyButton
-            value={
-              typeof window === "undefined"
-                ? ""
-                : `${window.location.origin}/dashboard?${new URLSearchParams({ repo: selectedRepo.full_name, branch, ...(activeTab === "code" && file ? { file } : {}) })}`
-            }
-          >
-            {({ copied, copy }) => (
-              <Button size="compact-sm" variant="default" onClick={copy}>
-                {copied ? "Đã sao chép" : "Sao chép link GitVN"}
-              </Button>
-            )}
-          </CopyButton>
         </Group>
 
         <Group gap="xs" wrap="nowrap">
+          <Group visibleFrom="lg" gap="xs" wrap="nowrap">
+            {actions}
+          </Group>
           <Button
+            hiddenFrom="lg"
             size="compact-sm"
             variant="default"
-            leftSection={<IconUserPlus size={14} color="#71717a" />}
-            onClick={() => setInviteModalOpen(true)}
-            styles={btnStyles}
+            onClick={() => setActionsOpen(true)}
           >
-            Mời thành viên
-          </Button>
-
-          <ClonePopover />
-          <Button
-            size="compact-sm"
-            variant="default"
-            component="a"
-            href={selectedRepo.html_url}
-            target="_blank"
-            rightSection={<IconExternalLink size={13} color="#71717a" />}
-            styles={btnStyles}
-          >
-            GitHub
+            Thao tác
           </Button>
         </Group>
       </Group>
+
+      <Drawer
+        opened={actionsOpen}
+        onClose={() => setActionsOpen(false)}
+        position="bottom"
+        size="auto"
+        title="Thao tác repo"
+      >
+        <Stack align="stretch" gap="xs">
+          {actions}
+        </Stack>
+      </Drawer>
 
       {/* Modal Mời & Tra cứu thành viên */}
       <InviteMemberModal
@@ -260,6 +315,11 @@ export function WorkspaceHeader({
           background: transparent !important;
         }
 
+        .ws-tab-btn:focus-visible {
+          outline: 2px solid #b91c1c;
+          outline-offset: -2px;
+        }
+
         .ws-tab-active::after {
           content: "";
           position: absolute;
@@ -273,6 +333,8 @@ export function WorkspaceHeader({
         }
       `}</style>
       <Group
+        component="nav"
+        aria-label="Các mục trong repository"
         gap={2}
         wrap="nowrap"
         className="hide-scrollbar"
@@ -283,16 +345,14 @@ export function WorkspaceHeader({
       >
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
-          const Icon =
-            isActive && (tab as any).activeIcon
-              ? (tab as any).activeIcon
-              : tab.icon;
+          const Icon = isActive ? (tab.activeIcon ?? tab.icon) : tab.icon;
 
           return (
             <button
               type="button"
               key={tab.id}
-              onClick={() => onTabChange(tab.id as WorkspaceTab)}
+              aria-current={isActive ? "page" : undefined}
+              onClick={() => onTabChange(tab.id)}
               className={`ws-tab-btn ${isActive ? "ws-tab-active" : ""}`}
             >
               <Icon

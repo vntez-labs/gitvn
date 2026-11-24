@@ -13,7 +13,9 @@ import { notifications } from "@mantine/notifications";
 import { IconAlertCircle, IconCheck } from "@tabler/icons-react";
 import axios from "axios";
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import useSWR from "swr";
+import { useAuthStore } from "@/store/auth.store";
 import { useDashboardStore } from "@/store/dashboard.store";
 import { BranchActionBanner } from "../workspace/BranchActionBanner";
 import { CodeTab } from "../workspace/CodeTab";
@@ -87,12 +89,8 @@ export function RepoWorkspace({ initialPull }: { initialPull?: number }) {
   const [commitsCount, setCommitsCount] = useState<number | undefined>(
     undefined,
   );
-  const [pullsCount, setPullsCount] = useState<number>(0);
-  const [issuesCount, setIssuesCount] = useState<number>(0);
-  const [hasGitvn, setHasGitvn] = useState<boolean>(false);
-  const [isOutdated, setIsOutdated] = useState<boolean>(false);
-  const [gitvnVersion, setGitvnVersion] = useState<string>("2.0.0");
-  const [outdatedReason, setOutdatedReason] = useState<string>("");
+  const [pullsCount, setPullsCount] = useState<number>();
+  const [issuesCount, setIssuesCount] = useState<number>();
   const [upgradeModalOpen, setUpgradeModalOpen] = useState<boolean>(false);
   const [bannerDismissed, setBannerDismissed] = useState<boolean>(false);
   const [initializingGitvn, setInitializingGitvn] = useState<boolean>(false);
@@ -101,30 +99,49 @@ export function RepoWorkspace({ initialPull }: { initialPull?: number }) {
   const currentBranch = useDashboardStore((s) => s.currentBranch);
   const selectRepo = useDashboardStore((s) => s.selectRepo);
 
+  const loadingTree = useDashboardStore((state) => state.loadingTree);
+  const waitForCode = activeTab === "code" && loadingTree;
+  const login = useAuthStore((state) => state.user?.login);
+  const owner = selectedRepo?.owner.login;
+  const repo = selectedRepo?.name;
+  const countsUrl =
+    owner &&
+    repo &&
+    `/api/github/repo?${new URLSearchParams({ owner, repo, view: "counts" })}`;
+  const { data: counts } = useSWR(
+    login && countsUrl && !waitForCode ? [countsUrl, login] : null,
+    async ([url]) =>
+      (await axios.get<{ pulls: number; issues: number }>(url)).data,
+    { dedupingInterval: 60_000, revalidateOnFocus: false, errorRetryCount: 1 },
+  );
+
   useEffect(() => {
     if (activeTab === "kanban") {
       setKanbanMounted(true);
     }
   }, [activeTab]);
 
-  const checkGitvnStatus = useCallback(() => {
-    if (!selectedRepo) return;
-    axios
-      .get(
-        `/api/gitvn?owner=${selectedRepo.owner.login}&repo=${selectedRepo.name}&branch=${encodeURIComponent(
-          currentBranch,
-        )}`,
-      )
-      .then((res) => {
-        setHasGitvn(Boolean(res.data.hasGitvn));
-        setIsOutdated(Boolean(res.data.isOutdated));
-        setGitvnVersion(res.data.currentVersion || "1.0.0");
-        setOutdatedReason(res.data.reason || "");
-      })
-      .catch((err) => {
-        console.error("Lỗi kiểm tra .gitvn:", err);
-      });
-  }, [selectedRepo, currentBranch]);
+  const gitvnUrl =
+    owner &&
+    repo &&
+    `/api/gitvn?${new URLSearchParams({ owner, repo, branch: currentBranch })}`;
+  const { data: gitvnStatus, mutate: checkGitvnStatus } = useSWR(
+    login && gitvnUrl && !waitForCode ? [gitvnUrl, login] : null,
+    async ([url]) =>
+      (
+        await axios.get<{
+          hasGitvn: boolean;
+          isOutdated: boolean;
+          currentVersion?: string;
+          reason?: string;
+        }>(url)
+      ).data,
+    { dedupingInterval: 30_000, revalidateOnFocus: false, errorRetryCount: 1 },
+  );
+  const hasGitvn = Boolean(gitvnStatus?.hasGitvn);
+  const isOutdated = Boolean(gitvnStatus?.isOutdated);
+  const gitvnVersion = gitvnStatus?.currentVersion || "2.0.0";
+  const outdatedReason = gitvnStatus?.reason || "";
 
   const handleInitializeGitvn = async () => {
     if (!selectedRepo) return;
@@ -147,10 +164,7 @@ export function RepoWorkspace({ initialPull }: { initialPull?: number }) {
           color: "teal",
           icon: <IconCheck size={16} />,
         });
-        setHasGitvn(true);
-        setIsOutdated(false);
-        setGitvnVersion("2.0.0");
-        checkGitvnStatus();
+        void checkGitvnStatus();
         selectRepo(selectedRepo, undefined, currentBranch);
       }
     } catch (err: any) {
@@ -164,38 +178,6 @@ export function RepoWorkspace({ initialPull }: { initialPull?: number }) {
       setInitializingGitvn(false);
     }
   };
-
-  // Tự động đồng bộ số lượng PRs và Issues mở thực tế ngay khi đổi Repo
-  useEffect(() => {
-    if (!selectedRepo) return;
-
-    // Reset về 0 tránh giữ số cũ của repo trước
-    setCommitsCount(undefined);
-    setPullsCount(0);
-    setIssuesCount(0);
-    setHasGitvn(false);
-    setIsOutdated(false);
-    setBannerDismissed(false);
-
-    const owner = selectedRepo.owner.login;
-    const repo = selectedRepo.name;
-
-    checkGitvnStatus();
-
-    // Gọi API stats để lấy số đếm thực tế
-    axios
-      .get(`/api/github/stats?owner=${owner}&repo=${repo}`)
-      .then((res) => {
-        const pulse = res.data?.pulse;
-        if (pulse) {
-          setPullsCount(pulse.pulls?.open ?? 0);
-          setIssuesCount(pulse.issues?.open ?? 0);
-        }
-      })
-      .catch((err) => {
-        console.error("Lỗi lấy số đếm badge:", err);
-      });
-  }, [selectedRepo, checkGitvnStatus]);
 
   if (!selectedRepo) return null;
 
@@ -213,13 +195,13 @@ export function RepoWorkspace({ initialPull }: { initialPull?: number }) {
         activeTab={activeTab}
         onTabChange={setActiveTab}
         commitsCount={commitsCount}
-        pullsCount={pullsCount}
-        issuesCount={issuesCount}
+        pullsCount={pullsCount ?? counts?.pulls}
+        issuesCount={issuesCount ?? counts?.issues}
         hasGitvn={hasGitvn}
         isOutdated={isOutdated}
         gitvnVersion={gitvnVersion}
         onOpenUpgradeModal={() => setUpgradeModalOpen(true)}
-        onInitializeGitvn={handleInitializeGitvn}
+        onInitializeGitvn={gitvnStatus ? handleInitializeGitvn : undefined}
         initializingGitvn={initializingGitvn}
       />
 
@@ -271,7 +253,7 @@ export function RepoWorkspace({ initialPull }: { initialPull?: number }) {
         />
       )}
 
-      <BranchActionBanner onTabChange={setActiveTab} />
+      {!waitForCode && <BranchActionBanner onTabChange={setActiveTab} />}
 
       {activeTab === "code" && (
         <CodeTab
@@ -299,7 +281,7 @@ export function RepoWorkspace({ initialPull }: { initialPull?: number }) {
       )}
       {activeTab === "docs" && (
         <DocsTab
-          onInitializeGitvn={handleInitializeGitvn}
+          onInitializeGitvn={gitvnStatus ? handleInitializeGitvn : undefined}
           hasGitvn={hasGitvn}
         />
       )}

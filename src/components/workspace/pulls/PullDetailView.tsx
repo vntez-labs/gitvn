@@ -75,20 +75,43 @@ export function PullDetailView({
       : null;
   const { data, error, isValidating, mutate } = useSWR(
     endpoint,
-    fetchPullData<{ pull: PullRequestDetails; checks: PullChecks }>,
+    fetchPullData<{ pull: PullRequestDetails }>,
     {
       refreshInterval: (current) => {
         if (current?.pull.state !== "open") return 0;
-        return current.pull.mergeable === null
-          ? 5000
-          : hasPendingPullChecks(current.checks)
-            ? 15000
-            : 30000;
+        return current.pull.mergeable === null ? 5000 : 45000;
       },
       errorRetryCount: 2,
     },
   );
   const pull = data?.pull;
+  const checkParams =
+    pull &&
+    new URLSearchParams({
+      view: "checks",
+      sha: pull.head.sha,
+      ...(pull.state === "open" &&
+      pull.mergeable === true &&
+      pull.merge_commit_sha
+        ? { test_sha: pull.merge_commit_sha }
+        : {}),
+    });
+  const checksRequest = useSWR(
+    endpoint && checkParams ? `${endpoint}&${checkParams}` : null,
+    fetchPullData<PullChecks>,
+    {
+      refreshInterval: (checks) => {
+        if (pull?.state !== "open") return 0;
+        return hasPendingPullChecks(checks) ? 15000 : 60000;
+      },
+      errorRetryCount: 2,
+    },
+  );
+  const checks = checksRequest.data;
+  function refreshPull() {
+    void mutate();
+    void checksRequest.mutate();
+  }
   const revision = pull && `&head=${pull.head.sha}&base=${pull.base.sha}`;
   const filesRequest = useSWR(
     endpoint && revision && activeTab === "files"
@@ -327,6 +350,16 @@ export function PullDetailView({
         </Box>
 
         {/* 2. TABS: CONVERSATION / COMMITS / FILES CHANGED */}
+        <Box mb="md">
+          <PullMergePanel
+            pull={pull}
+            stale={Boolean(error)}
+            refreshing={isValidating}
+            onRefresh={refreshPull}
+            onMerge={handleMerge}
+          />
+        </Box>
+
         <Tabs
           value={activeTab}
           onChange={setActiveTab}
@@ -371,7 +404,7 @@ export function PullDetailView({
               leftSection={<IconActivity size={15} />}
               rightSection={
                 <Badge size="xs" variant="light" color="gray">
-                  {data.checks.items.length}
+                  {checks?.items.length ?? "…"}
                 </Badge>
               }
             >
@@ -411,25 +444,16 @@ export function PullDetailView({
           <PullConversationTab
             pull={pull}
             commits={commits}
-            mergePanel={
-              <Stack gap="md">
-                {owner && repo && (
-                  <PullActivity
-                    owner={owner}
-                    repo={repo}
-                    pull={pull}
-                    onRefresh={() => void mutate()}
-                  />
-                )}
-                <PullChecksPanel checks={data.checks} />
-                <PullMergePanel
+            activity={
+              owner &&
+              repo && (
+                <PullActivity
+                  owner={owner}
+                  repo={repo}
                   pull={pull}
-                  stale={Boolean(error)}
-                  refreshing={isValidating}
-                  onRefresh={() => void mutate()}
-                  onMerge={handleMerge}
+                  onRefresh={refreshPull}
                 />
-              </Stack>
+              )
             }
           />
         )}
@@ -440,12 +464,16 @@ export function PullDetailView({
               variant="default"
               size="xs"
               w="fit-content"
-              onClick={() => void mutate()}
-              loading={isValidating}
+              onClick={() => void checksRequest.mutate()}
+              loading={checksRequest.isValidating}
             >
               Làm mới checks
             </Button>
-            <PullChecksPanel checks={data.checks} />
+            {checksRequest.error && (
+              <Alert color="yellow">Không tải được checks mới từ GitHub.</Alert>
+            )}
+            {checksRequest.isLoading && <Skeleton height={88} />}
+            {checks && <PullChecksPanel checks={checks} />}
           </Stack>
         )}
 

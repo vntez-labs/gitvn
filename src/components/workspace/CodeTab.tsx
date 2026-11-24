@@ -28,6 +28,7 @@ import { MarkdownViewer } from "@/components/MarkdownViewer";
 import { EmptyRepoView } from "@/components/workspace/EmptyRepoView";
 import type { WorkspaceTab } from "@/components/workspace/WorkspaceHeader";
 import { getDocumentFormat } from "@/lib/document-format";
+import { useAuthStore } from "@/store/auth.store";
 import { useDashboardStore } from "@/store/dashboard.store";
 import { CodeTreeSkeleton } from "./code/CodeTreeSkeleton";
 import { CommitDiffPreview } from "./code/CommitDiffPreview";
@@ -81,7 +82,11 @@ function decodePath(path: string) {
   }
 }
 
+type FileSnapshot = { text: string; sha: string };
+const fileDrafts = new Map<string, { original: FileSnapshot; text: string }>();
+
 export function CodeTab({ onNavigateTab, onPullCreated }: CodeTabProps) {
+  const login = useAuthStore((state) => state.user?.login);
   const tree = useDashboardStore((s) => s.tree);
   const treeError = useDashboardStore((s) => s.treeError);
   const loadingTree = useDashboardStore((s) => s.loadingTree);
@@ -100,10 +105,7 @@ export function CodeTab({ onNavigateTab, onPullCreated }: CodeTabProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState("");
   const [saving, setSaving] = useState(false);
-  const [original, setOriginal] = useState<{
-    text: string;
-    sha: string;
-  } | null>(null);
+  const [original, setOriginal] = useState<FileSnapshot | null>(null);
   const [commitOpen, setCommitOpen] = useState(false);
   const [commitMessage, setCommitMessage] = useState("");
   const [newBranch, setNewBranch] = useState("");
@@ -175,6 +177,7 @@ export function CodeTab({ onNavigateTab, onPullCreated }: CodeTabProps) {
   }, [isDragging]);
 
   const fileContext = JSON.stringify([
+    login,
     selectedRepo?.id,
     currentBranch,
     activeFile,
@@ -185,6 +188,14 @@ export function CodeTab({ onNavigateTab, onPullCreated }: CodeTabProps) {
     setIsEditing(false);
     setCommitOpen(false);
     setOriginal(null);
+  }
+
+  const draft = fileDrafts.get(fileContext);
+  function changeDraft(text: string, snapshot = original) {
+    setEditContent(text);
+    if (snapshot && text !== snapshot.text)
+      fileDrafts.set(fileContext, { original: snapshot, text });
+    else fileDrafts.delete(fileContext);
   }
 
   useEffect(() => {
@@ -352,6 +363,12 @@ export function CodeTab({ onNavigateTab, onPullCreated }: CodeTabProps) {
         message: commitMessage.trim(),
         sha: original.sha,
       });
+      const savedDraft = fileDrafts.get(fileContext);
+      if (
+        savedDraft?.text === editContent &&
+        savedDraft.original.sha === original.sha
+      )
+        fileDrafts.delete(fileContext);
       notifications.show({
         title: "Đã commit lên GitHub",
         message: `${activeFile} · ${target}`,
@@ -536,16 +553,20 @@ export function CodeTab({ onNavigateTab, onPullCreated }: CodeTabProps) {
             fileContent={isEditing ? editContent : fileContent}
             downloadUrl={documentUrl ?? undefined}
             isEditing={isEditing && !documentFormat}
+            hasDraft={Boolean(draft)}
             onToggleEdit={
               documentFormat || loadingContent || (!isEditing && !fileSha)
                 ? undefined
                 : () => {
                     if (!isEditing && fileSha) {
-                      setEditContent(fileContent);
-                      setOriginal({ text: fileContent, sha: fileSha });
+                      setEditContent(draft?.text ?? fileContent);
+                      setOriginal(
+                        draft?.original ?? { text: fileContent, sha: fileSha },
+                      );
                       setCreatedBranch("");
                       setNewBranch("");
                     }
+                    if (isEditing) fileDrafts.delete(fileContext);
                     setIsEditing(!isEditing);
                   }
             }
@@ -606,7 +627,7 @@ export function CodeTab({ onNavigateTab, onPullCreated }: CodeTabProps) {
               <Box p="md" style={{ flex: 1, display: "flex" }}>
                 <Textarea
                   value={editContent}
-                  onChange={(e) => setEditContent(e.currentTarget.value)}
+                  onChange={(e) => changeDraft(e.currentTarget.value)}
                   wrap="off"
                   style={{ flex: 1, display: "flex", flexDirection: "column" }}
                   styles={{
@@ -725,7 +746,7 @@ export function CodeTab({ onNavigateTab, onPullCreated }: CodeTabProps) {
             <Textarea
               label="Bản nháp"
               value={editContent}
-              onChange={(event) => setEditContent(event.currentTarget.value)}
+              onChange={(event) => changeDraft(event.currentTarget.value)}
               disabled={saving}
               rows={9}
               styles={{ input: { fontFamily: "monospace" } }}
@@ -749,6 +770,7 @@ export function CodeTab({ onNavigateTab, onPullCreated }: CodeTabProps) {
               w="fit-content"
               onClick={() => {
                 setOriginal(latest);
+                changeDraft(editContent, latest);
                 setLatest(null);
                 setCommitError("");
               }}

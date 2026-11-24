@@ -10,13 +10,13 @@ import type { PullCommit, PullRequestDetails } from "@/lib/pull-request";
 interface PullConversationTabProps {
   pull: PullRequestDetails;
   commits: PullCommit[];
-  mergePanel: ReactNode;
+  activity: ReactNode;
 }
 
 export function PullConversationTab({
   pull,
   commits,
-  mergePanel,
+  activity,
 }: PullConversationTabProps) {
   return (
     <Stack gap="md">
@@ -86,7 +86,7 @@ export function PullConversationTab({
           </Stack>
         </Box>
       )}
-      {mergePanel}
+      {activity}
     </Stack>
   );
 }

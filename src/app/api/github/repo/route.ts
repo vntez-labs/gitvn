@@ -1,5 +1,60 @@
 import { NextResponse } from "next/server";
 import { getValidAuthToken } from "@/lib/auth-token";
+import { pullRepositoryUrl } from "@/lib/pull-request";
+
+export async function GET(request: Request) {
+  const params = new URL(request.url).searchParams;
+  const owner = params.get("owner");
+  const repo = params.get("repo");
+  const url = pullRepositoryUrl(owner, repo);
+  if (!url)
+    return NextResponse.json({ error: "Repo không hợp lệ." }, { status: 400 });
+  const token = await getValidAuthToken();
+  if (!token)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    Accept: "application/vnd.github+json",
+  };
+  try {
+    if (params.get("view") === "counts") {
+      const res = await fetch("https://api.github.com/graphql", {
+        method: "POST",
+        headers: { ...headers, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query:
+            "query($owner: String!, $repo: String!) { repository(owner: $owner, name: $repo) { pullRequests(states: OPEN) { totalCount } issues(states: OPEN) { totalCount } } }",
+          variables: { owner, repo },
+        }),
+        cache: "no-store",
+      });
+      const result = await res.json();
+      const counts = result.data?.repository;
+      if (!res.ok || !counts || result.errors?.length)
+        return NextResponse.json(
+          { error: "Không thể tải số đếm repo." },
+          { status: res.ok ? 502 : res.status },
+        );
+      return NextResponse.json({
+        pulls: counts.pullRequests.totalCount,
+        issues: counts.issues.totalCount,
+      });
+    }
+    const res = await fetch(url, { headers, cache: "no-store" });
+    if (!res.ok)
+      return NextResponse.json(
+        { error: "Không thể mở repo GitHub." },
+        { status: res.status },
+      );
+    return NextResponse.json(await res.json());
+  } catch {
+    return NextResponse.json(
+      { error: "Không thể kết nối GitHub." },
+      { status: 502 },
+    );
+  }
+}
 
 export async function POST(request: Request) {
   const token = await getValidAuthToken();

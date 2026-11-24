@@ -73,19 +73,6 @@ export const useDashboardStore = create<DashboardState>()(
             invitations: data.invitations || [],
             dataLoading: false,
           });
-
-          const currentRepo = get().selectedRepo;
-          const currentFile = get().activeFile;
-          const branch = get().currentBranch;
-
-          if (currentRepo) {
-            const accessibleRepo = get().repos.find(
-              (item) => item.id === currentRepo.id,
-            );
-            if (accessibleRepo)
-              await get().selectRepo(accessibleRepo, currentFile, branch);
-            else get().resetWorkspace();
-          }
         } catch (error) {
           console.error("Lỗi lấy dữ liệu:", error);
           set({ dataLoading: false });

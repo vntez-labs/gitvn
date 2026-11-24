@@ -19,18 +19,21 @@ import {
   IconRefresh,
   IconUser,
 } from "@tabler/icons-react";
+import axios from "axios";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { GitVNLogo } from "@/components/brand/GitVNLogo";
 import { DashboardOverview } from "@/components/dashboard/Overview";
 import { DashboardSidebar } from "@/components/dashboard/Sidebar";
 import { RepoWorkspace } from "@/components/RepoWorkspace";
+import type { GitHubRepo } from "@/interfaces/github";
 import { useAuthStore } from "@/store/auth.store";
 import { useDashboardStore } from "@/store/dashboard.store";
 
 export default function DashboardPage() {
   const { user, isLoading, isAuthenticated } = useAuthStore();
-  const { selectedRepo, fetchInitialData } = useDashboardStore();
+  const selectedRepo = useDashboardStore((state) => state.selectedRepo);
+  const fetchInitialData = useDashboardStore((state) => state.fetchInitialData);
   const router = useRouter();
   const [reposOpen, reposDrawer] = useDisclosure(false);
   const [linkedPull, setLinkedPull] = useState<{
@@ -41,6 +44,7 @@ export default function DashboardPage() {
     linkedPull && linkedPull.repoId === selectedRepo?.id
       ? linkedPull.number
       : undefined;
+  const [restoringRepo, setRestoringRepo] = useState(true);
   const [linkError, setLinkError] = useState("");
   const login = user?.login;
 
@@ -52,33 +56,68 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!isAuthenticated || !login) return;
-    let cancelled = false;
+    const controller = new AbortController();
     async function openWorkspace() {
       const params = new URLSearchParams(window.location.search);
-      const repoName = params.get("repo");
-      await fetchInitialData();
-      if (cancelled || !repoName) return;
-      const { repos, selectRepo } = useDashboardStore.getState();
-      const repo = repos.find(
-        (item) => item.full_name.toLowerCase() === repoName.toLowerCase(),
-      );
-      if (!repo) {
-        setLinkError("Không tìm thấy repo trong tài khoản GitHub hiện tại.");
+      const saved = useDashboardStore.getState();
+      const repoName = params.get("repo") || saved.selectedRepo?.full_name;
+      if (!repoName) {
+        setRestoringRepo(false);
+        void fetchInitialData();
         return;
       }
-      const number = Number(params.get("pr"));
-      await selectRepo(
-        repo,
-        params.get("file"),
-        params.get("branch") || undefined,
-      );
-      if (!cancelled && Number.isSafeInteger(number) && number > 0)
-        setLinkedPull({ repoId: repo.id, number });
+
+      const [owner, repo, extra] = repoName.split("/");
+      try {
+        if (!owner || !repo || extra !== undefined)
+          throw new Error("Invalid repository");
+        const query = new URLSearchParams({ owner, repo });
+        const { data } = await axios.get<GitHubRepo>(
+          `/api/github/repo?${query}`,
+          { signal: controller.signal },
+        );
+        if (controller.signal.aborted) return;
+        const current = useDashboardStore.getState();
+        if (
+          current.selectedRepo?.id !== saved.selectedRepo?.id ||
+          current.currentBranch !== saved.currentBranch ||
+          current.activeFile !== saved.activeFile
+        )
+          return;
+        const linked = params.has("repo");
+        const number = Number(params.get("pr"));
+        if (linked && Number.isSafeInteger(number) && number > 0)
+          setLinkedPull({ repoId: data.id, number });
+        const opening = current.selectRepo(
+          data,
+          linked ? params.get("file") : saved.activeFile,
+          linked ? params.get("branch") : saved.currentBranch,
+        );
+        setRestoringRepo(false);
+        await opening;
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        if (
+          !params.has("repo") &&
+          axios.isAxiosError(error) &&
+          [403, 404].includes(error.response?.status ?? 0)
+        ) {
+          const current = useDashboardStore.getState();
+          if (current.selectedRepo?.id === saved.selectedRepo?.id)
+            current.resetWorkspace();
+        }
+        setLinkError(
+          "Không thể mở repo GitHub. Hãy chọn repo hoặc thử tải lại.",
+        );
+      } finally {
+        if (!controller.signal.aborted) {
+          setRestoringRepo(false);
+          void fetchInitialData();
+        }
+      }
     }
     void openWorkspace();
-    return () => {
-      cancelled = true;
-    };
+    return () => controller.abort();
   }, [isAuthenticated, login, fetchInitialData]);
 
   if (isLoading || !user) {
@@ -258,7 +297,12 @@ export default function DashboardPage() {
               {linkError}
             </Alert>
           )}
-          {selectedRepo ? (
+          {restoringRepo ? (
+            <Box p="lg" role="status" aria-label="Đang mở repository">
+              <Skeleton height={26} width="40%" mb="md" />
+              <Skeleton height={280} />
+            </Box>
+          ) : selectedRepo ? (
             <RepoWorkspace
               key={`${selectedRepo.id}:${initialPull ?? ""}`}
               initialPull={initialPull}

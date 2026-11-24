@@ -16,7 +16,9 @@ import { useRepoBranches } from "@/hooks/useRepoBranches";
 import { useDashboardStore } from "@/store/dashboard.store";
 
 export function BranchSelector() {
-  const { selectedRepo, currentBranch, changeBranch } = useDashboardStore();
+  const selectedRepo = useDashboardStore((state) => state.selectedRepo);
+  const currentBranch = useDashboardStore((state) => state.currentBranch);
+  const changeBranch = useDashboardStore((state) => state.changeBranch);
   const [opened, setOpened] = useState(false);
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState("");

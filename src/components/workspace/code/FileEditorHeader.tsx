@@ -26,6 +26,7 @@ interface FileEditorHeaderProps {
   fileContent: string;
   downloadUrl?: string;
   isEditing?: boolean;
+  hasDraft?: boolean;
   onToggleEdit?: () => void;
   onSave?: () => void;
   saving?: boolean;
@@ -38,6 +39,7 @@ export function FileEditorHeader({
   fileContent,
   downloadUrl,
   isEditing = false,
+  hasDraft = false,
   onToggleEdit,
   onSave,
   saving = false,
@@ -138,7 +140,7 @@ export function FileEditorHeader({
                 },
               }}
             >
-              Hủy
+              {hasDraft ? "Bỏ bản nháp" : "Hủy"}
             </Button>
             <Button
               size="xs"
@@ -181,7 +183,7 @@ export function FileEditorHeader({
                     },
                   }}
                 >
-                  Chỉnh sửa
+                  {hasDraft ? "Tiếp tục bản nháp" : "Chỉnh sửa"}
                 </Button>
               </Tooltip>
             )}

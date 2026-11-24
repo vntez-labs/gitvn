@@ -3,7 +3,6 @@ import { getValidAuthToken } from "@/lib/auth-token";
 import {
   type PullCheck,
   type PullChecks,
-  type PullRequestDetails,
   pullRepositoryUrl,
 } from "@/lib/pull-request";
 
@@ -131,23 +130,30 @@ export async function GET(request: Request) {
       return NextResponse.json(items);
     }
 
-    const response = await read(url);
-    if (!response.ok) {
-      const error = await response.json().catch(() => null);
-      return NextResponse.json(
-        { error: error?.message || "Không thể tải Pull Request." },
-        { status: response.status },
-      );
+    if (view !== "checks") {
+      const response = await read(url);
+      const pull = await response.json().catch(() => null);
+      if (!response.ok || !pull) {
+        return NextResponse.json(
+          { error: pull?.message || "Không thể tải Pull Request." },
+          { status: response.ok ? 502 : response.status },
+        );
+      }
+      return NextResponse.json({ pull });
     }
 
-    const pull: PullRequestDetails = await response.json();
-    const testSha =
-      pull.state === "open" && pull.mergeable === true
-        ? pull.merge_commit_sha
-        : null;
+    const sha = searchParams.get("sha");
+    const testSha = searchParams.get("test_sha");
+    const commit = /^[a-f0-9]{40}$/i;
+    if (!sha || !commit.test(sha) || (testSha && !commit.test(testSha))) {
+      return NextResponse.json(
+        { error: "Commit kiểm tra không hợp lệ." },
+        { status: 400 },
+      );
+    }
     const [headChecks, testChecks] = await Promise.all([
-      readChecks(read, repository, pull.head.sha, false),
-      testSha && testSha !== pull.head.sha
+      readChecks(read, repository, sha, false),
+      testSha && testSha !== sha
         ? readChecks(read, repository, testSha, true)
         : null,
     ]);
@@ -158,7 +164,7 @@ export async function GET(request: Request) {
           incomplete: headChecks.incomplete || Boolean(testChecks?.incomplete),
         };
 
-    return NextResponse.json({ pull, checks });
+    return NextResponse.json(checks);
   } catch {
     return NextResponse.json(
       { error: "Không thể tải dữ liệu Pull Request từ GitHub." },
