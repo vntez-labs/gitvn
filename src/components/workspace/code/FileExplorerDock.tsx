@@ -1,8 +1,17 @@
 "use client";
 
-import { ActionIcon, Badge, Box, Group, Text, Tooltip } from "@mantine/core";
-import { IconFilePlus } from "@tabler/icons-react";
-import { type FC, memo } from "react";
+import {
+  ActionIcon,
+  Badge,
+  Box,
+  Group,
+  Text,
+  TextInput,
+  Tooltip,
+  UnstyledButton,
+} from "@mantine/core";
+import { IconFilePlus, IconSearch } from "@tabler/icons-react";
+import { type FC, memo, useState } from "react";
 import { FileTree, type TreeNode } from "@/components/FileTree";
 
 interface FileExplorerDockProps {
@@ -19,6 +28,14 @@ export const FileExplorerDock: FC<FileExplorerDockProps> = memo(
     onSelectFile,
     onCreateFileClick,
   }) {
+    const [search, setSearch] = useState("");
+    const query = search.trim().toLowerCase();
+    const matches = query
+      ? tree.filter(
+          (node) =>
+            node.type === "blob" && node.path.toLowerCase().includes(query),
+        )
+      : [];
     return (
       <Box
         style={{
@@ -82,6 +99,16 @@ export const FileExplorerDock: FC<FileExplorerDockProps> = memo(
           </Group>
         </Box>
 
+        <TextInput
+          mx="xs"
+          mt="xs"
+          size="xs"
+          aria-label="Tìm file theo tên hoặc đường dẫn"
+          placeholder="Tìm file…"
+          leftSection={<IconSearch size={13} />}
+          value={search}
+          onChange={(event) => setSearch(event.currentTarget.value)}
+        />
         <Box
           style={{
             flex: 1,
@@ -91,7 +118,35 @@ export const FileExplorerDock: FC<FileExplorerDockProps> = memo(
             minHeight: 0,
           }}
         >
-          {tree.length === 0 ? (
+          {query ? (
+            matches.length ? (
+              <>
+                {matches.slice(0, 100).map((file) => (
+                  <UnstyledButton
+                    key={file.path}
+                    display="block"
+                    w="100%"
+                    px="xs"
+                    py={4}
+                    onClick={() => onSelectFile(file.path)}
+                  >
+                    <Text size="xs" truncate title={file.path}>
+                      {file.path}
+                    </Text>
+                  </UnstyledButton>
+                ))}
+                {matches.length > 100 && (
+                  <Text size="xs" c="dimmed" px="xs">
+                    Hiện 100/{matches.length} file. Nhập thêm để thu hẹp.
+                  </Text>
+                )}
+              </>
+            ) : (
+              <Text size="xs" c="dimmed" ta="center">
+                Không tìm thấy file.
+              </Text>
+            )
+          ) : tree.length === 0 ? (
             <Text fz="xs" c="#a1a1aa" ta="center" mt="xl">
               Không có file nào trong thư mục này
             </Text>

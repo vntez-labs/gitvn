@@ -1,6 +1,6 @@
 "use client";
 
-import { Badge, Box, Button, Group, Text } from "@mantine/core";
+import { Badge, Box, Button, CopyButton, Group, Text } from "@mantine/core";
 import {
   IconBook,
   IconCircleDot,
@@ -63,6 +63,8 @@ export function WorkspaceHeader({
   onInitializeGitvn,
   initializingGitvn = false,
 }: WorkspaceHeaderProps) {
+  const branch = useDashboardStore((s) => s.currentBranch);
+  const file = useDashboardStore((s) => s.activeFile);
   const selectedRepo = useDashboardStore((s) => s.selectedRepo);
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
   if (!selectedRepo) return null;
@@ -177,6 +179,19 @@ export function WorkspaceHeader({
           />
 
           <BranchSelector />
+          <CopyButton
+            value={
+              typeof window === "undefined"
+                ? ""
+                : `${window.location.origin}/dashboard?${new URLSearchParams({ repo: selectedRepo.full_name, branch, ...(activeTab === "code" && file ? { file } : {}) })}`
+            }
+          >
+            {({ copied, copy }) => (
+              <Button size="compact-sm" variant="default" onClick={copy}>
+                {copied ? "Đã sao chép" : "Sao chép link GitVN"}
+              </Button>
+            )}
+          </CopyButton>
         </Group>
 
         <Group gap="xs" wrap="nowrap">

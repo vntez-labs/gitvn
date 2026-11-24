@@ -5,7 +5,7 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const owner = searchParams.get("owner");
   const repo = searchParams.get("repo");
-  const branch = searchParams.get("branch") || "all";
+  const branch = searchParams.get("branch");
   const path = searchParams.get("path");
   const page = searchParams.get("page") || "1";
   const perPage = searchParams.get("per_page") || "100";
@@ -30,83 +30,16 @@ export async function GET(request: Request) {
   };
 
   try {
-    // Nếu yêu cầu "all", lấy danh sách commits từ các nhánh hoạt động và gộp lại
-    if (branch === "all") {
-      const branchesRes = await fetch(
-        `https://api.github.com/repos/${owner}/${repo}/branches?per_page=12`,
-        { headers, cache: "no-store" },
-      );
-
-      const branchesData = branchesRes.ok ? await branchesRes.json() : [];
-      const branchNames = Array.isArray(branchesData)
-        ? branchesData.map((b: any) => b.name)
-        : ["main"];
-
-      if (branchNames.length === 0) {
-        branchNames.push("main");
-      }
-
-      // Tải commits từ các nhánh song song (tối đa 8 nhánh phổ biến nhất)
-      const targetBranches = branchNames.slice(0, 8);
-      const commitLists = await Promise.all(
-        targetBranches.map(async (bName) => {
-          let bUrl = `https://api.github.com/repos/${owner}/${repo}/commits?sha=${encodeURIComponent(
-            bName,
-          )}&per_page=${perPage}&page=${page}`;
-          if (author && author !== "all") {
-            bUrl += `&author=${encodeURIComponent(author)}`;
-          }
-          if (path) {
-            bUrl += `&path=${encodeURIComponent(path)}`;
-          }
-          const res = await fetch(bUrl, { headers, cache: "no-store" });
-          if (!res.ok) return [];
-          const data = await res.json();
-          return Array.isArray(data) ? data : [];
-        }),
-      );
-
-      // Gộp và khử trùng lặp theo SHA
-      const commitMap = new Map<string, any>();
-      commitLists.flat().forEach((c) => {
-        if (c?.sha && !commitMap.has(c.sha)) {
-          commitMap.set(c.sha, c);
-        }
-      });
-
-      // Sắp xếp theo ngày commit mới nhất lên đầu
-      const mergedCommits = Array.from(commitMap.values()).sort(
-        (a, b) =>
-          new Date(
-            b.commit?.author?.date || b.commit?.committer?.date || 0,
-          ).getTime() -
-          new Date(
-            a.commit?.author?.date || a.commit?.committer?.date || 0,
-          ).getTime(),
-      );
-
-      return NextResponse.json({
-        commits: mergedCommits,
-        total: mergedCommits.length,
-        branches: branchNames,
-      });
-    }
-
-    // Trường hợp yêu cầu nhánh cụ thể
-    let url = `https://api.github.com/repos/${owner}/${repo}/commits?sha=${encodeURIComponent(
-      branch,
-    )}&page=${page}&per_page=${perPage}`;
-    if (author && author !== "all") {
-      url += `&author=${encodeURIComponent(author)}`;
-    }
-    if (path) {
-      url += `&path=${encodeURIComponent(path)}`;
-    }
+    const params = new URLSearchParams({ page, per_page: perPage });
+    if (branch) params.set("sha", branch);
+    if (author && author !== "all") params.set("author", author);
+    if (path) params.set("path", path);
+    const url = `https://api.github.com/repos/${owner}/${repo}/commits?${params}`;
 
     const res = await fetch(url, { headers, cache: "no-store" });
 
-    if (res.status === 409 || res.status === 404) {
-      return NextResponse.json({ commits: [], total: 0 });
+    if (res.status === 409) {
+      return NextResponse.json({ commits: [], hasMore: false });
     }
 
     if (!res.ok) {
@@ -118,7 +51,10 @@ export async function GET(request: Request) {
     }
 
     const data = await res.json();
-    return NextResponse.json({ commits: Array.isArray(data) ? data : [] });
+    return NextResponse.json({
+      commits: Array.isArray(data) ? data : [],
+      hasMore: res.headers.get("link")?.includes('rel="next"') ?? false,
+    });
   } catch {
     return NextResponse.json(
       { error: "Internal Server Error" },

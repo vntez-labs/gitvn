@@ -1,10 +1,12 @@
 "use client";
 
 import {
+  Alert,
   Avatar,
   Badge,
   Box,
   Button,
+  CopyButton,
   Group,
   Skeleton,
   Stack,
@@ -12,6 +14,7 @@ import {
   Text,
 } from "@mantine/core";
 import {
+  IconActivity,
   IconArrowLeft,
   IconCircleX,
   IconExternalLink,
@@ -22,10 +25,30 @@ import {
   IconMessageCircle,
 } from "@tabler/icons-react";
 import axios from "axios";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import useSWR from "swr";
+import type {
+  MergeMethod,
+  PullChecks,
+  PullCommit,
+  PullRequestDetails,
+} from "@/lib/pull-request";
 import { useDashboardStore } from "@/store/dashboard.store";
-import { DiffViewer } from "./DiffViewer";
+import { DiffViewer, type FileDiff } from "./DiffViewer";
+import { PullActivity } from "./PullActivity";
+import { hasPendingPullChecks, PullChecksPanel } from "./PullChecksPanel";
 import { PullConversationTab } from "./PullConversationTab";
+import { PullMergePanel } from "./PullMergePanel";
+
+async function fetchPullData<T>(url: string): Promise<T> {
+  return (await axios.get<T>(url)).data;
+}
+
+function pullError(error: unknown, fallback: string) {
+  return axios.isAxiosError<{ error: string }>(error)
+    ? error.response?.data?.error || fallback
+    : fallback;
+}
 
 interface PullDetailViewProps {
   pullNumber: number;
@@ -38,69 +61,107 @@ export function PullDetailView({
   onBack,
   onMergedSuccess,
 }: PullDetailViewProps) {
-  const { selectedRepo } = useDashboardStore();
-  const [data, setData] = useState<{
-    pull: any;
-    files: any[];
-    commits: any[];
-  } | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<
-    "conversation" | "commits" | "files"
-  >("conversation");
-
-  // Merge state
-  const [mergeMethod, setMergeMethod] = useState<"merge" | "squash" | "rebase">(
-    "merge",
+  const selectedRepo = useDashboardStore((state) => state.selectedRepo);
+  const [activeTab, setActiveTab] = useState<string | null>("conversation");
+  const owner = selectedRepo?.owner.login;
+  const repo = selectedRepo?.name;
+  const endpoint =
+    owner && repo
+      ? `/api/github/pulls/detail?${new URLSearchParams({
+          owner,
+          repo,
+          pull_number: String(pullNumber),
+        })}`
+      : null;
+  const { data, error, isValidating, mutate } = useSWR(
+    endpoint,
+    fetchPullData<{ pull: PullRequestDetails; checks: PullChecks }>,
+    {
+      refreshInterval: (current) => {
+        if (current?.pull.state !== "open") return 0;
+        return current.pull.mergeable === null
+          ? 5000
+          : hasPendingPullChecks(current.checks)
+            ? 15000
+            : 30000;
+      },
+      errorRetryCount: 2,
+    },
   );
-  const [merging, setMerging] = useState(false);
-  const [mergeError, setMergeError] = useState<string | null>(null);
-  const [mergeSuccess, setMergeSuccess] = useState(false);
+  const pull = data?.pull;
+  const revision = pull && `&head=${pull.head.sha}&base=${pull.base.sha}`;
+  const filesRequest = useSWR(
+    endpoint && revision && activeTab === "files"
+      ? `${endpoint}&view=files${revision}`
+      : null,
+    fetchPullData<FileDiff[]>,
+  );
+  const commitsRequest = useSWR(
+    endpoint &&
+      revision &&
+      (activeTab === "commits" || activeTab === "conversation")
+      ? `${endpoint}&view=commits${revision}`
+      : null,
+    fetchPullData<PullCommit[]>,
+  );
+  const files = filesRequest.data ?? [];
+  const commits = commitsRequest.data ?? [];
 
-  useEffect(() => {
-    if (!selectedRepo) return;
-    setLoading(true);
-
-    axios
-      .get(
-        `/api/github/pulls/detail?owner=${selectedRepo.owner.login}&repo=${selectedRepo.name}&pull_number=${pullNumber}`,
-      )
-      .then((res) => {
-        setData(res.data);
-      })
-      .catch((err) => console.error("Lỗi tải chi tiết PR:", err))
-      .finally(() => setLoading(false));
-  }, [selectedRepo?.id, pullNumber]);
-
-  const handleMerge = async () => {
-    if (!selectedRepo || !data?.pull) return;
-    setMerging(true);
-    setMergeError(null);
-
+  async function handleMerge(method: MergeMethod, sha: string) {
     try {
       await axios.put("/api/github/pulls/merge", {
-        owner: selectedRepo.owner.login,
-        repo: selectedRepo.name,
-        pull_number: pullNumber,
-        merge_method: mergeMethod,
-        commit_title: `${data.pull.title} (#${pullNumber})`,
+        owner,
+        repo,
+        pullNumber,
+        mergeMethod: method,
+        sha,
       });
-
-      setMergeSuccess(true);
-      setTimeout(() => {
-        onMergedSuccess();
-      }, 1500);
-    } catch (err: any) {
-      setMergeError(
-        err.response?.data?.error ||
-          "Merge thất bại. Có thể do xung đột hoặc không đủ quyền.",
+    } catch (error) {
+      void mutate();
+      throw new Error(
+        pullError(
+          error,
+          "GitHub chưa xác nhận merge. Hãy kiểm tra lại trạng thái PR.",
+        ),
       );
-    } finally {
-      setMerging(false);
     }
-  };
 
-  if (loading || !data) {
+    await mutate(
+      (current) =>
+        current && {
+          ...current,
+          pull: {
+            ...current.pull,
+            state: "closed",
+            merged: true,
+          },
+        },
+      { revalidate: false },
+    );
+    onMergedSuccess();
+  }
+
+  if (!data || !pull) {
+    if (error) {
+      return (
+        <Stack p="xl">
+          <Button variant="subtle" onClick={onBack} w="fit-content">
+            Quay lại danh sách Pull Requests
+          </Button>
+          <Alert color="red">
+            {pullError(error, "Không thể tải Pull Request.")}
+          </Alert>
+          <Button
+            variant="default"
+            onClick={() => void mutate()}
+            loading={isValidating}
+            w="fit-content"
+          >
+            Thử lại
+          </Button>
+        </Stack>
+      );
+    }
     return (
       <Box p="xl" style={{ maxWidth: 960, margin: "0 auto" }}>
         <Skeleton height={28} width={120} radius="sm" mb="lg" />
@@ -112,12 +173,8 @@ export function PullDetailView({
     );
   }
 
-  const { pull, files, commits } = data;
-  const isMerged = Boolean(pull.merged_at);
+  const isMerged = pull.merged;
   const isOpen = pull.state === "open";
-
-  const totalAdditions = files.reduce((acc, f) => acc + (f.additions || 0), 0);
-  const totalDeletions = files.reduce((acc, f) => acc + (f.deletions || 0), 0);
 
   return (
     <Box
@@ -156,16 +213,31 @@ export function PullDetailView({
               </span>
             </Text>
 
-            <Button
-              size="compact-xs"
-              variant="default"
-              component="a"
-              href={pull.html_url}
-              target="_blank"
-              rightSection={<IconExternalLink size={12} />}
-            >
-              Xem trên GitHub
-            </Button>
+            <Group gap="xs">
+              <CopyButton
+                value={
+                  typeof window === "undefined" || !owner || !repo
+                    ? ""
+                    : `${window.location.origin}/dashboard?${new URLSearchParams({ repo: `${owner}/${repo}`, pr: String(pull.number) })}`
+                }
+              >
+                {({ copied, copy }) => (
+                  <Button size="compact-xs" variant="default" onClick={copy}>
+                    {copied ? "Đã sao chép" : "Sao chép link GitVN"}
+                  </Button>
+                )}
+              </CopyButton>
+              <Button
+                size="compact-xs"
+                variant="default"
+                component="a"
+                href={pull.html_url}
+                target="_blank"
+                rightSection={<IconExternalLink size={12} />}
+              >
+                Xem trên GitHub
+              </Button>
+            </Group>
           </Group>
 
           {/* Subtitle mô tả ngắn gọn */}
@@ -188,12 +260,26 @@ export function PullDetailView({
                   <IconCircleX size={14} />
                 )
               }
-              color={isMerged ? "violet" : isOpen ? "green" : "red"}
+              color={
+                isMerged
+                  ? "violet"
+                  : pull.draft && isOpen
+                    ? "gray"
+                    : isOpen
+                      ? "green"
+                      : "red"
+              }
               variant="filled"
               radius="xl"
               styles={{ root: { textTransform: "capitalize" } }}
             >
-              {isMerged ? "Merged" : isOpen ? "Open" : "Closed"}
+              {isMerged
+                ? "Merged"
+                : isOpen
+                  ? pull.draft
+                    ? "Draft"
+                    : "Open"
+                  : "Closed"}
             </Badge>
 
             <Text
@@ -212,7 +298,7 @@ export function PullDetailView({
               </span>
               <span>{isMerged ? "đã merge" : "muốn merge"}</span>
               <span style={{ color: "#0f172a", fontWeight: 600 }}>
-                {commits.length} commits
+                {pull.commits} commits
               </span>
               <span>vào</span>
               <Badge
@@ -223,7 +309,7 @@ export function PullDetailView({
                 ff="monospace"
                 px={6}
               >
-                {pull.base.ref}
+                {pull.base.label}
               </Badge>
               <span>từ</span>
               <Badge
@@ -234,7 +320,7 @@ export function PullDetailView({
                 ff="monospace"
                 px={6}
               >
-                {pull.head.ref}
+                {pull.head.label}
               </Badge>
             </Text>
           </Box>
@@ -243,7 +329,7 @@ export function PullDetailView({
         {/* 2. TABS: CONVERSATION / COMMITS / FILES CHANGED */}
         <Tabs
           value={activeTab}
-          onChange={(val) => setActiveTab(val as any)}
+          onChange={setActiveTab}
           styles={{
             root: { marginBottom: 20 },
             list: { borderBottom: "1px solid #e2e8f0" },
@@ -273,11 +359,23 @@ export function PullDetailView({
               leftSection={<IconGitCommit size={15} />}
               rightSection={
                 <Badge size="xs" variant="light" color="gray" circle>
-                  {commits.length}
+                  {pull.commits}
                 </Badge>
               }
             >
               Commits
+            </Tabs.Tab>
+
+            <Tabs.Tab
+              value="checks"
+              leftSection={<IconActivity size={15} />}
+              rightSection={
+                <Badge size="xs" variant="light" color="gray">
+                  {data.checks.items.length}
+                </Badge>
+              }
+            >
+              Checks
             </Tabs.Tab>
 
             <Tabs.Tab
@@ -286,13 +384,13 @@ export function PullDetailView({
               rightSection={
                 <Group gap={4} wrap="nowrap">
                   <Badge size="xs" variant="light" color="gray" circle>
-                    {files.length}
+                    {pull.changed_files}
                   </Badge>
                   <Text fz={11} c="#16a34a" fw={600}>
-                    +{totalAdditions}
+                    +{pull.additions}
                   </Text>
                   <Text fz={11} c="#dc2626" fw={600}>
-                    -{totalDeletions}
+                    -{pull.deletions}
                   </Text>
                 </Group>
               }
@@ -302,21 +400,74 @@ export function PullDetailView({
           </Tabs.List>
         </Tabs>
 
-        {/* 3. NỘI DUNG TỪNG TAB */}
+        {error && (
+          <Alert color="yellow" mb="md">
+            {pullError(error, "Không thể cập nhật trạng thái từ GitHub.")} Dữ
+            liệu đang hiển thị có thể đã cũ.
+          </Alert>
+        )}
 
-        {/* TAB 1: CONVERSATION */}
         {activeTab === "conversation" && (
           <PullConversationTab
             pull={pull}
             commits={commits}
-            isOpen={isOpen}
-            mergeSuccess={mergeSuccess}
-            mergeError={mergeError}
-            mergeMethod={mergeMethod}
-            setMergeMethod={setMergeMethod}
-            merging={merging}
-            onMerge={handleMerge}
+            mergePanel={
+              <Stack gap="md">
+                {owner && repo && (
+                  <PullActivity
+                    owner={owner}
+                    repo={repo}
+                    pull={pull}
+                    onRefresh={() => void mutate()}
+                  />
+                )}
+                <PullChecksPanel checks={data.checks} />
+                <PullMergePanel
+                  pull={pull}
+                  stale={Boolean(error)}
+                  refreshing={isValidating}
+                  onRefresh={() => void mutate()}
+                  onMerge={handleMerge}
+                />
+              </Stack>
+            }
           />
+        )}
+
+        {activeTab === "checks" && (
+          <Stack gap="sm">
+            <Button
+              variant="default"
+              size="xs"
+              w="fit-content"
+              onClick={() => void mutate()}
+              loading={isValidating}
+            >
+              Làm mới checks
+            </Button>
+            <PullChecksPanel checks={data.checks} />
+          </Stack>
+        )}
+
+        {(activeTab === "conversation" || activeTab === "commits") &&
+          commitsRequest.error && (
+            <Alert color="red" my="sm">
+              {pullError(
+                commitsRequest.error,
+                "Không thể tải danh sách commit.",
+              )}
+            </Alert>
+          )}
+        {activeTab === "commits" && commitsRequest.isLoading && (
+          <Skeleton height={90} />
+        )}
+        {activeTab === "files" && filesRequest.isLoading && (
+          <Skeleton height={120} />
+        )}
+        {activeTab === "files" && filesRequest.error && (
+          <Alert color="red" my="sm">
+            {pullError(filesRequest.error, "Không thể tải thay đổi của PR.")}
+          </Alert>
         )}
 
         {/* TAB 2: COMMITS */}

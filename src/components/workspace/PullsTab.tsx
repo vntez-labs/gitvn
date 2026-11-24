@@ -1,92 +1,95 @@
 "use client";
 
 import {
+  Alert,
   Box,
   Button,
   Group,
   Pagination,
   SegmentedControl,
+  Select,
   Skeleton,
   Stack,
   Text,
   TextInput,
 } from "@mantine/core";
+import { useDebouncedValue } from "@mantine/hooks";
 import { IconGitPullRequest, IconPlus, IconSearch } from "@tabler/icons-react";
 import axios from "axios";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import useSWR from "swr";
+import { useAuthStore } from "@/store/auth.store";
 import { useDashboardStore } from "@/store/dashboard.store";
 import { CreatePullModal } from "./pulls/CreatePullModal";
 import { PullDetailView } from "./pulls/PullDetailView";
-import { PullListItem } from "./pulls/PullListItem";
+import { PullListItem, type PullListItemProps } from "./pulls/PullListItem";
 
 interface PullsTabProps {
+  initialPull?: number;
+  onPullOpened?: (number: number | null) => void;
   onPullsLoaded?: (count: number) => void;
 }
 
-export function PullsTab({ onPullsLoaded }: PullsTabProps) {
-  const { selectedRepo } = useDashboardStore();
-  const [pulls, setPulls] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+export function PullsTab({
+  initialPull,
+  onPullOpened,
+  onPullsLoaded,
+}: PullsTabProps) {
+  const selectedRepo = useDashboardStore((state) => state.selectedRepo);
+  const login = useAuthStore((state) => state.user?.login);
   const [filter, setFilter] = useState<"all" | "open" | "closed">("open");
   const [searchQuery, setSearchQuery] = useState("");
-
-  // State phân trang & tổng số PR thực tế
+  const [query] = useDebouncedValue(searchQuery.trim(), 300);
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalCount, setTotalCount] = useState<number>(0);
-
   const [selectedPullNumber, setSelectedPullNumber] = useState<number | null>(
-    null,
+    initialPull ?? null,
   );
   const [createModalOpen, setCreateModalOpen] = useState(false);
-
-  const fetchPulls = () => {
-    if (!selectedRepo) return;
-    setLoading(true);
-
-    axios
-      .get(
-        `/api/github/pulls?owner=${selectedRepo.owner.login}&repo=${selectedRepo.name}&state=${filter}&page=${page}&per_page=15`,
-      )
-      .then((res) => {
-        const data = res.data.pulls || [];
-        const count = res.data.totalCount ?? data.length;
-        setPulls(data);
-        setTotalPages(res.data.totalPages || 1);
-        setTotalCount(count);
-        // Chỉ cập nhật badge số lượng open PRs khi filter là 'open'
-        if (onPullsLoaded && filter === "open") {
-          onPullsLoaded(count);
-        }
-      })
-      .catch((err) => console.error("Lỗi tải PRs:", err))
-      .finally(() => setLoading(false));
-  };
-
+  const [view, setView] = useState<string | null>(null);
+  const params =
+    selectedRepo &&
+    new URLSearchParams({
+      owner: selectedRepo.owner.login,
+      repo: selectedRepo.name,
+      state: filter,
+      page: String(page),
+      q: query,
+      view: view || "",
+      login: login || "",
+    });
+  const {
+    data,
+    error,
+    isLoading: loading,
+    mutate,
+  } = useSWR(
+    params && login ? [`/api/github/pulls?${params}`, login] : null,
+    async ([url]) => (await axios.get(url)).data,
+    { errorRetryCount: 1 },
+  );
+  const filteredPulls = (data?.items ??
+    data?.pulls ??
+    []) as PullListItemProps["pr"][];
+  const totalCount = data?.totalCount ?? 0;
+  const totalPages = data?.totalPages ?? 1;
+  const unfilteredOpenCount =
+    data && filter === "open" && !query && !view ? totalCount : null;
   useEffect(() => {
-    fetchPulls();
-  }, [selectedRepo?.id, filter, page]);
+    if (unfilteredOpenCount !== null) onPullsLoaded?.(unfilteredOpenCount);
+  }, [unfilteredOpenCount, onPullsLoaded]);
 
-  const filteredPulls = useMemo(() => {
-    if (!searchQuery.trim()) return pulls;
-    const q = searchQuery.toLowerCase();
-    return pulls.filter(
-      (item) =>
-        item.title.toLowerCase().includes(q) ||
-        item.user?.login?.toLowerCase().includes(q) ||
-        String(item.number).includes(q),
-    );
-  }, [pulls, searchQuery]);
+  function openPull(number: number | null) {
+    setSelectedPullNumber(number);
+    onPullOpened?.(number);
+  }
 
   if (selectedPullNumber) {
     return (
       <PullDetailView
+        key={`${selectedRepo?.id}:${selectedPullNumber}`}
         pullNumber={selectedPullNumber}
-        onBack={() => setSelectedPullNumber(null)}
-        onMergedSuccess={() => {
-          fetchPulls();
-          setSelectedPullNumber(null);
-        }}
+        onBack={() => openPull(null)}
+        onMergedSuccess={() => void mutate()}
       />
     );
   }
@@ -111,7 +114,10 @@ export function PullsTab({ onPullsLoaded }: PullsTabProps) {
               leftSection={<IconSearch size={14} color="#94a3b8" />}
               size="xs"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.currentTarget.value)}
+              onChange={(e) => {
+                setSearchQuery(e.currentTarget.value);
+                setPage(1);
+              }}
               style={{ width: 280 }}
               styles={{
                 input: {
@@ -125,7 +131,7 @@ export function PullsTab({ onPullsLoaded }: PullsTabProps) {
             <SegmentedControl
               value={filter}
               onChange={(val) => {
-                setFilter(val as any);
+                setFilter(val as typeof filter);
                 setPage(1);
               }}
               size="xs"
@@ -146,9 +152,25 @@ export function PullsTab({ onPullsLoaded }: PullsTabProps) {
           </Group>
 
           <Group gap="sm" align="center">
+            <Select
+              size="xs"
+              aria-label="Lọc theo người dùng"
+              placeholder="Tất cả PR"
+              value={view}
+              clearable
+              onChange={(value) => {
+                setView(value);
+                setPage(1);
+                if (value === "review") setFilter("open");
+              }}
+              data={[
+                { value: "mine", label: "PR của tôi" },
+                { value: "review", label: "Chờ tôi review" },
+              ]}
+            />
             <Text fz="xs" c="#6e675f">
               {searchQuery.trim()
-                ? `Tìm thấy ${filteredPulls.length} PRs (trong ${totalCount} PRs)`
+                ? `Tìm thấy ${totalCount} PRs`
                 : `Trang ${page} / ${totalPages} (${totalCount} PRs)`}
             </Text>
 
@@ -163,8 +185,27 @@ export function PullsTab({ onPullsLoaded }: PullsTabProps) {
           </Group>
         </Group>
 
+        {data?.incomplete && (
+          <Alert color="yellow" mb="sm">
+            GitHub trả kết quả tìm kiếm giới hạn. Hãy thu hẹp bộ lọc.
+          </Alert>
+        )}
         {/* Danh sách Pulls */}
-        {loading ? (
+        {error ? (
+          <Alert color="red" title="Không thể tải Pull Requests">
+            {axios.isAxiosError(error)
+              ? error.response?.data?.error || error.message
+              : "Lỗi kết nối GitHub."}
+            <Button
+              ml="sm"
+              size="compact-xs"
+              variant="subtle"
+              onClick={() => void mutate()}
+            >
+              Thử lại
+            </Button>
+          </Alert>
+        ) : loading ? (
           <Stack
             gap={1}
             style={{
@@ -209,7 +250,7 @@ export function PullsTab({ onPullsLoaded }: PullsTabProps) {
               <PullListItem
                 key={pr.id}
                 pr={pr}
-                onClick={() => setSelectedPullNumber(pr.number)}
+                onClick={() => openPull(pr.number)}
               />
             ))}
           </Stack>
@@ -249,10 +290,10 @@ export function PullsTab({ onPullsLoaded }: PullsTabProps) {
           onClose={() => setCreateModalOpen(false)}
           owner={selectedRepo.owner.login}
           repo={selectedRepo.name}
-          defaultBase={(selectedRepo as any).default_branch || "main"}
+          defaultBase={selectedRepo.default_branch || "main"}
           onSuccess={(newNum) => {
-            fetchPulls();
-            setSelectedPullNumber(newNum);
+            void mutate();
+            openPull(newNum);
           }}
         />
       )}

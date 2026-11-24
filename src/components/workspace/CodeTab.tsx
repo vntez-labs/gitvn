@@ -1,13 +1,17 @@
 "use client";
 
 import {
+  Alert,
   Box,
   Button,
   Drawer,
+  Group,
+  Modal,
   Skeleton,
   Stack,
   Text,
   Textarea,
+  TextInput,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
@@ -26,10 +30,12 @@ import type { WorkspaceTab } from "@/components/workspace/WorkspaceHeader";
 import { getDocumentFormat } from "@/lib/document-format";
 import { useDashboardStore } from "@/store/dashboard.store";
 import { CodeTreeSkeleton } from "./code/CodeTreeSkeleton";
+import { CommitDiffPreview } from "./code/CommitDiffPreview";
 import { CreateFileModal } from "./code/CreateFileModal";
 import { DocumentPreview } from "./code/DocumentPreview";
 import { FileEditorHeader } from "./code/FileEditorHeader";
 import { FileExplorerDock } from "./code/FileExplorerDock";
+import { CreatePullModal } from "./pulls/CreatePullModal";
 
 const CodeViewer = dynamic(
   () => import("@/components/CodeViewer").then((mod) => mod.CodeViewer),
@@ -49,6 +55,7 @@ const CodeViewer = dynamic(
 );
 
 interface CodeTabProps {
+  onPullCreated?: (number: number) => void;
   onNavigateTab?: (tab: WorkspaceTab) => void;
 }
 
@@ -74,13 +81,14 @@ function decodePath(path: string) {
   }
 }
 
-export function CodeTab({ onNavigateTab }: CodeTabProps) {
+export function CodeTab({ onNavigateTab, onPullCreated }: CodeTabProps) {
   const tree = useDashboardStore((s) => s.tree);
   const treeError = useDashboardStore((s) => s.treeError);
   const loadingTree = useDashboardStore((s) => s.loadingTree);
   const activeFile = useDashboardStore((s) => s.activeFile);
   const selectFile = useDashboardStore((s) => s.selectFile);
   const fileContent = useDashboardStore((s) => s.fileContent);
+  const fileSha = useDashboardStore((s) => s.fileSha);
   const contentError = useDashboardStore((s) => s.contentError);
   const loadingContent = useDashboardStore((s) => s.loadingContent);
   const selectedRepo = useDashboardStore((s) => s.selectedRepo);
@@ -92,6 +100,19 @@ export function CodeTab({ onNavigateTab }: CodeTabProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState("");
   const [saving, setSaving] = useState(false);
+  const [original, setOriginal] = useState<{
+    text: string;
+    sha: string;
+  } | null>(null);
+  const [commitOpen, setCommitOpen] = useState(false);
+  const [commitMessage, setCommitMessage] = useState("");
+  const [newBranch, setNewBranch] = useState("");
+  const [createdBranch, setCreatedBranch] = useState("");
+  const [commitError, setCommitError] = useState("");
+  const [latest, setLatest] = useState<{ text: string; sha: string } | null>(
+    null,
+  );
+  const [pullBranch, setPullBranch] = useState("");
 
   // Kích thước thanh File Explorer có thể kéo giãn linh hoạt
   const [explorerWidth, setExplorerWidth] = useState<number>(() => {
@@ -153,10 +174,27 @@ export function CodeTab({ onNavigateTab }: CodeTabProps) {
     };
   }, [isDragging]);
 
-  useEffect(() => {
+  const fileContext = JSON.stringify([
+    selectedRepo?.id,
+    currentBranch,
+    activeFile,
+  ]);
+  const [editorContext, setEditorContext] = useState(fileContext);
+  if (fileContext !== editorContext) {
+    setEditorContext(fileContext);
     setIsEditing(false);
-    setEditContent(activeFile ? fileContent : "");
-  }, [activeFile, fileContent]);
+    setCommitOpen(false);
+    setOriginal(null);
+  }
+
+  useEffect(() => {
+    if (!isEditing || editContent === original?.text) return;
+    const warn = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [isEditing, editContent, original]);
 
   const lineCount = useMemo(() => {
     if (!fileContent) return 0;
@@ -279,45 +317,91 @@ export function CodeTab({ onNavigateTab }: CodeTabProps) {
       : undefined;
 
   const handleSaveFile = async () => {
-    if (!selectedRepo || !activeFile) return;
+    if (
+      !selectedRepo ||
+      !activeFile ||
+      !original ||
+      !commitMessage.trim() ||
+      editContent === original.text
+    )
+      return;
     setSaving(true);
+    setCommitError("");
+    setLatest(null);
+    const {
+      owner: { login: owner },
+      name: repo,
+    } = selectedRepo;
+    const target = newBranch.trim() || currentBranch;
     try {
-      const res = await axios.put("/api/github/content", {
-        owner: selectedRepo.owner.login,
-        repo: selectedRepo.name,
-        path: activeFile,
-        branch: currentBranch,
-        content: editContent,
-        message: `chore: update ${activeFile} via GitVN`,
-      });
-
-      if (res.data.success) {
-        notifications.show({
-          title: "Đã lưu & commit thành công!",
-          message: `Thay đổi trên ${activeFile} đã được đẩy lên branch ${currentBranch}`,
-          color: "teal",
-          icon: <IconCheck size={16} />,
+      if (target !== currentBranch && target !== createdBranch) {
+        await axios.post("/api/github/branches", {
+          owner,
+          repo,
+          name: target,
+          from: currentBranch,
         });
-        const current = useDashboardStore.getState();
+        setCreatedBranch(target);
+      }
+      await axios.put("/api/github/content", {
+        owner,
+        repo,
+        path: activeFile,
+        branch: target,
+        content: editContent,
+        message: commitMessage.trim(),
+        sha: original.sha,
+      });
+      notifications.show({
+        title: "Đã commit lên GitHub",
+        message: `${activeFile} · ${target}`,
+        color: "teal",
+        icon: <IconCheck size={16} />,
+      });
+      const current = useDashboardStore.getState();
+      if (
+        current.selectedRepo?.id === selectedRepo.id &&
+        current.currentBranch === currentBranch &&
+        current.activeFile === activeFile
+      ) {
+        setCommitOpen(false);
+        setIsEditing(false);
+        await (target === currentBranch
+          ? selectFile(activeFile)
+          : selectRepo(selectedRepo, activeFile, target));
         if (
-          current.selectedRepo?.id === selectedRepo.id &&
-          current.currentBranch === currentBranch &&
-          current.activeFile === activeFile
-        ) {
-          setIsEditing(false);
-          void selectFile(activeFile);
-        }
+          useDashboardStore.getState().selectedRepo?.id === selectedRepo.id &&
+          target !== (selectedRepo.default_branch || "main")
+        )
+          setPullBranch(target);
       }
     } catch (error) {
-      notifications.show({
-        title: "Lưu file thất bại",
-        message: axios.isAxiosError<{ error?: string }>(error)
+      setCommitError(
+        axios.isAxiosError(error)
           ? error.response?.data?.error || error.message
-          : "Không thể lưu file.",
-        color: "red",
-      });
+          : "Không thể tạo commit.",
+      );
     } finally {
       setSaving(false);
+    }
+  };
+
+  const loadLatest = async () => {
+    if (!selectedRepo || !activeFile) return;
+    const params = new URLSearchParams({
+      owner: selectedRepo.owner.login,
+      repo: selectedRepo.name,
+      path: activeFile,
+      ref: createdBranch === newBranch.trim() ? createdBranch : currentBranch,
+    });
+    try {
+      const { data } = await axios.get(`/api/github/content?${params}`);
+      if (!data.sha) throw new Error();
+      setLatest({ text: data.content, sha: data.sha });
+    } catch {
+      setCommitError(
+        "Không thể tải phiên bản mới. Bản nháp vẫn nằm trong trình sửa.",
+      );
     }
   };
 
@@ -453,14 +537,24 @@ export function CodeTab({ onNavigateTab }: CodeTabProps) {
             downloadUrl={documentUrl ?? undefined}
             isEditing={isEditing && !documentFormat}
             onToggleEdit={
-              documentFormat || loadingContent
+              documentFormat || loadingContent || (!isEditing && !fileSha)
                 ? undefined
                 : () => {
-                    if (!isEditing) setEditContent(fileContent);
+                    if (!isEditing && fileSha) {
+                      setEditContent(fileContent);
+                      setOriginal({ text: fileContent, sha: fileSha });
+                      setCreatedBranch("");
+                      setNewBranch("");
+                    }
                     setIsEditing(!isEditing);
                   }
             }
-            onSave={handleSaveFile}
+            onSave={() => {
+              setCommitMessage(`Update ${activeFile}`);
+              setCommitError("");
+              setLatest(null);
+              setCommitOpen(true);
+            }}
             saving={saving}
           />
         )}
@@ -598,6 +692,107 @@ export function CodeTab({ onNavigateTab }: CodeTabProps) {
           )}
         </Box>
       </Box>
+
+      <Modal
+        opened={commitOpen}
+        onClose={() => {
+          if (!saving) setCommitOpen(false);
+        }}
+        title="Xem thay đổi và commit"
+        size="xl"
+        closeOnClickOutside={!saving}
+        closeOnEscape={!saving}
+        withCloseButton={!saving}
+      >
+        <Stack>
+          <Text size="sm">
+            {selectedRepo?.full_name} · {currentBranch} · {activeFile}
+          </Text>
+          {commitOpen && original && (
+            <CommitDiffPreview
+              before={latest?.text ?? original.text}
+              after={editContent}
+            />
+          )}
+          <Group grow align="start">
+            <Textarea
+              label={latest ? "Phiên bản trên GitHub" : "Trước khi sửa"}
+              value={latest?.text ?? original?.text ?? ""}
+              readOnly
+              rows={9}
+              styles={{ input: { fontFamily: "monospace" } }}
+            />
+            <Textarea
+              label="Bản nháp"
+              value={editContent}
+              onChange={(event) => setEditContent(event.currentTarget.value)}
+              disabled={saving}
+              rows={9}
+              styles={{ input: { fontFamily: "monospace" } }}
+            />
+          </Group>
+          {commitError && <Alert color="red">{commitError}</Alert>}
+          {commitError && !latest && (
+            <Button
+              variant="default"
+              size="xs"
+              w="fit-content"
+              onClick={loadLatest}
+            >
+              Tải bản mới để đối chiếu
+            </Button>
+          )}
+          {latest && (
+            <Button
+              variant="default"
+              size="xs"
+              w="fit-content"
+              onClick={() => {
+                setOriginal(latest);
+                setLatest(null);
+                setCommitError("");
+              }}
+            >
+              Dùng bản GitHub làm mốc sau khi đối chiếu
+            </Button>
+          )}
+          <TextInput
+            label="Commit message"
+            value={commitMessage}
+            onChange={(event) => setCommitMessage(event.currentTarget.value)}
+            disabled={saving}
+          />
+          <TextInput
+            label="Tạo nhánh mới (tùy chọn)"
+            placeholder={currentBranch}
+            value={newBranch}
+            onChange={(event) => setNewBranch(event.currentTarget.value)}
+            disabled={saving || Boolean(createdBranch)}
+          />
+          <Button
+            loading={saving}
+            disabled={
+              Boolean(latest) ||
+              !commitMessage.trim() ||
+              original?.text === editContent
+            }
+            onClick={handleSaveFile}
+          >
+            Commit vào {newBranch.trim() || currentBranch}
+          </Button>
+        </Stack>
+      </Modal>
+      {selectedRepo && pullBranch && (
+        <CreatePullModal
+          opened
+          owner={selectedRepo.owner.login}
+          repo={selectedRepo.name}
+          defaultBase={selectedRepo.default_branch}
+          defaultHead={pullBranch}
+          onClose={() => setPullBranch("")}
+          onSuccess={onPullCreated}
+        />
+      )}
 
       {/* Modal tạo file mới */}
       {selectedRepo && (

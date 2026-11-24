@@ -9,7 +9,7 @@ const ICON_BASE_URL =
   "https://cdn.jsdelivr.net/gh/vscode-icons/vscode-icons@master/icons";
 const MAX_PREVIEW_LINES = 250;
 
-interface FileDiff {
+export interface FileDiff {
   filename: string;
   status: string;
   additions: number;
@@ -140,6 +140,7 @@ export const DiffViewer = memo(function DiffViewer({
 
               return (
                 <Box
+                  // biome-ignore lint/suspicious/noArrayIndexKey: Each line is identified by its position in this immutable patch.
                   key={idx}
                   px="md"
                   style={{

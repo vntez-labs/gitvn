@@ -65,7 +65,10 @@ export function CommitsToolbar({
           size="xs"
           data={branchOptions}
           value={branchFilter}
-          onChange={(val) => onBranchChange(val || "all")}
+          allowDeselect={false}
+          onChange={(val) => {
+            if (val) onBranchChange(val);
+          }}
           placeholder="Chọn nhánh..."
           style={{ width: 210 }}
           leftSection={<IconGitBranch size={14} color="#6e675f" />}

@@ -12,23 +12,21 @@ import {
   Title,
 } from "@mantine/core";
 import { IconArrowRight } from "@tabler/icons-react";
-import axios from "axios";
-import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { GitVNLogo } from "@/components/brand/GitVNLogo";
 import { LandingBentoGrid } from "@/components/landing/LandingBentoGrid";
 import { LandingFooter } from "@/components/landing/LandingFooter";
+import { useAuthStore } from "@/store/auth.store";
 
 export default function GitVNLanding() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const router = useRouter();
+  const isLoggedIn = useAuthStore((state) => state.isAuthenticated);
+  const isLoading = useAuthStore((state) => state.isLoading);
 
   useEffect(() => {
-    axios
-      .get("/api/user")
-      .then((res) => {
-        if (res.data?.user) setIsLoggedIn(true);
-      })
-      .catch(() => {});
-  }, []);
+    if (!isLoading && isLoggedIn) router.replace("/dashboard");
+  }, [isLoading, isLoggedIn, router]);
 
   return (
     <Box
@@ -86,6 +84,10 @@ export default function GitVNLanding() {
                 <Button
                   component="a"
                   href={isLoggedIn ? "/dashboard" : "/api/integrations/github"}
+                  aria-disabled={isLoading}
+                  onClick={(event) => {
+                    if (isLoading) event.preventDefault();
+                  }}
                   size="sm"
                   radius="md"
                   color="vntez"
@@ -127,6 +129,10 @@ export default function GitVNLanding() {
             <Button
               component="a"
               href={isLoggedIn ? "/dashboard" : "/api/integrations/github"}
+              aria-disabled={isLoading}
+              onClick={(event) => {
+                if (isLoading) event.preventDefault();
+              }}
               size="lg"
               radius="md"
               color="vntez"

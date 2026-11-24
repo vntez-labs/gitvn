@@ -6,8 +6,8 @@ import {
   Modal,
   Stack,
   Text,
-  TextInput,
   Textarea,
+  TextInput,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { IconCheck, IconFilePlus } from "@tabler/icons-react";
@@ -56,6 +56,7 @@ export function CreateFileModal({
         path: trimmedPath,
         branch,
         content,
+        sha: null,
         message: commitMsg,
       });
 

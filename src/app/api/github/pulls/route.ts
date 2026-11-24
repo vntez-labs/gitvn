@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getValidAuthToken } from "@/lib/auth-token";
+import { searchGitHubWork } from "@/lib/github-work-search";
 
 // Hàm bóc tách tổng số trang từ header 'link' chuẩn RFC 5988 của GitHub
 function parseTotalPages(
@@ -52,6 +53,8 @@ export async function GET(request: Request) {
   };
 
   try {
+    if (searchParams.get("q") || searchParams.get("view"))
+      return await searchGitHubWork(searchParams, headers, "pr");
     const statesMap: Record<string, string[]> = {
       open: ["OPEN"],
       closed: ["CLOSED", "MERGED"],
@@ -107,7 +110,7 @@ export async function GET(request: Request) {
       totalPages = Math.max(1, Math.ceil(gqlCount / perPage));
     } else {
       totalPages = parseTotalPages(linkHeader, page);
-      totalCount = totalPages * perPage;
+      totalCount = (page - 1) * perPage + pulls.length;
     }
 
     return NextResponse.json({ pulls, totalPages, totalCount });

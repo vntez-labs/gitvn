@@ -1,15 +1,19 @@
 "use client";
 
 import {
+  Alert,
   Badge,
   Box,
+  Button,
   Group,
+  Pagination,
   SegmentedControl,
   Skeleton,
   Stack,
   Text,
   TextInput,
 } from "@mantine/core";
+import { useDebouncedValue } from "@mantine/hooks";
 import {
   IconCircleCheck,
   IconCircleDot,
@@ -17,7 +21,9 @@ import {
   IconSearch,
 } from "@tabler/icons-react";
 import axios from "axios";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import useSWR from "swr";
+import { useAuthStore } from "@/store/auth.store";
 import { useDashboardStore } from "@/store/dashboard.store";
 
 interface IssuesTabProps {
@@ -25,44 +31,40 @@ interface IssuesTabProps {
 }
 
 export function IssuesTab({ onIssuesLoaded }: IssuesTabProps) {
-  const { selectedRepo } = useDashboardStore();
-  const [issues, setIssues] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [filter, setFilter] = useState<"open" | "closed" | "all">("open");
+  const selectedRepo = useDashboardStore((state) => state.selectedRepo);
+  const login = useAuthStore((state) => state.user?.login);
+  const [filter, setFilter] = useState<"all" | "open" | "closed">("open");
   const [searchQuery, setSearchQuery] = useState("");
-  const [totalCount, setTotalCount] = useState<number>(0);
+  const [query] = useDebouncedValue(searchQuery.trim(), 300);
+  const [page, setPage] = useState(1);
 
+  const params =
+    selectedRepo &&
+    new URLSearchParams({
+      owner: selectedRepo.owner.login,
+      repo: selectedRepo.name,
+      state: filter,
+      page: String(page),
+      q: query,
+    });
+  const {
+    data,
+    error,
+    isLoading: loading,
+    mutate,
+  } = useSWR(
+    params && login ? [`/api/github/issues?${params}`, login] : null,
+    async ([url]) => (await axios.get(url)).data,
+    { errorRetryCount: 1 },
+  );
+  const filteredIssues = (data?.items ?? data?.issues ?? []) as any[];
+  const totalCount = data?.totalCount ?? 0;
+  const totalPages = data?.totalPages ?? 1;
+  const unfilteredOpenCount =
+    data && filter === "open" && !query ? totalCount : null;
   useEffect(() => {
-    if (!selectedRepo) return;
-    setLoading(true);
-
-    axios
-      .get(
-        `/api/github/issues?owner=${selectedRepo.owner.login}&repo=${selectedRepo.name}&state=${filter}`,
-      )
-      .then((res) => {
-        const data = res.data.issues || [];
-        const count = res.data.totalCount ?? data.length;
-        setIssues(data);
-        setTotalCount(count);
-        if (onIssuesLoaded && filter === "open") {
-          onIssuesLoaded(count);
-        }
-      })
-      .catch((err) => console.error("Lỗi tải issues:", err))
-      .finally(() => setLoading(false));
-  }, [selectedRepo?.id, filter]);
-
-  const filteredIssues = useMemo(() => {
-    if (!searchQuery.trim()) return issues;
-    const q = searchQuery.toLowerCase();
-    return issues.filter(
-      (item) =>
-        item.title.toLowerCase().includes(q) ||
-        item.user?.login?.toLowerCase().includes(q) ||
-        String(item.number).includes(q),
-    );
-  }, [issues, searchQuery]);
+    if (unfilteredOpenCount !== null) onIssuesLoaded?.(unfilteredOpenCount);
+  }, [unfilteredOpenCount, onIssuesLoaded]);
 
   return (
     <Box
@@ -84,7 +86,10 @@ export function IssuesTab({ onIssuesLoaded }: IssuesTabProps) {
               leftSection={<IconSearch size={14} color="#94a3b8" />}
               size="xs"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.currentTarget.value)}
+              onChange={(e) => {
+                setSearchQuery(e.currentTarget.value);
+                setPage(1);
+              }}
               style={{ width: 280 }}
               styles={{
                 input: {
@@ -97,7 +102,10 @@ export function IssuesTab({ onIssuesLoaded }: IssuesTabProps) {
 
             <SegmentedControl
               value={filter}
-              onChange={(val) => setFilter(val as any)}
+              onChange={(val) => {
+                setFilter(val as typeof filter);
+                setPage(1);
+              }}
               size="xs"
               data={[
                 { label: "Open", value: "open" },
@@ -117,13 +125,32 @@ export function IssuesTab({ onIssuesLoaded }: IssuesTabProps) {
 
           <Text fz="xs" c="#64748b">
             {searchQuery.trim()
-              ? `Tìm thấy ${filteredIssues.length} issues`
-              : `Hiển thị ${totalCount} issues`}
+              ? `Tìm thấy ${totalCount} issues`
+              : `Trang ${page} / ${totalPages} · ${totalCount} issues`}
           </Text>
         </Group>
 
+        {data?.incomplete && (
+          <Alert color="yellow" mb="sm">
+            GitHub trả kết quả tìm kiếm giới hạn. Hãy thu hẹp bộ lọc.
+          </Alert>
+        )}
         {/* Danh sách Issues */}
-        {loading ? (
+        {error ? (
+          <Alert color="red" title="Không thể tải Issues">
+            {axios.isAxiosError(error)
+              ? error.response?.data?.error || error.message
+              : "Lỗi kết nối GitHub."}
+            <Button
+              ml="sm"
+              size="compact-xs"
+              variant="subtle"
+              onClick={() => void mutate()}
+            >
+              Thử lại
+            </Button>
+          </Alert>
+        ) : loading ? (
           <Stack
             gap={1}
             style={{
@@ -252,6 +279,14 @@ export function IssuesTab({ onIssuesLoaded }: IssuesTabProps) {
               Repository hiện tại không có lỗi hay yêu cầu tính năng mở nào.
             </Text>
           </Box>
+        )}
+        {totalPages > 1 && (
+          <Pagination
+            mt="md"
+            value={page}
+            onChange={setPage}
+            total={totalPages}
+          />
         )}
       </Box>
     </Box>

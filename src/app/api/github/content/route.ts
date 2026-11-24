@@ -63,7 +63,9 @@ export async function GET(request: Request) {
     const res = await fetch(url.toString(), {
       headers: {
         Authorization: `Bearer ${token}`,
-        Accept: "application/vnd.github.raw+json",
+        Accept: binary
+          ? "application/vnd.github.raw+json"
+          : "application/vnd.github.object+json",
         ...(pdf ? { "Accept-Encoding": "identity" } : {}),
         ...(range ? { Range: range } : {}),
       },
@@ -115,8 +117,32 @@ export async function GET(request: Request) {
       return new Response(res.body, { headers, status: res.status });
     }
 
-    const content = await res.text();
-    return NextResponse.json({ content });
+    const file = await res.json();
+    if (file.type !== "file" || typeof file.sha !== "string") {
+      return NextResponse.json(
+        { error: "Đường dẫn không phải file." },
+        { status: 422 },
+      );
+    }
+    if (file.encoding === "base64" && typeof file.content === "string") {
+      const bytes = Buffer.from(file.content, "base64");
+      const content = bytes.toString("utf8");
+      const editable = !bytes.includes(0) && Buffer.from(content).equals(bytes);
+      return NextResponse.json({ content, sha: editable ? file.sha : null });
+    }
+    const raw = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/vnd.github.raw+json",
+      },
+      cache: "no-store",
+    });
+    if (!raw.ok)
+      return NextResponse.json(
+        { error: "Lỗi tải nội dung file" },
+        { status: raw.status },
+      );
+    return NextResponse.json({ content: await raw.text(), sha: null });
   } catch {
     return NextResponse.json(
       { error: "Internal Server Error" },
@@ -136,39 +162,29 @@ export async function PUT(request: Request) {
     const body = await request.json();
     const { owner, repo, path, branch, content, message, sha } = body;
 
-    if (!owner || !repo || !path || content === undefined) {
+    if (
+      typeof owner !== "string" ||
+      !owner ||
+      typeof repo !== "string" ||
+      !repo ||
+      typeof path !== "string" ||
+      path.split("/").some((part) => !part || part === "." || part === "..") ||
+      typeof branch !== "string" ||
+      !branch ||
+      typeof content !== "string" ||
+      (sha !== null &&
+        (typeof sha !== "string" || !/^[a-f0-9]{40}$/i.test(sha)))
+    ) {
       return NextResponse.json(
-        { error: "Thiếu thông tin bắt buộc (owner, repo, path, content)" },
+        { error: "Thông tin commit không hợp lệ." },
         { status: 400 },
       );
     }
 
     const url = contentsUrl(owner, repo, path);
-    let fileSha = sha;
-    // Nếu chưa có sha, thử tìm sha của file hiện tại trên GitHub
-    if (!fileSha) {
-      try {
-        const checkUrl = new URL(url);
-        if (branch) checkUrl.searchParams.set("ref", branch);
-        const checkRes = await fetch(checkUrl.toString(), {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: "application/vnd.github.v3+json",
-          },
-          cache: "no-store",
-        });
-        if (checkRes.ok) {
-          const fileInfo = await checkRes.json();
-          fileSha = fileInfo.sha;
-        }
-      } catch {
-        // File chưa từng tồn tại, tạo mới
-      }
-    }
-
     const commitMessage =
-      message?.trim() ||
-      (fileSha ? `chore(code): update ${path}` : `chore(code): create ${path}`);
+      (typeof message === "string" && message.trim()) ||
+      (sha ? `chore(code): update ${path}` : `chore(code): create ${path}`);
     const encodedContent = Buffer.from(content, "utf-8").toString("base64");
 
     const putRes = await fetch(url, {
@@ -181,8 +197,8 @@ export async function PUT(request: Request) {
       body: JSON.stringify({
         message: commitMessage,
         content: encodedContent,
-        branch: branch || "main",
-        ...(fileSha ? { sha: fileSha } : {}),
+        branch,
+        ...(sha ? { sha } : {}),
       }),
     });
 

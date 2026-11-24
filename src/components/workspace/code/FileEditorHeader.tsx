@@ -158,7 +158,7 @@ export function FileEditorHeader({
                 },
               }}
             >
-              Lưu & Commit
+              Xem thay đổi
             </Button>
           </>
         ) : (

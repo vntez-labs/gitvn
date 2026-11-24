@@ -2,6 +2,7 @@
 
 import {
   ActionIcon,
+  Alert,
   Avatar,
   Box,
   Drawer,
@@ -19,7 +20,7 @@ import {
   IconUser,
 } from "@tabler/icons-react";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { GitVNLogo } from "@/components/brand/GitVNLogo";
 import { DashboardOverview } from "@/components/dashboard/Overview";
 import { DashboardSidebar } from "@/components/dashboard/Sidebar";
@@ -32,18 +33,53 @@ export default function DashboardPage() {
   const { selectedRepo, fetchInitialData } = useDashboardStore();
   const router = useRouter();
   const [reposOpen, reposDrawer] = useDisclosure(false);
+  const [linkedPull, setLinkedPull] = useState<{
+    repoId: number;
+    number: number;
+  }>();
+  const initialPull =
+    linkedPull && linkedPull.repoId === selectedRepo?.id
+      ? linkedPull.number
+      : undefined;
+  const [linkError, setLinkError] = useState("");
+  const login = user?.login;
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      router.push("/");
+      router.replace("/");
     }
   }, [isLoading, isAuthenticated, router]);
 
   useEffect(() => {
-    if (isAuthenticated) {
-      fetchInitialData();
+    if (!isAuthenticated || !login) return;
+    let cancelled = false;
+    async function openWorkspace() {
+      const params = new URLSearchParams(window.location.search);
+      const repoName = params.get("repo");
+      await fetchInitialData();
+      if (cancelled || !repoName) return;
+      const { repos, selectRepo } = useDashboardStore.getState();
+      const repo = repos.find(
+        (item) => item.full_name.toLowerCase() === repoName.toLowerCase(),
+      );
+      if (!repo) {
+        setLinkError("Không tìm thấy repo trong tài khoản GitHub hiện tại.");
+        return;
+      }
+      const number = Number(params.get("pr"));
+      await selectRepo(
+        repo,
+        params.get("file"),
+        params.get("branch") || undefined,
+      );
+      if (!cancelled && Number.isSafeInteger(number) && number > 0)
+        setLinkedPull({ repoId: repo.id, number });
     }
-  }, [isAuthenticated, fetchInitialData]);
+    void openWorkspace();
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, login, fetchInitialData]);
 
   if (isLoading || !user) {
     return (
@@ -213,7 +249,23 @@ export default function DashboardPage() {
             minWidth: 0,
           }}
         >
-          {selectedRepo ? <RepoWorkspace /> : <DashboardOverview />}
+          {linkError && (
+            <Alert
+              color="yellow"
+              withCloseButton
+              onClose={() => setLinkError("")}
+            >
+              {linkError}
+            </Alert>
+          )}
+          {selectedRepo ? (
+            <RepoWorkspace
+              key={`${selectedRepo.id}:${initialPull ?? ""}`}
+              initialPull={initialPull}
+            />
+          ) : (
+            <DashboardOverview />
+          )}
         </Box>
       </Box>
     </Box>

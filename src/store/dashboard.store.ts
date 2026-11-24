@@ -20,6 +20,7 @@ interface DashboardState {
   treeError: string | null;
   activeFile: string | null;
   fileContent: string;
+  fileSha: string | null;
   loadingContent: boolean;
   contentError: string | null;
 
@@ -55,6 +56,7 @@ export const useDashboardStore = create<DashboardState>()(
       treeError: null,
       activeFile: null,
       fileContent: "",
+      fileSha: null,
       loadingContent: false,
       contentError: null,
 
@@ -77,7 +79,12 @@ export const useDashboardStore = create<DashboardState>()(
           const branch = get().currentBranch;
 
           if (currentRepo) {
-            await get().selectRepo(currentRepo, currentFile, branch);
+            const accessibleRepo = get().repos.find(
+              (item) => item.id === currentRepo.id,
+            );
+            if (accessibleRepo)
+              await get().selectRepo(accessibleRepo, currentFile, branch);
+            else get().resetWorkspace();
           }
         } catch (error) {
           console.error("Lỗi lấy dữ liệu:", error);
@@ -105,6 +112,7 @@ export const useDashboardStore = create<DashboardState>()(
           tree: [],
           activeFile: null,
           fileContent: "",
+          fileSha: null,
           loadingTree: false,
           treeError: null,
           loadingContent: false,
@@ -129,6 +137,7 @@ export const useDashboardStore = create<DashboardState>()(
           tree: [],
           activeFile: targetFile,
           fileContent: "",
+          fileSha: null,
           loadingContent: false,
           contentError: null,
         });
@@ -157,7 +166,7 @@ export const useDashboardStore = create<DashboardState>()(
           if (readme) {
             await get().selectFile(readme.path, branch);
           } else {
-            set({ activeFile: null, fileContent: "" });
+            set({ activeFile: null, fileContent: "", fileSha: null });
           }
         } catch (error) {
           if (request !== treeRequest) return;
@@ -181,6 +190,7 @@ export const useDashboardStore = create<DashboardState>()(
           tree: [],
           activeFile: null,
           fileContent: "",
+          fileSha: null,
           loadingTree: false,
           treeError: null,
           loadingContent: false,
@@ -207,6 +217,7 @@ export const useDashboardStore = create<DashboardState>()(
         set({
           activeFile: path,
           fileContent: "",
+          fileSha: null,
           loadingContent: !format,
           contentError: null,
         });
@@ -227,7 +238,11 @@ export const useDashboardStore = create<DashboardState>()(
             `/api/github/content?owner=${repo.owner.login}&repo=${repo.name}&path=${encodeURIComponent(path)}&ref=${encodeURIComponent(branch)}`,
           );
           if (!isCurrent()) return;
-          set({ fileContent: data.content || "", loadingContent: false });
+          set({
+            fileContent: data.content || "",
+            fileSha: data.sha ?? null,
+            loadingContent: false,
+          });
         } catch (error) {
           if (!isCurrent()) return;
           console.error("Lỗi lấy nội dung file:", error);
@@ -246,6 +261,7 @@ export const useDashboardStore = create<DashboardState>()(
           tree: [],
           activeFile: null,
           fileContent: "",
+          fileSha: null,
           loadingTree: false,
           treeError: null,
           loadingContent: false,

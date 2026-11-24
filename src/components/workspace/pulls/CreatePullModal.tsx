@@ -57,22 +57,38 @@ export function CreatePullModal({
   // Lấy danh sách branches
   useEffect(() => {
     if (!opened) return;
+    const controller = new AbortController();
     axios
-      .get(`/api/github/branches?owner=${owner}&repo=${repo}`)
-      .then((res) => {
-        const names = (res.data?.branches || []).map((b: any) => b.name);
-        setBranches(names);
-        if (!baseBranch && names.includes("main")) setBaseBranch("main");
-        if (defaultHead && names.includes(defaultHead))
-          setHeadBranch(defaultHead);
-        else if (!headBranch && names.length > 1) {
-          const nonBase = names.find(
-            (n: string) => n !== (defaultBase || "main"),
-          );
-          if (nonBase) setHeadBranch(nonBase);
-        }
+      .get(`/api/github/branches?owner=${owner}&repo=${repo}`, {
+        signal: controller.signal,
       })
-      .catch((err) => console.error("Lỗi lấy branches:", err));
+      .then((res) => {
+        const names = (res.data?.branches || []).map(
+          (b: { name: string }) => b.name,
+        );
+        setBranches(names);
+        setBaseBranch(
+          (value) =>
+            value ||
+            (names.includes(defaultBase) ? defaultBase : (names[0] ?? "")),
+        );
+        setHeadBranch((value) => {
+          if (defaultHead && names.includes(defaultHead)) return defaultHead;
+          return (
+            value ||
+            names.find(
+              (name: string) =>
+                name !== (names.includes(defaultBase) ? defaultBase : names[0]),
+            ) ||
+            ""
+          );
+        });
+      })
+      .catch(() => {
+        if (!controller.signal.aborted)
+          setErrorMsg("Không thể tải danh sách nhánh từ GitHub.");
+      });
+    return () => controller.abort();
   }, [opened, owner, repo, defaultBase, defaultHead]);
 
   // So sánh giữa base và head branch
@@ -82,24 +98,36 @@ export function CreatePullModal({
       return;
     }
 
+    const controller = new AbortController();
+    setCompareData(null);
     axios
       .get(
         `/api/github/compare?owner=${owner}&repo=${repo}&base=${encodeURIComponent(
           baseBranch,
         )}&head=${encodeURIComponent(headBranch)}`,
+        { signal: controller.signal },
       )
       .then((res) => {
         setCompareData(res.data);
-        if (!title && res.data?.ahead_by > 0) {
-          setTitle(`Merge ${headBranch} into ${baseBranch}`);
-        }
+        if (res.data?.ahead_by > 0)
+          setTitle(
+            (value) => value || `Merge ${headBranch} into ${baseBranch}`,
+          );
       })
-      .catch(() => setCompareData(null));
+      .catch(() => {
+        if (!controller.signal.aborted) setCompareData(null);
+      });
+    return () => controller.abort();
   }, [opened, owner, repo, baseBranch, headBranch]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !headBranch || !baseBranch) {
+    if (
+      !title.trim() ||
+      !headBranch ||
+      !baseBranch ||
+      headBranch === baseBranch
+    ) {
       setErrorMsg("Vui lòng điền đầy đủ tiêu đề và nhánh cần merge.");
       return;
     }

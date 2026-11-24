@@ -79,8 +79,11 @@ const UpgradeGitvnModal = dynamic(
   { ssr: false },
 );
 
-export function RepoWorkspace() {
-  const [activeTab, setActiveTab] = useState<WorkspaceTab>("code");
+export function RepoWorkspace({ initialPull }: { initialPull?: number }) {
+  const [activeTab, setActiveTab] = useState<WorkspaceTab>(
+    initialPull ? "pulls" : "code",
+  );
+  const [pullNumber, setPullNumber] = useState(initialPull);
   const [commitsCount, setCommitsCount] = useState<number | undefined>(
     undefined,
   );
@@ -192,7 +195,7 @@ export function RepoWorkspace() {
       .catch((err) => {
         console.error("Lỗi lấy số đếm badge:", err);
       });
-  }, [selectedRepo, currentBranch, checkGitvnStatus]);
+  }, [selectedRepo, checkGitvnStatus]);
 
   if (!selectedRepo) return null;
 
@@ -270,7 +273,15 @@ export function RepoWorkspace() {
 
       <BranchActionBanner onTabChange={setActiveTab} />
 
-      {activeTab === "code" && <CodeTab onNavigateTab={setActiveTab} />}
+      {activeTab === "code" && (
+        <CodeTab
+          onNavigateTab={setActiveTab}
+          onPullCreated={(number) => {
+            setPullNumber(number);
+            setActiveTab("pulls");
+          }}
+        />
+      )}
       {activeTab === "commits" && (
         <CommitsTab onCommitsLoaded={setCommitsCount} />
       )}
@@ -295,6 +306,8 @@ export function RepoWorkspace() {
       {activeTab === "overview" && <OverviewTab />}
       {activeTab === "pulls" && (
         <PullsTab
+          initialPull={pullNumber}
+          onPullOpened={(number) => setPullNumber(number ?? undefined)}
           onPullsLoaded={(count) => {
             if (typeof count === "number") {
               setPullsCount(count);

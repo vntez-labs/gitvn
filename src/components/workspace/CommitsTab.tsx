@@ -1,10 +1,19 @@
 "use client";
 
-import { Box, Button, Group, Skeleton, Stack, Text } from "@mantine/core";
+import {
+  Alert,
+  Box,
+  Button,
+  Group,
+  Skeleton,
+  Stack,
+  Text,
+} from "@mantine/core";
 import { IconGitCommit } from "@tabler/icons-react";
 import axios from "axios";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CommitDetailModal } from "@/components/workspace/CommitDetailModal";
+import { useRepoBranches } from "@/hooks/useRepoBranches";
 import { computeGitGraphLayout } from "@/lib/git-graph-layout";
 import { useDashboardStore } from "@/store/dashboard.store";
 import { CommitGraphRow } from "./commits/CommitGraphRow";
@@ -25,62 +34,70 @@ export function CommitsTab({ onCommitsLoaded }: CommitsTabProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSha, setSelectedSha] = useState<string | null>(null);
   const [authorFilter, setAuthorFilter] = useState<string>("all");
-  const [branchFilter, setBranchFilter] = useState<string>("all");
-  const [branchList, setBranchList] = useState<string[]>([]);
+  const [chosenBranch, setBranchFilter] = useState<string | null>(null);
+  const branchFilter = chosenBranch ?? currentBranch;
+  const [loadError, setLoadError] = useState("");
+  const { data: branches } = useRepoBranches(selectedRepo);
+  const commitRequest = useRef<AbortController | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
-  // Tải danh sách branches của repo
-  useEffect(() => {
-    if (!selectedRepo) return;
-    axios
-      .get(
-        `/api/github/branches?owner=${selectedRepo.owner.login}&repo=${selectedRepo.name}`,
-      )
-      .then((res) => {
-        const list = (res.data.branches || []).map((b: any) => b.name);
-        if (list.length > 0) setBranchList(list);
-      })
-      .catch(() => {});
-  }, [selectedRepo?.id]);
+  const owner = selectedRepo?.owner.login;
+  const repo = selectedRepo?.name;
+  const fetchCommits = useCallback(
+    (targetPage = 1, append = false) => {
+      if (!owner || !repo) return;
+      commitRequest.current?.abort();
+      const controller = new AbortController();
+      commitRequest.current = controller;
+      setLoadError("");
+      setLoadingMore(append);
+      setLoading(!append);
 
-  const fetchCommits = (targetPage = 1, append = false) => {
-    if (!selectedRepo) return;
-    if (append) setLoadingMore(true);
-    else setLoading(true);
-
-    axios
-      .get(
-        `/api/github/commits?owner=${selectedRepo.owner.login}&repo=${selectedRepo.name}&branch=${encodeURIComponent(
-          branchFilter,
-        )}&page=${targetPage}&per_page=100`,
-      )
-      .then((res) => {
-        const data = res.data.commits || [];
-        if (append) {
-          setCommits((prev) => {
-            const map = new Map<string, any>();
-            prev.forEach((c) => map.set(c.sha, c));
-            data.forEach((c: any) => map.set(c.sha, c));
-            return Array.from(map.values());
-          });
-        } else {
-          setCommits(data);
-          if (onCommitsLoaded) onCommitsLoaded(data.length);
-        }
-        setHasMore(data.length >= 30);
-        setPage(targetPage);
-      })
-      .catch((err) => console.error("Lỗi tải danh sách commits:", err))
-      .finally(() => {
-        setLoading(false);
-        setLoadingMore(false);
+      const params = new URLSearchParams({
+        owner,
+        repo,
+        branch: branchFilter,
+        page: String(targetPage),
+        per_page: "100",
       });
-  };
+      axios
+        .get(`/api/github/commits?${params}`, { signal: controller.signal })
+        .then((res) => {
+          if (controller.signal.aborted) return;
+          const data = res.data.commits || [];
+          if (append) {
+            setCommits((previous) =>
+              Array.from(
+                new Map(
+                  [...previous, ...data].map((commit) => [commit.sha, commit]),
+                ).values(),
+              ),
+            );
+          } else {
+            setCommits(data);
+            onCommitsLoaded?.(data.length);
+          }
+          setHasMore(res.data.hasMore === true);
+          setPage(targetPage);
+        })
+        .catch(() => {
+          if (!controller.signal.aborted)
+            setLoadError("Không thể tải lịch sử commit từ GitHub.");
+        })
+        .finally(() => {
+          if (controller.signal.aborted) return;
+          setLoading(false);
+          setLoadingMore(false);
+        });
+    },
+    [owner, repo, branchFilter, onCommitsLoaded],
+  );
 
   useEffect(() => {
     setPage(1);
-    fetchCommits(1, false);
-  }, [selectedRepo?.id, branchFilter]);
+    fetchCommits();
+    return () => commitRequest.current?.abort();
+  }, [fetchCommits]);
 
   // Danh sách các tác giả đã commit trong repo
   const authorOptions = useMemo(() => {
@@ -104,13 +121,16 @@ export function CommitsTab({ onCommitsLoaded }: CommitsTabProps) {
   // Danh sách branches cho dropdown
   const branchOptions = useMemo(() => {
     const unique = Array.from(
-      new Set(["all", currentBranch, ...branchList]),
+      new Set([
+        currentBranch,
+        ...(branches ?? []).map((branch) => branch.name),
+      ]),
     ).filter(Boolean);
     return unique.map((b) => ({
       value: b,
-      label: b === "all" ? "Tất cả các nhánh (All branches)" : `Nhánh: ${b}`,
+      label: `Nhánh: ${b}`,
     }));
-  }, [branchList, currentBranch]);
+  }, [branches, currentBranch]);
 
   // Bộ lọc tìm kiếm commit & lọc tác giả
   const filteredCommits = useMemo(() => {
@@ -154,6 +174,11 @@ export function CommitsTab({ onCommitsLoaded }: CommitsTabProps) {
     >
       <Box style={{ maxWidth: 1060, margin: "0 auto" }}>
         {/* Toolbar lọc và tìm kiếm */}
+        {loadError && (
+          <Alert color="red" mb="sm">
+            {loadError}
+          </Alert>
+        )}
         <CommitsToolbar
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}

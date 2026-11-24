@@ -25,7 +25,7 @@ import {
   IconSearch,
   IconX,
 } from "@tabler/icons-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CreateRepoModal } from "@/components/dashboard/CreateRepoModal";
 import { useAuthStore } from "@/store/auth.store";
 import { useDashboardStore } from "@/store/dashboard.store";
@@ -55,6 +55,32 @@ export function DashboardSidebar({
   const [refreshing, setRefreshing] = useState(false);
 
   const userLogin = user?.login.toLowerCase();
+  const [recentIds, setRecentIds] = useState<number[]>([]);
+  useEffect(() => {
+    if (!userLogin) return;
+    const key = `gitvn:recent-repos:${userLogin}`;
+    try {
+      const stored: unknown = JSON.parse(
+        window.localStorage.getItem(key) || "[]",
+      );
+      const ids = Array.isArray(stored)
+        ? stored.filter((id): id is number => Number.isSafeInteger(id))
+        : [];
+      const next = selectedRepo
+        ? [
+            selectedRepo.id,
+            ...ids.filter((id) => id !== selectedRepo.id),
+          ].slice(0, 5)
+        : ids;
+      if (selectedRepo) window.localStorage.setItem(key, JSON.stringify(next));
+      setRecentIds(next);
+    } catch {
+      setRecentIds([]);
+    }
+  }, [userLogin, selectedRepo]);
+  const recentRepos = recentIds.flatMap((id) =>
+    repos.filter((repo) => repo.id === id),
+  );
 
   // Lọc theo tìm kiếm
   const query = searchQuery.trim().toLowerCase();
@@ -323,6 +349,29 @@ export function DashboardSidebar({
             },
           }}
         />
+
+        {!query && !selectedOrg && recentRepos.length > 0 && (
+          <Stack gap={4} mb="sm">
+            <Text size="xs" fw={600} c="dimmed" px="xs">
+              Repo gần đây
+            </Text>
+            {recentRepos.map((repo) => (
+              <Button
+                key={repo.id}
+                variant="subtle"
+                color="gray"
+                size="compact-xs"
+                justify="start"
+                onClick={() => {
+                  void selectRepo(repo);
+                  onRepoSelect?.();
+                }}
+              >
+                {repo.full_name}
+              </Button>
+            ))}
+          </Stack>
+        )}
 
         {/* REPOSITORIES HEADER */}
         <Group justify="space-between" mb={8} px="xs" align="center">
